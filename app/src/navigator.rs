@@ -1,11 +1,11 @@
-use crate::view::Viewable;
+use shared_view::Viewable;
 
 #[derive(Default)]
-pub struct Navigator {}
+pub struct Navigator;
 
 impl Viewable for Navigator {
     fn title(&self) -> &str {
-        "Navigator"
+        "📊 Navigator"
     }
     fn draw_ui(&mut self, ui: &mut egui::Ui) {
         ui.heading("Hello from Nav");

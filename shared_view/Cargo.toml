@@ -1,8 +1,7 @@
 [package]
-name = "tabletop_sound"
+name = "shared_view"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 egui.workspace = true
-shared_view = { path = "../../shared_view" }

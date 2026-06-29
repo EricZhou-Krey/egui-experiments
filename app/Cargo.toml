@@ -6,5 +6,7 @@ edition = "2024"
 [dependencies]
 egui.workspace = true
 eframe.workspace = true
+egui_dock.workspace = true
+shared_view = { path = "../shared_view" }
 
 tabletop_sound = { path = "../experiments/tabletop_sound" }
