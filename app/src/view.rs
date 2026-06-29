@@ -1,9 +1,22 @@
 use eframe::egui;
 
-#[derive(Default)]
+use crate::navigator::Navigator;
+
 pub struct View {
     views: Vec<Box<dyn Viewable>>,
     active_view_index: usize,
+}
+
+impl Default for View {
+    fn default() -> Self {
+        Self {
+            views: vec![
+                Box::new(Navigator::default()),
+                Box::new(Navigator::default()),
+            ],
+            active_view_index: 0,
+        }
+    }
 }
 
 impl eframe::App for View {

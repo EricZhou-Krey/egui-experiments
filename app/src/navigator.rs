@@ -7,7 +7,7 @@ impl Viewable for Navigator {
     fn title(&self) -> &str {
         "Navigator"
     }
-    fn draw_ui(&mut self, _ui: &mut egui::Ui) {
-        todo!()
+    fn draw_ui(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Hello from Nav");
     }
 }
