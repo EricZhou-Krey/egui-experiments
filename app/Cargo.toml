@@ -1,0 +1,10 @@
+[package]
+name = "app"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+egui.workspace = true
+eframe.workspace = true
+
+tabletop_sound = { path = "../experiments/tabletop_sound" }

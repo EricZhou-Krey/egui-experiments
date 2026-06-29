@@ -1,6 +1,7 @@
-[package]
-name = "egui-experiments"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+resolver = "3"
+members = ["app", "experiments/tabletop_sound"]
 
-[dependencies]
+[workspace.dependencies]
+egui = "0.35.0"
+eframe = "0.35.0"
