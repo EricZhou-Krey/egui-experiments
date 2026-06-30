@@ -19,8 +19,8 @@ impl TabViewer for Viewer {
         self.views[*tab].draw_ui(ui);
     }
 
-    fn is_closeable(&self, _tab: &Self::Tab) -> bool {
-        false
+    fn is_closeable(&self, tab: &Self::Tab) -> bool {
+        self.views[*tab].is_closeable()
     }
 }
 
@@ -31,9 +31,14 @@ pub struct View {
 
 impl Default for View {
     fn default() -> Self {
-        let views: Vec<Box<dyn Viewable>> = vec![Box::new(Navigator), Box::new(TabletopSoundTab)];
+        macro_rules! box_vec {
+            [$($x:expr),* $(,)?] => {
+                vec![$(Box::new($x) as Box<dyn Viewable>),*]
+            };
+        }
+        let views: Vec<Box<dyn Viewable>> = box_vec![Navigator, TabletopSoundTab];
 
-        let dock_state = DockState::new(vec![0]);
+        let dock_state = DockState::new((0..views.len()).collect());
 
         Self {
             dock_state,
@@ -46,7 +51,6 @@ impl eframe::App for View {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         DockArea::new(&mut self.dock_state)
             .style(egui_dock::Style::from_egui(ui.style().as_ref()))
-            .show_close_buttons(false)
             .show_inside(ui, &mut self.viewer);
     }
 }

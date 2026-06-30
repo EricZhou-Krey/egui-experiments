@@ -10,4 +10,8 @@ impl Viewable for Navigator {
     fn draw_ui(&mut self, ui: &mut egui::Ui) {
         ui.heading("Hello from Nav");
     }
+
+    fn is_closeable(&self) -> bool {
+        false
+    }
 }
