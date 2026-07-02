@@ -32,10 +32,11 @@ pub struct View {
 impl Default for View {
     fn default() -> Self {
         macro_rules! box_vec {
-            [$($x:expr),* $(,)?] => {
-                vec![$(Box::new($x) as Box<dyn Viewable>),*]
+            [$($t:ty),* $(,)?] => {
+                vec![$(Box::new(<$t>::default()) as Box<dyn Viewable>),*]
             };
         }
+
         let views: Vec<Box<dyn Viewable>> = box_vec![Navigator, TabletopSoundTab];
 
         let dock_state = DockState::new((0..views.len()).collect());
