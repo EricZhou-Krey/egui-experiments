@@ -68,24 +68,30 @@ impl TriangulationGraph {
 
     fn delaunay_triangulation(
         points: &[Pos2],
-        sorted_indicies: Vec<usize>,
+        sorted_indicies: &[usize],
         left: usize,
         right: usize,
     ) -> Vec<USizeVec2> {
         if right - left < 3 {
-            return sorted_indicies[left..right]
+            return sorted_indicies[left..=right]
                 .iter()
                 .permutations(2)
                 .map(|p| USizeVec2 { x: *p[0], y: *p[1] })
                 .collect();
         }
 
-        (1..points.len())
-            .map(|i| USizeVec2 {
-                x: sorted_indicies[i - 1],
-                y: sorted_indicies[i],
-            })
-            .collect()
+        let midpoint: usize = (left + right) / 2;
+        let mut result: Vec<USizeVec2> =
+            TriangulationGraph::delaunay_triangulation(points, sorted_indicies, left, midpoint);
+
+        result.extend(TriangulationGraph::delaunay_triangulation(
+            points,
+            sorted_indicies,
+            midpoint + 1,
+            right,
+        ));
+
+        result
     }
 
     fn update_edges(&mut self) {
@@ -98,7 +104,7 @@ impl TriangulationGraph {
 
         self.edges = TriangulationGraph::delaunay_triangulation(
             &self.points,
-            sorted_indicies,
+            &sorted_indicies,
             0,
             self.points.len() - 1,
         );
