@@ -53,5 +53,7 @@ impl eframe::App for View {
         DockArea::new(&mut self.dock_state)
             .style(egui_dock::Style::from_egui(ui.style().as_ref()))
             .show_inside(ui, &mut self.viewer);
+
+        ui.request_repaint();
     }
 }
