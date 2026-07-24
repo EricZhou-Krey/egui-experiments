@@ -1,5 +1,5 @@
 use egui::{Pos2, Vec2};
-use glam::I8Vec2;
+use glam::USizeVec2;
 use shared_view::Viewable;
 
 pub struct TriangulationGraph {
@@ -15,7 +15,7 @@ pub struct TriangulationGraph {
 
     edge_length: f32,
     edge_color: egui::Color32,
-    edges: Vec<I8Vec2>,
+    edges: Vec<USizeVec2>,
 }
 
 impl Default for TriangulationGraph {
@@ -65,7 +65,7 @@ impl TriangulationGraph {
         }
     }
 
-    fn delaunay_triangulation(points: &[Pos2], left: usize, right: usize) -> Vec<I8Vec2> {
+    fn delaunay_triangulation(points: &[Pos2], left: usize, right: usize) -> Vec<USizeVec2> {
         let mut sorted_indicies: Vec<usize> = (0..points.len()).collect();
         sorted_indicies.sort_unstable_by(|&i, &j| {
             (points[i].x, points[i].y)
@@ -74,9 +74,9 @@ impl TriangulationGraph {
         });
 
         (1..points.len())
-            .map(|i| I8Vec2 {
-                x: sorted_indicies[i - 1] as i8,
-                y: sorted_indicies[i] as i8,
+            .map(|i| USizeVec2 {
+                x: sorted_indicies[i - 1],
+                y: sorted_indicies[i],
             })
             .collect()
     }
@@ -113,10 +113,7 @@ impl Viewable for TriangulationGraph {
         };
 
         for edge in &self.edges {
-            painter.line_segment(
-                [self.points[edge.x as usize], self.points[edge.y as usize]],
-                edge_style,
-            );
+            painter.line_segment([self.points[edge.x], self.points[edge.y]], edge_style);
         }
 
         for pos in self.points.clone() {
