@@ -1,38 +1,45 @@
-use egui::{
-    Align, Color32, FontFamily, FontId, Layout, Painter, Pos2, Rect, Response, RichText, Sense,
-    UiBuilder,
-};
+use glam::Vec2;
 use shared_view::Viewable;
 
-// TODO: Change ui system:
-// - Make nodes
-// Reconfigure the title to only be displayed at top left and cover with bounding box and not
-// display preview unless click occurs,
-// sense drag and align preview according to the placement on the click on a node, title disappears
-// then and etc
+#[derive(Default)]
+pub struct TriangulationGraph {
+    init_flag: bool, // Memory alignment issues :(
+    n_points: usize,
+    points: Vec<Vec2>,
+}
 
-pub struct Navigator {}
+impl Viewable for TriangulationGraph {
+    fn title(&self) -> &str {
+        "Detri Graph"
+    }
 
-impl Default for Navigator {
-    fn default() -> Self {
-        Self {}
+    fn draw_ui(&mut self, ui: &mut egui::Ui) {
+        if !self.init_flag {
+            self.n_points = 100;
+            self.points = (0..self.n_points)
+                .map(|_| Vec2 {
+                    x: rand::random::<f32>() * ui.available_width(),
+                    y: rand::random::<f32>() * ui.available_height(),
+                })
+                .collect();
+        }
+        let debug_info: String = format!("{:?}", self.points);
+        ui.heading(debug_info.as_str());
     }
 }
 
-impl Navigator {
-    fn draw_node_graph(&mut self, ui: &mut egui::Ui) {
-        let (response, painter): (Response, Painter) =
-            ui.allocate_painter(ui.available_size(), Sense::hover());
-    }
+#[derive(Default)]
+pub struct Navigator {
+    triangulation_graph: TriangulationGraph,
 }
 
 impl Viewable for Navigator {
     fn title(&self) -> &str {
-        "📊 Navigator"
+        "Navigator"
     }
 
     fn draw_ui(&mut self, ui: &mut egui::Ui) {
-        self.draw_node_graph(ui);
+        self.triangulation_graph.draw_ui(ui);
     }
 
     fn is_closeable(&self) -> bool {
