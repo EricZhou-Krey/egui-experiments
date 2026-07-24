@@ -73,11 +73,27 @@ impl TriangulationGraph {
         right: usize,
     ) -> Vec<USizeVec2> {
         if right - left < 3 {
-            return sorted_indicies[left..=right]
-                .iter()
-                .permutations(2)
-                .map(|p| USizeVec2 { x: *p[0], y: *p[1] })
-                .collect();
+            let collinear = {
+                let v1: Vec2 = points[sorted_indicies[right]] - points[sorted_indicies[left]];
+                let v2: Vec2 = points[sorted_indicies[right - 1]] - points[sorted_indicies[left]];
+                let v1: glam::Vec2 = glam::Vec2 { x: v1.x, y: v1.y };
+                let v2: glam::Vec2 = glam::Vec2 { x: v2.x, y: v2.y };
+
+                right - left == 2 && v1.perp_dot(v2).abs() <= f32::EPSILON
+            };
+
+            if collinear {
+                return vec![USizeVec2 {
+                    x: sorted_indicies[left],
+                    y: sorted_indicies[right],
+                }];
+            } else {
+                return sorted_indicies[left..=right]
+                    .iter()
+                    .permutations(2)
+                    .map(|p| USizeVec2 { x: *p[0], y: *p[1] })
+                    .collect();
+            }
         }
 
         let midpoint: usize = (left + right) / 2;
