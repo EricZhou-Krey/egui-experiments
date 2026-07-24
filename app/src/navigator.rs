@@ -1,4 +1,4 @@
-use glam::Vec2;
+use glam::{I8Vec2, Vec2};
 use shared_view::Viewable;
 
 #[derive(Default)]
@@ -7,6 +7,7 @@ pub struct TriangulationGraph {
     n_points: usize,
     points: Vec<Vec2>,
     point_speeds: Vec<Vec2>,
+    edges: Vec<I8Vec2>,
 }
 
 impl TriangulationGraph {
@@ -25,13 +26,17 @@ impl TriangulationGraph {
                 y: (rand::random::<f32>() - 0.5) * point_speed,
             })
             .collect();
+
+        self.update_edges();
     }
 
     fn update_points(&mut self) {
         for i in 0..self.points.len() {
-            self.points[i] += self.point_speeds[i]
+            self.points[i] += self.point_speeds[i];
         }
     }
+
+    fn update_edges(&mut self) {}
 }
 
 impl Viewable for TriangulationGraph {
@@ -53,8 +58,9 @@ impl Viewable for TriangulationGraph {
         }
 
         self.update_points();
+        self.update_edges();
 
-        let debug_info: String = format!("{:?}", self.points);
+        let debug_info: String = format!("points: {:?}, \n edges: {:?}", self.points, self.edges);
         ui.heading(debug_info.as_str());
     }
 }
