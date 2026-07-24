@@ -1,5 +1,6 @@
 use egui::{Pos2, Vec2};
 use glam::USizeVec2;
+use itertools::Itertools;
 use shared_view::Viewable;
 
 pub struct TriangulationGraph {
@@ -65,13 +66,19 @@ impl TriangulationGraph {
         }
     }
 
-    fn delaunay_triangulation(points: &[Pos2], left: usize, right: usize) -> Vec<USizeVec2> {
-        let mut sorted_indicies: Vec<usize> = (0..points.len()).collect();
-        sorted_indicies.sort_unstable_by(|&i, &j| {
-            (points[i].x, points[i].y)
-                .partial_cmp(&(points[j].x, points[j].y))
-                .unwrap()
-        });
+    fn delaunay_triangulation(
+        points: &[Pos2],
+        sorted_indicies: Vec<usize>,
+        left: usize,
+        right: usize,
+    ) -> Vec<USizeVec2> {
+        if right - left < 3 {
+            return sorted_indicies[left..right]
+                .iter()
+                .permutations(2)
+                .map(|p| USizeVec2 { x: *p[0], y: *p[1] })
+                .collect();
+        }
 
         (1..points.len())
             .map(|i| USizeVec2 {
@@ -82,8 +89,19 @@ impl TriangulationGraph {
     }
 
     fn update_edges(&mut self) {
-        self.edges =
-            TriangulationGraph::delaunay_triangulation(&self.points, 0, self.points.len() - 1);
+        let mut sorted_indicies: Vec<usize> = (0..self.points.len()).collect();
+        sorted_indicies.sort_unstable_by(|&i, &j| {
+            (self.points[i].x, self.points[i].y)
+                .partial_cmp(&(self.points[j].x, self.points[j].y))
+                .unwrap()
+        });
+
+        self.edges = TriangulationGraph::delaunay_triangulation(
+            &self.points,
+            sorted_indicies,
+            0,
+            self.points.len() - 1,
+        );
     }
 }
 
