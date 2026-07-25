@@ -43,6 +43,28 @@ impl Default for TriangulationGraph {
     }
 }
 
+struct TriangulationCircle {
+    a: glam::Vec2,
+    b: glam::Vec2,
+    c: glam::Vec2,
+}
+
+impl TriangulationCircle {
+    fn in_circle(&self, p: glam::Vec2) -> bool {
+        let da = self.a - p;
+        let db = self.b - p;
+        let dc = self.c - p;
+
+        glam::Mat3::from_cols(
+            da.extend(da.length_squared()),
+            db.extend(db.length_squared()),
+            dc.extend(dc.length_squared()),
+        )
+        .determinant()
+            > 0.0
+    }
+}
+
 impl TriangulationGraph {
     pub fn re_initialize(&mut self, dimensions: (f32, f32)) {
         self.dimensions = dimensions;
