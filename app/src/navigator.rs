@@ -1,29 +1,26 @@
-use egui::{Pos2, Vec2};
-use glam::USizeVec2;
 use itertools::Itertools;
 use shared_view::Viewable;
+use std::collections::HashSet;
 
 pub struct TriangulationGraph {
-    width: f32,
-    height: f32,
+    dimensions: (f32, f32),
 
     n_points: usize,
-    points: Vec<Pos2>,
+    points: Vec<(f32, f32)>,
 
     point_size: f32,
     point_color: egui::Color32,
-    point_velocity: Vec<Vec2>,
+    point_velocity: Vec<(f32, f32)>,
 
     edge_length: f32,
     edge_color: egui::Color32,
-    edges: Vec<USizeVec2>,
+    edges: HashSet<(usize, usize)>,
 }
 
 impl Default for TriangulationGraph {
     fn default() -> Self {
         Self {
-            width: 0.0,
-            height: 0.0,
+            dimensions: (0.0, 0.0),
 
             n_points: 100,
             points: Vec::with_capacity(100),
@@ -31,27 +28,30 @@ impl Default for TriangulationGraph {
             point_size: 4.0,
             point_color: egui::Color32::RED,
             point_velocity: (0..100)
-                .map(|_| Vec2 {
-                    x: (rand::random::<f32>() - 0.5) * 0.5,
-                    y: (rand::random::<f32>() - 0.5) * 0.5,
+                .map(|_| {
+                    (
+                        (rand::random::<f32>() - 0.5) * 0.5,
+                        (rand::random::<f32>() - 0.5) * 0.5,
+                    )
                 })
                 .collect(),
 
             edge_length: 2.0,
             edge_color: egui::Color32::LIGHT_RED,
-            edges: Vec::with_capacity(100),
+            edges: HashSet::with_capacity(100),
         }
     }
 }
 
 impl TriangulationGraph {
-    pub fn re_initialize(&mut self, dimensions: Vec2) {
-        self.width = dimensions.x;
-        self.height = dimensions.y;
+    pub fn re_initialize(&mut self, dimensions: (f32, f32)) {
+        self.dimensions = dimensions;
         self.points = (0..self.n_points)
-            .map(|_| Pos2 {
-                x: rand::random::<f32>() * dimensions.x,
-                y: rand::random::<f32>() * dimensions.y,
+            .map(|_| {
+                (
+                    rand::random::<f32>() * dimensions.0,
+                    rand::random::<f32>() * dimensions.1,
+                )
             })
             .collect();
 
@@ -60,63 +60,70 @@ impl TriangulationGraph {
 
     fn update_points(&mut self) {
         for i in 0..self.points.len() {
-            self.points[i] += self.point_velocity[i];
-            self.points[i].x = self.points[i].x.rem_euclid(self.width);
-            self.points[i].y = self.points[i].y.rem_euclid(self.height);
+            self.points[i] = (glam::Vec2::from(self.points[i])
+                + glam::Vec2::from(self.point_velocity[i]))
+            .into();
+
+            self.points[i] = (
+                self.points[i].0.rem_euclid(self.dimensions.0),
+                self.points[i].1.rem_euclid(self.dimensions.1),
+            );
         }
     }
 
+    fn delaunay_merge(
+        points: &[(f32, f32)],
+        mut left: HashSet<(usize, usize)>,
+        right: HashSet<(usize, usize)>,
+    ) -> HashSet<(usize, usize)> {
+        left.extend(right);
+        left
+    }
+
     fn delaunay_triangulation(
-        points: &[Pos2],
+        points: &[(f32, f32)],
         sorted_indicies: &[usize],
         left: usize,
         right: usize,
-    ) -> Vec<USizeVec2> {
+    ) -> HashSet<(usize, usize)> {
         if right - left < 3 {
             let collinear = {
-                let v1: Vec2 = points[sorted_indicies[right]] - points[sorted_indicies[left]];
-                let v2: Vec2 = points[sorted_indicies[right - 1]] - points[sorted_indicies[left]];
-                let v1: glam::Vec2 = glam::Vec2 { x: v1.x, y: v1.y };
-                let v2: glam::Vec2 = glam::Vec2 { x: v2.x, y: v2.y };
+                let v1: glam::Vec2 = glam::Vec2::from(points[sorted_indicies[right]])
+                    - glam::Vec2::from(points[sorted_indicies[left]]);
+                let v2: glam::Vec2 = glam::Vec2::from(points[sorted_indicies[right - 1]])
+                    - glam::Vec2::from(points[sorted_indicies[left]]);
 
                 right - left == 2 && v1.perp_dot(v2).abs() <= f32::EPSILON
             };
 
             if collinear {
-                return vec![USizeVec2 {
-                    x: sorted_indicies[left],
-                    y: sorted_indicies[right],
-                }];
+                return HashSet::from([(sorted_indicies[left], sorted_indicies[right])]);
             } else {
                 return sorted_indicies[left..=right]
                     .iter()
                     .permutations(2)
-                    .map(|p| USizeVec2 { x: *p[0], y: *p[1] })
+                    .map(|p| (*p[0], *p[1]))
                     .collect();
             }
         }
 
         let midpoint: usize = (left + right) / 2;
-        let mut result: Vec<USizeVec2> =
+        let left: HashSet<(usize, usize)> =
             TriangulationGraph::delaunay_triangulation(points, sorted_indicies, left, midpoint);
-
-        result.extend(TriangulationGraph::delaunay_triangulation(
+        let right: HashSet<(usize, usize)> = TriangulationGraph::delaunay_triangulation(
             points,
             sorted_indicies,
             midpoint + 1,
             right,
-        ));
+        );
 
-        result
+        TriangulationGraph::delaunay_merge(points, left, right)
     }
 
     fn update_edges(&mut self) {
         let mut sorted_indicies: Vec<usize> = (0..self.points.len()).collect();
-        sorted_indicies.sort_unstable_by(|&i, &j| {
-            (self.points[i].x, self.points[i].y)
-                .partial_cmp(&(self.points[j].x, self.points[j].y))
-                .unwrap()
-        });
+        sorted_indicies
+            .sort_unstable_by(|&i, &j| self.points[i].partial_cmp(&self.points[j]).unwrap());
 
         self.edges = TriangulationGraph::delaunay_triangulation(
             &self.points,
@@ -133,10 +140,10 @@ impl Viewable for TriangulationGraph {
     }
 
     fn draw_ui(&mut self, ui: &mut egui::Ui) {
-        let full_size: Vec2 = ui.available_size();
+        let full_size: egui::Vec2 = ui.available_size();
 
-        if full_size.x != self.width || full_size.y != self.height {
-            self.re_initialize(full_size);
+        if full_size.x != self.dimensions.0 || full_size.y != self.dimensions.1 {
+            self.re_initialize(full_size.into());
         }
 
         self.update_points();
@@ -153,11 +160,17 @@ impl Viewable for TriangulationGraph {
         };
 
         for edge in &self.edges {
-            painter.line_segment([self.points[edge.x], self.points[edge.y]], edge_style);
+            painter.line_segment(
+                [
+                    egui::Pos2::from(self.points[edge.0]),
+                    egui::Pos2::from(self.points[edge.1]),
+                ],
+                edge_style,
+            );
         }
 
         for pos in self.points.clone() {
-            painter.circle_filled(pos, self.point_size, self.point_color);
+            painter.circle_filled(egui::Pos2::from(pos), self.point_size, self.point_color);
         }
     }
 }
