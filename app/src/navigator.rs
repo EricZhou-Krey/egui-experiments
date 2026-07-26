@@ -2,17 +2,16 @@ use shared_view::Viewable;
 use std::collections::{HashMap, HashSet};
 
 pub struct TriangulationGraph {
-    dimensions: (f32, f32),
+    dimensions: (f32, f32, f32),
 
     camera_pos: (f32, f32, f32),
     camera_facing_direction: (f32, f32, f32),
 
     n_points: usize,
-    points: Vec<(f32, f32)>,
-    point_height: Vec<f32>,
+    points: Vec<(f32, f32, f32)>,
     point_size: f32,
     point_color: egui::Color32,
-    point_velocity: Vec<(f32, f32)>,
+    point_velocity: Vec<(f32, f32, f32)>,
 
     edge_length: f32,
     edge_color: egui::Color32,
@@ -23,13 +22,12 @@ impl Default for TriangulationGraph {
     fn default() -> Self {
         let n_points: usize = 200;
         Self {
-            dimensions: (0.0, 0.0),
+            dimensions: (0.0, 0.0, 0.0),
             camera_pos: (0.0, 0.0, -40.0),
             camera_facing_direction: (0.0, 0.0, 1.0),
 
             n_points,
             points: Vec::with_capacity(n_points),
-            point_height: (0..n_points).map(|_| rand::random::<f32>()).collect(),
             point_size: 4.0,
             point_color: egui::Color32::RED,
             point_velocity: (0..n_points)
@@ -37,6 +35,7 @@ impl Default for TriangulationGraph {
                     (
                         (rand::random::<f32>() - 0.5) * 0.5,
                         (rand::random::<f32>() - 0.5) * 0.5,
+                        0.0,
                     )
                 })
                 .collect(),
@@ -71,13 +70,14 @@ impl TriangulationCircle {
 }
 
 impl TriangulationGraph {
-    pub fn re_initialize(&mut self, dimensions: (f32, f32)) {
+    pub fn re_initialize(&mut self, dimensions: (f32, f32, f32)) {
         self.dimensions = dimensions;
         self.points = (0..self.n_points)
             .map(|_| {
                 (
                     rand::random::<f32>() * dimensions.0,
                     rand::random::<f32>() * dimensions.1,
+                    rand::random::<f32>() * dimensions.2,
                 )
             })
             .collect();
@@ -87,13 +87,14 @@ impl TriangulationGraph {
 
     fn update_points(&mut self) {
         for i in 0..self.points.len() {
-            self.points[i] = (glam::Vec2::from(self.points[i])
-                + glam::Vec2::from(self.point_velocity[i]))
+            self.points[i] = (glam::Vec3::from(self.points[i])
+                + glam::Vec3::from(self.point_velocity[i]))
             .into();
 
             self.points[i] = (
                 self.points[i].0.rem_euclid(self.dimensions.0),
                 self.points[i].1.rem_euclid(self.dimensions.1),
+                self.points[i].2.rem_euclid(self.dimensions.2),
             );
         }
     }
@@ -331,8 +332,10 @@ impl TriangulationGraph {
         x_sorted_indicies
             .sort_unstable_by(|&i, &j| self.points[i].partial_cmp(&self.points[j]).unwrap());
 
+        let xy_points: Vec<(f32, f32)> = self.points.iter().map(|&(x, y, _)| (x, y)).collect();
+
         self.edges = TriangulationGraph::delaunay_triangulation(
-            &self.points,
+            &xy_points,
             &x_sorted_indicies,
             0,
             self.points.len() - 1,
@@ -349,7 +352,7 @@ impl Viewable for TriangulationGraph {
         let full_size: egui::Vec2 = ui.available_size();
 
         if full_size.x != self.dimensions.0 || full_size.y != self.dimensions.1 {
-            self.re_initialize(full_size.into());
+            self.re_initialize((full_size.x, full_size.y, 1.0));
         }
 
         self.update_points();
@@ -365,17 +368,19 @@ impl Viewable for TriangulationGraph {
             color: self.edge_color,
         };
 
+        let xy_points: Vec<(f32, f32)> = self.points.iter().map(|&(x, y, _)| (x, y)).collect();
+
         for edge in &self.edges {
             painter.line_segment(
                 [
-                    egui::Pos2::from(self.points[edge.0]),
-                    egui::Pos2::from(self.points[edge.1]),
+                    egui::Pos2::from(xy_points[edge.0]),
+                    egui::Pos2::from(xy_points[edge.1]),
                 ],
                 edge_style,
             );
         }
 
-        for pos in self.points.clone() {
+        for pos in xy_points {
             painter.circle_filled(egui::Pos2::from(pos), self.point_size, self.point_color);
         }
     }
