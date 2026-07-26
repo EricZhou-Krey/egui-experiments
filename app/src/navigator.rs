@@ -4,9 +4,12 @@ use std::collections::{HashMap, HashSet};
 pub struct TriangulationGraph {
     dimensions: (f32, f32),
 
+    camera_pos: (f32, f32, f32),
+    camera_facing_direction: (f32, f32, f32),
+
     n_points: usize,
     points: Vec<(f32, f32)>,
-
+    point_height: Vec<f32>,
     point_size: f32,
     point_color: egui::Color32,
     point_velocity: Vec<(f32, f32)>,
@@ -18,15 +21,18 @@ pub struct TriangulationGraph {
 
 impl Default for TriangulationGraph {
     fn default() -> Self {
+        let n_points: usize = 200;
         Self {
             dimensions: (0.0, 0.0),
+            camera_pos: (0.0, 0.0, -40.0),
+            camera_facing_direction: (0.0, 0.0, 1.0),
 
-            n_points: 300,
-            points: Vec::with_capacity(300),
-
+            n_points,
+            points: Vec::with_capacity(n_points),
+            point_height: (0..n_points).map(|_| rand::random::<f32>()).collect(),
             point_size: 4.0,
             point_color: egui::Color32::RED,
-            point_velocity: (0..300)
+            point_velocity: (0..n_points)
                 .map(|_| {
                     (
                         (rand::random::<f32>() - 0.5) * 0.5,
@@ -37,7 +43,7 @@ impl Default for TriangulationGraph {
 
             edge_length: 2.0,
             edge_color: egui::Color32::LIGHT_RED,
-            edges: HashSet::with_capacity(900),
+            edges: HashSet::with_capacity(3 * n_points),
         }
     }
 }
