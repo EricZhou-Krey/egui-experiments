@@ -6,6 +6,7 @@ pub struct TriangulationGraph {
 
     camera_pos: (f32, f32, f32),
     camera_facing_direction: (f32, f32, f32),
+    screen_origin: (f32, f32),
 
     n_points: usize,
     points: Vec<(f32, f32, f32)>,
@@ -23,8 +24,10 @@ impl Default for TriangulationGraph {
         let n_points: usize = 200;
         Self {
             dimensions: (0.0, 0.0, 0.0),
+
             camera_pos: (0.0, 0.0, -40.0),
             camera_facing_direction: (0.0, 0.0, 1.0),
+            screen_origin: (0.0, 0.0),
 
             n_points,
             points: Vec::with_capacity(n_points),
@@ -70,8 +73,9 @@ impl TriangulationCircle {
 }
 
 impl TriangulationGraph {
-    pub fn re_initialize(&mut self, dimensions: (f32, f32, f32)) {
+    pub fn re_initialize(&mut self, dimensions: (f32, f32, f32), screen_origin: (f32, f32)) {
         self.dimensions = dimensions;
+        self.screen_origin = screen_origin;
         self.points = (0..self.n_points)
             .map(|_| {
                 (
@@ -341,6 +345,14 @@ impl TriangulationGraph {
             self.points.len() - 1,
         );
     }
+
+    fn project_points(&self, painter: egui::Painter) {
+        todo!()
+    }
+
+    fn project_edges(&self, painter: egui::Painter) {
+        todo!()
+    }
 }
 
 impl Viewable for TriangulationGraph {
@@ -350,18 +362,19 @@ impl Viewable for TriangulationGraph {
 
     fn draw_ui(&mut self, ui: &mut egui::Ui) {
         let full_size: egui::Vec2 = ui.available_size();
+        let screen_origin: egui::Pos2 = ui.available_rect_before_wrap().min;
 
         if full_size.x != self.dimensions.0 || full_size.y != self.dimensions.1 {
-            self.re_initialize((full_size.x, full_size.y, 1.0));
+            self.re_initialize(
+                (full_size.x, full_size.y, 1.0),
+                (screen_origin.x, screen_origin.y),
+            );
         }
 
         self.update_points();
         self.update_edges();
 
-        let (response, painter) =
-            ui.allocate_painter(ui.available_size(), egui::Sense::click_and_drag());
-
-        painter.rect_filled(response.rect, 0.0, egui::Color32::from_gray(30));
+        let (_response, painter) = ui.allocate_painter(full_size, egui::Sense::click_and_drag());
 
         let edge_style: egui::Stroke = egui::Stroke {
             width: self.edge_length,
@@ -373,15 +386,19 @@ impl Viewable for TriangulationGraph {
         for edge in &self.edges {
             painter.line_segment(
                 [
-                    egui::Pos2::from(xy_points[edge.0]),
-                    egui::Pos2::from(xy_points[edge.1]),
+                    egui::Pos2::from(xy_points[edge.0]) + self.screen_origin.into(),
+                    egui::Pos2::from(xy_points[edge.1]) + self.screen_origin.into(),
                 ],
                 edge_style,
             );
         }
 
         for pos in xy_points {
-            painter.circle_filled(egui::Pos2::from(pos), self.point_size, self.point_color);
+            painter.circle_filled(
+                egui::Pos2::from(pos) + self.screen_origin.into(),
+                self.point_size,
+                self.point_color,
+            );
         }
     }
 }

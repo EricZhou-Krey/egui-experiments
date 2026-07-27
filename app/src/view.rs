@@ -37,7 +37,7 @@ impl Default for View {
             };
         }
 
-        let views: Vec<Box<dyn Viewable>> = box_vec![Navigator, TabletopSoundTab];
+        let views: Vec<Box<dyn Viewable>> = box_vec![Navigator];
 
         let dock_state = DockState::new((0..views.len()).collect());
 
