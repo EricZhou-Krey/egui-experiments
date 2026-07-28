@@ -8,6 +8,14 @@ pub struct TriangulationGraph {
     camera_facing_direction: (f32, f32, f32),
     screen_origin: (f32, f32),
 
+    camera_move_speed: f32,
+    camera_rotation_speed: f32,
+
+    aspect_ratio: f32,
+    z_near: f32,
+    z_far: f32,
+    fov_y: f32,
+
     n_points: usize,
     points: Vec<(f32, f32, f32)>,
     point_size: f32,
@@ -23,11 +31,19 @@ impl Default for TriangulationGraph {
     fn default() -> Self {
         let n_points: usize = 200;
         Self {
-            dimensions: (0.0, 0.0, 0.0),
+            dimensions: (0.0, 0.0, 200.0),
 
-            camera_pos: (0.0, 0.0, -40.0),
+            camera_pos: (0.0, 0.0, 0.0),
             camera_facing_direction: (0.0, 0.0, 1.0),
             screen_origin: (0.0, 0.0),
+
+            camera_move_speed: 5.0,
+            camera_rotation_speed: 0.05,
+
+            aspect_ratio: 1.0,
+            z_near: 0.1,
+            z_far: 1000.0,
+            fov_y: 60.0_f32.to_radians(),
 
             n_points,
             points: Vec::with_capacity(n_points),
@@ -76,6 +92,13 @@ impl TriangulationGraph {
     pub fn re_initialize(&mut self, dimensions: (f32, f32, f32), screen_origin: (f32, f32)) {
         self.dimensions = dimensions;
         self.screen_origin = screen_origin;
+        self.camera_pos = (dimensions.0 / 2.0, dimensions.1 / 2.0, -800.0);
+        self.aspect_ratio = if dimensions.1 > 0.0 {
+            dimensions.0 / dimensions.1
+        } else {
+            1.0
+        };
+
         self.points = (0..self.n_points)
             .map(|_| {
                 (
@@ -346,12 +369,107 @@ impl TriangulationGraph {
         );
     }
 
-    fn project_points(&self, painter: egui::Painter) {
-        todo!()
+    fn project_visual(&self, painter: &egui::Painter) {
+        let cam_pos: glam::Vec3 = glam::Vec3::from(self.camera_pos);
+        let cam_dir: glam::Vec3 =
+            glam::Vec3::from(self.camera_facing_direction).normalize_or_zero();
+        let up_vector: glam::Vec3 = glam::Vec3::Y;
+
+        let view_mat: glam::Mat4 =
+            glam::camera::rh::view::look_at_mat4(cam_pos, cam_pos + cam_dir, up_vector);
+        let proj_mat: glam::Mat4 = glam::camera::rh::proj::directx::perspective(
+            self.fov_y,
+            self.aspect_ratio,
+            self.z_near,
+            self.z_far,
+        );
+
+        let view_proj_mat: glam::Mat4 = proj_mat * view_mat;
+
+        let screen_points: Vec<(f32, f32)> = self
+            .points
+            .iter()
+            .map(|&(x, y, z)| {
+                let world_pos: glam::Vec4 = glam::vec4(x, y, z, 1.0);
+
+                let clip_space_pos: glam::Vec4 = view_proj_mat * world_pos;
+
+                let ndc_x = clip_space_pos.x / clip_space_pos.w;
+                let ndc_y = clip_space_pos.y / clip_space_pos.w;
+
+                let screen_x = (ndc_x + 1.0) * 0.5 * self.dimensions.0;
+                let screen_y = (1.0 - ndc_y) * 0.5 * self.dimensions.1;
+
+                (screen_x, screen_y)
+            })
+            .collect();
+
+        let edge_style: egui::Stroke = egui::Stroke {
+            width: self.edge_length,
+            color: self.edge_color,
+        };
+
+        for edge in &self.edges {
+            painter.line_segment(
+                [
+                    egui::Pos2::from(screen_points[edge.0]) + self.screen_origin.into(),
+                    egui::Pos2::from(screen_points[edge.1]) + self.screen_origin.into(),
+                ],
+                edge_style,
+            );
+        }
+
+        for pos in screen_points {
+            painter.circle_filled(
+                egui::Pos2::from(pos) + self.screen_origin.into(),
+                self.point_size,
+                self.point_color,
+            );
+        }
     }
 
-    fn project_edges(&self, painter: egui::Painter) {
-        todo!()
+    fn handle_input(&mut self, ui: &mut egui::Ui) {
+        let mut pos = glam::Vec3::from(self.camera_pos);
+        let mut dir = glam::Vec3::from(self.camera_facing_direction).normalize_or_zero();
+
+        let up = glam::Vec3::Y;
+        let right = dir.cross(up).normalize_or_zero();
+
+        ui.input(|i| {
+            if i.key_down(egui::Key::W) {
+                pos += dir * self.camera_move_speed;
+            }
+            if i.key_down(egui::Key::S) {
+                pos -= dir * self.camera_move_speed;
+            }
+            if i.key_down(egui::Key::D) {
+                pos += right * self.camera_move_speed;
+            }
+            if i.key_down(egui::Key::A) {
+                pos -= right * self.camera_move_speed;
+            }
+            if i.key_down(egui::Key::E) {
+                pos += up * self.camera_move_speed;
+            }
+            if i.key_down(egui::Key::Q) {
+                pos -= up * self.camera_move_speed;
+            }
+            if i.key_down(egui::Key::ArrowLeft) {
+                dir = glam::Quat::from_axis_angle(up, self.camera_rotation_speed) * dir;
+            }
+            if i.key_down(egui::Key::ArrowRight) {
+                dir = glam::Quat::from_axis_angle(up, -self.camera_rotation_speed) * dir;
+            }
+            if i.key_down(egui::Key::ArrowUp) {
+                dir = glam::Quat::from_axis_angle(right, self.camera_rotation_speed) * dir;
+            }
+            if i.key_down(egui::Key::ArrowDown) {
+                dir = glam::Quat::from_axis_angle(right, -self.camera_rotation_speed) * dir;
+            }
+        });
+
+        self.camera_pos = pos.into();
+        self.camera_facing_direction = dir.into();
     }
 }
 
@@ -366,7 +484,7 @@ impl Viewable for TriangulationGraph {
 
         if full_size.x != self.dimensions.0 || full_size.y != self.dimensions.1 {
             self.re_initialize(
-                (full_size.x, full_size.y, 1.0),
+                (full_size.x, full_size.y, self.dimensions.2),
                 (screen_origin.x, screen_origin.y),
             );
         }
@@ -376,30 +494,9 @@ impl Viewable for TriangulationGraph {
 
         let (_response, painter) = ui.allocate_painter(full_size, egui::Sense::click_and_drag());
 
-        let edge_style: egui::Stroke = egui::Stroke {
-            width: self.edge_length,
-            color: self.edge_color,
-        };
+        self.handle_input(ui);
 
-        let xy_points: Vec<(f32, f32)> = self.points.iter().map(|&(x, y, _)| (x, y)).collect();
-
-        for edge in &self.edges {
-            painter.line_segment(
-                [
-                    egui::Pos2::from(xy_points[edge.0]) + self.screen_origin.into(),
-                    egui::Pos2::from(xy_points[edge.1]) + self.screen_origin.into(),
-                ],
-                edge_style,
-            );
-        }
-
-        for pos in xy_points {
-            painter.circle_filled(
-                egui::Pos2::from(pos) + self.screen_origin.into(),
-                self.point_size,
-                self.point_color,
-            );
-        }
+        self.project_visual(&painter);
     }
 }
 

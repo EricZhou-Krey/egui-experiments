@@ -2,7 +2,6 @@ use crate::navigator::Navigator;
 use eframe::egui;
 use egui_dock::{DockArea, DockState, TabViewer};
 use shared_view::Viewable;
-use tabletop_sound::TabletopSoundTab;
 
 pub struct Viewer {
     views: Vec<Box<dyn Viewable>>,
