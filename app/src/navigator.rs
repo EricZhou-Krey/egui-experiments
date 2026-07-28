@@ -386,13 +386,16 @@ impl TriangulationGraph {
 
         let view_proj_mat: glam::Mat4 = proj_mat * view_mat;
 
-        let screen_points: Vec<(f32, f32)> = self
+        let screen_points: Vec<Option<(f32, f32)>> = self
             .points
             .iter()
             .map(|&(x, y, z)| {
                 let world_pos: glam::Vec4 = glam::vec4(x, y, z, 1.0);
-
                 let clip_space_pos: glam::Vec4 = view_proj_mat * world_pos;
+
+                if clip_space_pos.w <= 0.0 {
+                    return None;
+                }
 
                 let ndc_x = clip_space_pos.x / clip_space_pos.w;
                 let ndc_y = clip_space_pos.y / clip_space_pos.w;
@@ -400,7 +403,7 @@ impl TriangulationGraph {
                 let screen_x = (ndc_x + 1.0) * 0.5 * self.dimensions.0;
                 let screen_y = (1.0 - ndc_y) * 0.5 * self.dimensions.1;
 
-                (screen_x, screen_y)
+                Some((screen_x, screen_y))
             })
             .collect();
 
@@ -410,16 +413,18 @@ impl TriangulationGraph {
         };
 
         for edge in &self.edges {
-            painter.line_segment(
-                [
-                    egui::Pos2::from(screen_points[edge.0]) + self.screen_origin.into(),
-                    egui::Pos2::from(screen_points[edge.1]) + self.screen_origin.into(),
-                ],
-                edge_style,
-            );
+            if let (Some(p0), Some(p1)) = (screen_points[edge.0], screen_points[edge.1]) {
+                painter.line_segment(
+                    [
+                        egui::Pos2::from(p0) + self.screen_origin.into(),
+                        egui::Pos2::from(p1) + self.screen_origin.into(),
+                    ],
+                    edge_style,
+                );
+            }
         }
 
-        for pos in screen_points {
+        for pos in screen_points.into_iter().flatten() {
             painter.circle_filled(
                 egui::Pos2::from(pos) + self.screen_origin.into(),
                 self.point_size,
