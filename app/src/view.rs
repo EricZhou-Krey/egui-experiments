@@ -3,23 +3,29 @@ use eframe::egui;
 use egui_dock::{DockArea, DockState, TabViewer};
 use shared_view::Viewable;
 
+struct Tab {
+    label: String,
+    view: Box<dyn Viewable>,
+    is_closeable: bool, // Memory alignment :(
+}
+
 pub struct Viewer {
-    views: Vec<Box<dyn Viewable>>,
+    tabs: Vec<Tab>,
 }
 
 impl TabViewer for Viewer {
     type Tab = usize;
 
     fn title(&mut self, tab: &mut Self::Tab) -> egui::WidgetText {
-        self.views[*tab].title().into()
+        self.tabs[*tab].label.clone().into()
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, tab: &mut Self::Tab) {
-        self.views[*tab].draw_ui(ui);
+        self.tabs[*tab].view.draw_ui(ui);
     }
 
     fn is_closeable(&self, tab: &Self::Tab) -> bool {
-        self.views[*tab].is_closeable()
+        self.tabs[*tab].is_closeable
     }
 }
 
@@ -30,19 +36,27 @@ pub struct View {
 
 impl Default for View {
     fn default() -> Self {
-        macro_rules! box_vec {
-            [$($t:ty),* $(,)?] => {
-                vec![$(Box::new(<$t>::default()) as Box<dyn Viewable>),*]
+        macro_rules! create_tabs {
+            [$(($t:ident, $is_closeable:expr)),* $(,)?] => {
+                vec![
+                    $(
+                        Tab {
+                            label: String::from(stringify!($t)),
+                            view: Box::new(<$t>::default()) as Box<dyn Viewable>,
+                            is_closeable: $is_closeable,
+                        }
+                    ),*
+                ]
             };
         }
 
-        let views: Vec<Box<dyn Viewable>> = box_vec![Navigator];
+        let tabs: Vec<Tab> = create_tabs![(Navigator, false)];
 
-        let dock_state = DockState::new((0..views.len()).collect());
+        let dock_state = DockState::new((0..tabs.len()).collect());
 
         Self {
             dock_state,
-            viewer: Viewer { views },
+            viewer: Viewer { tabs },
         }
     }
 }
