@@ -492,11 +492,7 @@ impl Viewable for TriangulationGraph {
 
         self.update_points();
         self.update_edges();
-
-        let (_response, painter) = ui.allocate_painter(full_size, egui::Sense::click_and_drag());
-
         self.handle_input(ui);
-
-        self.project_visual(&painter);
+        self.project_visual(ui.painter());
     }
 }
