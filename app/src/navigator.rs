@@ -4,8 +4,6 @@ use shared_view::Viewable;
 #[derive(Default)]
 pub struct Navigator {
     triangulation_graph: TriangulationGraph,
-
-    selected_point: usize,
 }
 
 // PLAN:
@@ -17,7 +15,7 @@ pub struct Navigator {
 //          - First example will be the tabletop sound Project
 
 impl Navigator {
-    fn handle_input(&mut self, ui: &mut egui::Ui) {
+    fn handle_input(&mut self, _ui: &mut egui::Ui) {
         todo!();
     }
 }
