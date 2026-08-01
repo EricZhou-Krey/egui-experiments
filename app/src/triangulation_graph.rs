@@ -19,6 +19,8 @@ pub struct TriangulationGraphSettings {
 
     edge_width: f32,
     edge_color: egui::Color32,
+
+    face_color: egui::Color32,
 }
 
 pub struct TriangulationGraph {
@@ -40,7 +42,7 @@ impl Default for TriangulationGraphSettings {
             screen_origin: (0.0, 0.0),
 
             camera_move_speed: 5.0,
-            camera_rotation_speed: 0.05,
+            camera_rotation_speed: 0.01,
 
             aspect_ratio: 1.0,
             z_near: 0.1,
@@ -53,6 +55,8 @@ impl Default for TriangulationGraphSettings {
 
             edge_width: 2.0,
             edge_color: egui::Color32::LIGHT_RED,
+
+            face_color: egui::Color32::DARK_RED,
         }
     }
 }
@@ -102,6 +106,31 @@ impl TriangulationCircle {
         )
         .determinant()
             > 0.0
+    }
+}
+
+enum RenderPrimitive {
+    Face {
+        pts: [egui::Pos2; 3],
+        depth: f32,
+    },
+    Edge {
+        pts: [egui::Pos2; 2],
+        depth: f32,
+    },
+    Point {
+        pt: egui::Pos2,
+        depth: f32,
+    },
+}
+
+impl RenderPrimitive {
+    fn sort_depth(&self) -> f32 {
+        match self {
+            RenderPrimitive::Face { depth, .. } => *depth,
+            RenderPrimitive::Edge { depth, .. } => *depth - 0.001,
+            RenderPrimitive::Point { depth, .. } => *depth - 0.002,
+        }
     }
 }
 
@@ -406,7 +435,12 @@ impl TriangulationGraph {
 
         let view_proj_mat: glam::Mat4 = proj_mat * view_mat;
 
-        let screen_points: Vec<Option<(f32, f32)>> = self
+        struct ProjPoint {
+            screen: egui::Pos2,
+            depth: f32,
+        }
+
+        let screen_points: Vec<Option<ProjPoint>> = self
             .points
             .iter()
             .map(|&(x, y, z)| {
@@ -423,33 +457,86 @@ impl TriangulationGraph {
                 let screen_x = (ndc_x + 1.0) * 0.5 * self.settings.dimensions.0;
                 let screen_y = (1.0 - ndc_y) * 0.5 * self.settings.dimensions.1;
 
-                Some((screen_x, screen_y))
+                Some(ProjPoint {
+                    screen: egui::Pos2::new(
+                        screen_x + self.settings.screen_origin.0,
+                        screen_y + self.settings.screen_origin.1,
+                    ),
+                    depth: clip_space_pos.w,
+                })
             })
             .collect();
 
-        let edge_style: egui::Stroke = egui::Stroke {
-            width: self.settings.edge_width,
-            color: self.settings.edge_color,
-        };
+        let mut primitives: Vec<RenderPrimitive> = Vec::new();
 
-        for edge in &self.edges {
-            if let (Some(p0), Some(p1)) = (screen_points[edge.0], screen_points[edge.1]) {
-                painter.line_segment(
-                    [
-                        egui::Pos2::from(p0) + self.settings.screen_origin.into(),
-                        egui::Pos2::from(p1) + self.settings.screen_origin.into(),
-                    ],
-                    edge_style,
-                );
+        for p in screen_points.iter().flatten() {
+            primitives.push(RenderPrimitive::Point {
+                pt: p.screen,
+                depth: p.depth,
+            });
+        }
+
+        for &(u, v) in &self.edges {
+            if let (Some(p0), Some(p1)) = (&screen_points[u], &screen_points[v]) {
+                primitives.push(RenderPrimitive::Edge {
+                    pts: [p0.screen, p1.screen],
+                    depth: (p0.depth + p1.depth) / 2.0,
+                });
             }
         }
 
-        for pos in screen_points.into_iter().flatten() {
-            painter.circle_filled(
-                egui::Pos2::from(pos) + self.settings.screen_origin.into(),
-                self.settings.point_size,
-                self.settings.point_color,
-            );
+        let mut adj = vec![Vec::new(); self.points.len()];
+        for &(u, v) in &self.edges {
+            adj[u].push(v);
+            adj[v].push(u);
+        }
+
+        let has_edge =
+            |u: usize, v: usize| self.edges.contains(&(u, v)) || self.edges.contains(&(v, u));
+
+        for i in 0..self.points.len() {
+            for &j in &adj[i] {
+                if j > i {
+                    for &k in &adj[j] {
+                        if k > j && has_edge(i, k) && let (Some(pi), Some(pj), Some(pk)) =
+                                (&screen_points[i], &screen_points[j], &screen_points[k]) {
+
+                            let avg_depth = (pi.depth + pj.depth + pk.depth) / 3.0;
+
+                            primitives.push(RenderPrimitive::Face {
+                                pts: [pi.screen, pj.screen, pk.screen],
+                                depth: avg_depth,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        primitives.sort_by(|a, b| {
+            b.sort_depth()
+                .partial_cmp(&a.sort_depth())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        let edge_stroke = egui::Stroke::new(self.settings.edge_width, self.settings.edge_color);
+
+        for prim in primitives {
+            match prim {
+                RenderPrimitive::Face { pts, .. } => {
+                    painter.add(egui::Shape::convex_polygon(
+                        pts.to_vec(),
+                        self.settings.face_color,
+                        egui::Stroke::NONE,
+                    ));
+                }
+                RenderPrimitive::Edge { pts, .. } => {
+                    painter.line_segment(pts, edge_stroke);
+                }
+                RenderPrimitive::Point { pt, .. } => {
+                    painter.circle_filled(pt, self.settings.point_size, self.settings.point_color);
+                }
+            }
         }
     }
 
