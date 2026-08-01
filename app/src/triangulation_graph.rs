@@ -1,11 +1,8 @@
 use shared_view::Viewable;
 use std::collections::{HashMap, HashSet};
 
-pub struct TriangulationGraph {
+pub struct TriangulationGraphSettings {
     dimensions: (f32, f32, f32),
-
-    camera_pos: (f32, f32, f32),
-    camera_facing_direction: (f32, f32, f32),
     screen_origin: (f32, f32),
 
     camera_move_speed: f32,
@@ -17,24 +14,29 @@ pub struct TriangulationGraph {
     fov_y: f32,
 
     n_points: usize,
-    points: Vec<(f32, f32, f32)>,
     point_size: f32,
     point_color: egui::Color32,
+
+    edge_width: f32,
+    edge_color: egui::Color32,
+}
+
+pub struct TriangulationGraph {
+    settings: TriangulationGraphSettings,
+
+    camera_pos: (f32, f32, f32),
+    camera_facing_direction: (f32, f32, f32),
+
+    points: Vec<(f32, f32, f32)>,
     point_velocity: Vec<(f32, f32, f32)>,
 
-    edge_length: f32,
-    edge_color: egui::Color32,
     edges: HashSet<(usize, usize)>,
 }
 
-impl Default for TriangulationGraph {
+impl Default for TriangulationGraphSettings {
     fn default() -> Self {
-        let n_points: usize = 200;
         Self {
             dimensions: (0.0, 0.0, 200.0),
-
-            camera_pos: (0.0, 0.0, 0.0),
-            camera_facing_direction: (0.0, 0.0, 1.0),
             screen_origin: (0.0, 0.0),
 
             camera_move_speed: 5.0,
@@ -45,10 +47,27 @@ impl Default for TriangulationGraph {
             z_far: 1000.0,
             fov_y: 60.0_f32.to_radians(),
 
-            n_points,
-            points: Vec::with_capacity(n_points),
+            n_points: 200,
             point_size: 4.0,
             point_color: egui::Color32::RED,
+
+            edge_width: 2.0,
+            edge_color: egui::Color32::LIGHT_RED,
+        }
+    }
+}
+
+impl Default for TriangulationGraph {
+    fn default() -> Self {
+        let settings: TriangulationGraphSettings = TriangulationGraphSettings::default();
+        let n_points = settings.n_points;
+        Self {
+            settings,
+
+            camera_pos: (0.0, 0.0, 0.0),
+            camera_facing_direction: (0.0, 0.0, 1.0),
+
+            points: Vec::with_capacity(n_points),
             point_velocity: (0..n_points)
                 .map(|_| {
                     (
@@ -59,8 +78,6 @@ impl Default for TriangulationGraph {
                 })
                 .collect(),
 
-            edge_length: 2.0,
-            edge_color: egui::Color32::LIGHT_RED,
             edges: HashSet::with_capacity(3 * n_points),
         }
     }
@@ -89,22 +106,25 @@ impl TriangulationCircle {
 }
 
 impl TriangulationGraph {
-    pub fn re_initialize(&mut self, dimensions: (f32, f32, f32), screen_origin: (f32, f32)) {
-        self.dimensions = dimensions;
-        self.screen_origin = screen_origin;
-        self.camera_pos = (dimensions.0 / 2.0, dimensions.1 / 2.0, -800.0);
-        self.aspect_ratio = if dimensions.1 > 0.0 {
-            dimensions.0 / dimensions.1
+    pub fn re_initialize(&mut self, settings: TriangulationGraphSettings) {
+        self.settings = settings;
+        self.camera_pos = (
+            self.settings.dimensions.0 / 2.0,
+            self.settings.dimensions.1 / 2.0,
+            -800.0,
+        );
+        self.settings.aspect_ratio = if self.settings.dimensions.1 > 0.0 {
+            self.settings.dimensions.0 / self.settings.dimensions.1
         } else {
             1.0
         };
 
-        self.points = (0..self.n_points)
+        self.points = (0..self.settings.n_points)
             .map(|_| {
                 (
-                    rand::random::<f32>() * dimensions.0,
-                    rand::random::<f32>() * dimensions.1,
-                    rand::random::<f32>() * dimensions.2,
+                    rand::random::<f32>() * self.settings.dimensions.0,
+                    rand::random::<f32>() * self.settings.dimensions.1,
+                    rand::random::<f32>() * self.settings.dimensions.2,
                 )
             })
             .collect();
@@ -119,9 +139,9 @@ impl TriangulationGraph {
             .into();
 
             self.points[i] = (
-                self.points[i].0.rem_euclid(self.dimensions.0),
-                self.points[i].1.rem_euclid(self.dimensions.1),
-                self.points[i].2.rem_euclid(self.dimensions.2),
+                self.points[i].0.rem_euclid(self.settings.dimensions.0),
+                self.points[i].1.rem_euclid(self.settings.dimensions.1),
+                self.points[i].2.rem_euclid(self.settings.dimensions.2),
             );
         }
     }
@@ -378,10 +398,10 @@ impl TriangulationGraph {
         let view_mat: glam::Mat4 =
             glam::camera::rh::view::look_at_mat4(cam_pos, cam_pos + cam_dir, up_vector);
         let proj_mat: glam::Mat4 = glam::camera::rh::proj::directx::perspective(
-            self.fov_y,
-            self.aspect_ratio,
-            self.z_near,
-            self.z_far,
+            self.settings.fov_y,
+            self.settings.aspect_ratio,
+            self.settings.z_near,
+            self.settings.z_far,
         );
 
         let view_proj_mat: glam::Mat4 = proj_mat * view_mat;
@@ -400,24 +420,24 @@ impl TriangulationGraph {
                 let ndc_x = clip_space_pos.x / clip_space_pos.w;
                 let ndc_y = clip_space_pos.y / clip_space_pos.w;
 
-                let screen_x = (ndc_x + 1.0) * 0.5 * self.dimensions.0;
-                let screen_y = (1.0 - ndc_y) * 0.5 * self.dimensions.1;
+                let screen_x = (ndc_x + 1.0) * 0.5 * self.settings.dimensions.0;
+                let screen_y = (1.0 - ndc_y) * 0.5 * self.settings.dimensions.1;
 
                 Some((screen_x, screen_y))
             })
             .collect();
 
         let edge_style: egui::Stroke = egui::Stroke {
-            width: self.edge_length,
-            color: self.edge_color,
+            width: self.settings.edge_width,
+            color: self.settings.edge_color,
         };
 
         for edge in &self.edges {
             if let (Some(p0), Some(p1)) = (screen_points[edge.0], screen_points[edge.1]) {
                 painter.line_segment(
                     [
-                        egui::Pos2::from(p0) + self.screen_origin.into(),
-                        egui::Pos2::from(p1) + self.screen_origin.into(),
+                        egui::Pos2::from(p0) + self.settings.screen_origin.into(),
+                        egui::Pos2::from(p1) + self.settings.screen_origin.into(),
                     ],
                     edge_style,
                 );
@@ -426,9 +446,9 @@ impl TriangulationGraph {
 
         for pos in screen_points.into_iter().flatten() {
             painter.circle_filled(
-                egui::Pos2::from(pos) + self.screen_origin.into(),
-                self.point_size,
-                self.point_color,
+                egui::Pos2::from(pos) + self.settings.screen_origin.into(),
+                self.settings.point_size,
+                self.settings.point_color,
             );
         }
     }
@@ -442,34 +462,35 @@ impl TriangulationGraph {
 
         ui.input(|i| {
             if i.key_down(egui::Key::W) {
-                pos += dir * self.camera_move_speed;
+                pos += dir * self.settings.camera_move_speed;
             }
             if i.key_down(egui::Key::S) {
-                pos -= dir * self.camera_move_speed;
+                pos -= dir * self.settings.camera_move_speed;
             }
             if i.key_down(egui::Key::D) {
-                pos += right * self.camera_move_speed;
+                pos += right * self.settings.camera_move_speed;
             }
             if i.key_down(egui::Key::A) {
-                pos -= right * self.camera_move_speed;
+                pos -= right * self.settings.camera_move_speed;
             }
             if i.key_down(egui::Key::E) {
-                pos += up * self.camera_move_speed;
+                pos += up * self.settings.camera_move_speed;
             }
             if i.key_down(egui::Key::Q) {
-                pos -= up * self.camera_move_speed;
+                pos -= up * self.settings.camera_move_speed;
             }
             if i.key_down(egui::Key::ArrowLeft) {
-                dir = glam::Quat::from_axis_angle(up, self.camera_rotation_speed) * dir;
+                dir = glam::Quat::from_axis_angle(up, self.settings.camera_rotation_speed) * dir;
             }
             if i.key_down(egui::Key::ArrowRight) {
-                dir = glam::Quat::from_axis_angle(up, -self.camera_rotation_speed) * dir;
+                dir = glam::Quat::from_axis_angle(up, -self.settings.camera_rotation_speed) * dir;
             }
             if i.key_down(egui::Key::ArrowUp) {
-                dir = glam::Quat::from_axis_angle(right, self.camera_rotation_speed) * dir;
+                dir = glam::Quat::from_axis_angle(right, self.settings.camera_rotation_speed) * dir;
             }
             if i.key_down(egui::Key::ArrowDown) {
-                dir = glam::Quat::from_axis_angle(right, -self.camera_rotation_speed) * dir;
+                dir =
+                    glam::Quat::from_axis_angle(right, -self.settings.camera_rotation_speed) * dir;
             }
         });
 
@@ -483,11 +504,13 @@ impl Viewable for TriangulationGraph {
         let full_size: egui::Vec2 = ui.available_size();
         let screen_origin: egui::Pos2 = ui.available_rect_before_wrap().min;
 
-        if full_size.x != self.dimensions.0 || full_size.y != self.dimensions.1 {
-            self.re_initialize(
-                (full_size.x, full_size.y, self.dimensions.2),
-                (screen_origin.x, screen_origin.y),
-            );
+        if full_size.x != self.settings.dimensions.0 || full_size.y != self.settings.dimensions.1 {
+            let settings: TriangulationGraphSettings = TriangulationGraphSettings {
+                dimensions: (full_size.x, full_size.y, self.settings.dimensions.2),
+                screen_origin: screen_origin.into(),
+                ..Default::default()
+            };
+            self.re_initialize(settings);
         }
 
         self.update_points();

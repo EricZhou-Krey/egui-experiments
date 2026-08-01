@@ -5,6 +5,7 @@ use shared_view::Viewable;
 pub struct Navigator {
     triangulation_graph: TriangulationGraph,
 }
+
 // PLAN:
 // Selectable point on triangulation triangulation_graph
 //      - Project mouse position to node that has been clicked
