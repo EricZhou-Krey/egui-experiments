@@ -23,5 +23,12 @@ impl Navigator {
 impl Viewable for Navigator {
     fn draw_ui(&mut self, ui: &mut egui::Ui) {
         self.triangulation_graph.draw_ui(ui);
+        egui::Frame::new()
+            .stroke(egui::Stroke::new(1.0, egui::Color32::WHITE))
+            .fill(egui::Color32::from_gray(32))
+            .inner_margin(8.0)
+            .show(ui, |ui| {
+                ui.label("This is inside a bordered box!");
+            });
     }
 }

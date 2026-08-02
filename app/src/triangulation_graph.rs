@@ -5,6 +5,8 @@ pub struct TriangulationGraphSettings {
     dimensions: (f32, f32, f32),
     screen_origin: (f32, f32),
 
+    camera_origin: (f32, f32, f32),
+    camera_default_direction: (f32, f32, f32),
     camera_move_speed: f32,
     camera_rotation_speed: f32,
 
@@ -41,6 +43,8 @@ impl Default for TriangulationGraphSettings {
             dimensions: (0.0, 0.0, 200.0),
             screen_origin: (0.0, 0.0),
 
+            camera_origin: (0.0, 0.0, 0.0),
+            camera_default_direction: (0.0, 0.0, 1.0),
             camera_move_speed: 5.0,
             camera_rotation_speed: 0.01,
 
@@ -65,11 +69,13 @@ impl Default for TriangulationGraph {
     fn default() -> Self {
         let settings: TriangulationGraphSettings = TriangulationGraphSettings::default();
         let n_points = settings.n_points;
+        let camera_pos = settings.camera_origin;
+        let camera_facing_direction = settings.camera_default_direction;
         Self {
             settings,
 
-            camera_pos: (0.0, 0.0, 0.0),
-            camera_facing_direction: (0.0, 0.0, 1.0),
+            camera_pos,
+            camera_facing_direction,
 
             points: Vec::with_capacity(n_points),
             point_velocity: (0..n_points)
@@ -88,29 +94,26 @@ impl Default for TriangulationGraph {
 }
 
 impl TriangulationGraph {
-    pub fn re_initialize(&mut self, settings: TriangulationGraphSettings) {
-        self.settings = settings;
-        self.camera_pos = (
-            self.settings.dimensions.0 / 2.0,
-            self.settings.dimensions.1 / 2.0,
-            -800.0,
-        );
-        self.settings.aspect_ratio = if self.settings.dimensions.1 > 0.0 {
-            self.settings.dimensions.0 / self.settings.dimensions.1
+    pub fn re_initialize(&mut self, mut settings: TriangulationGraphSettings) {
+        self.camera_pos = settings.camera_origin;
+
+        settings.aspect_ratio = if settings.dimensions.1 > 0.0 {
+            settings.dimensions.0 / settings.dimensions.1
         } else {
             1.0
         };
 
-        self.points = (0..self.settings.n_points)
+        self.points = (0..settings.n_points)
             .map(|_| {
                 (
-                    rand::random::<f32>() * self.settings.dimensions.0,
-                    rand::random::<f32>() * self.settings.dimensions.1,
-                    rand::random::<f32>() * self.settings.dimensions.2,
+                    rand::random::<f32>() * settings.dimensions.0,
+                    rand::random::<f32>() * settings.dimensions.1,
+                    rand::random::<f32>() * settings.dimensions.2,
                 )
             })
             .collect();
 
+        self.settings = settings;
         self.update_edges();
     }
 
@@ -555,42 +558,42 @@ impl TriangulationGraph {
         let up = glam::Vec3::Y;
         let right = dir.cross(up).normalize_or_zero();
 
+        let mut input_velocity = glam::Vec3::ZERO;
+        let mut input_rotation = glam::Vec2::ZERO;
+        let mut reset: bool = false;
+
         ui.input(|i| {
-            if i.key_down(egui::Key::W) {
-                pos += dir * self.settings.camera_move_speed;
-            }
-            if i.key_down(egui::Key::S) {
-                pos -= dir * self.settings.camera_move_speed;
-            }
-            if i.key_down(egui::Key::D) {
-                pos += right * self.settings.camera_move_speed;
-            }
-            if i.key_down(egui::Key::A) {
-                pos -= right * self.settings.camera_move_speed;
-            }
-            if i.key_down(egui::Key::E) {
-                pos += up * self.settings.camera_move_speed;
-            }
-            if i.key_down(egui::Key::Q) {
-                pos -= up * self.settings.camera_move_speed;
-            }
-            if i.key_down(egui::Key::ArrowLeft) {
-                dir = glam::Quat::from_axis_angle(up, self.settings.camera_rotation_speed) * dir;
-            }
-            if i.key_down(egui::Key::ArrowRight) {
-                dir = glam::Quat::from_axis_angle(up, -self.settings.camera_rotation_speed) * dir;
-            }
-            if i.key_down(egui::Key::ArrowUp) {
-                dir = glam::Quat::from_axis_angle(right, self.settings.camera_rotation_speed) * dir;
-            }
-            if i.key_down(egui::Key::ArrowDown) {
-                dir =
-                    glam::Quat::from_axis_angle(right, -self.settings.camera_rotation_speed) * dir;
+            for key in &i.keys_down {
+                match key {
+                    egui::Key::R => reset = true,
+                    egui::Key::W => input_velocity += dir,
+                    egui::Key::S => input_velocity -= dir,
+                    egui::Key::D => input_velocity += right,
+                    egui::Key::A => input_velocity -= right,
+                    egui::Key::E => input_velocity += up,
+                    egui::Key::Q => input_velocity -= up,
+                    egui::Key::ArrowLeft => input_rotation.y += 1.0,
+                    egui::Key::ArrowRight => input_rotation.y -= 1.0,
+                    egui::Key::ArrowUp => input_rotation.x += 1.0,
+                    egui::Key::ArrowDown => input_rotation.x -= 1.0,
+                    _ => {}
+                }
             }
         });
 
-        self.camera_pos = pos.into();
-        self.camera_facing_direction = dir.into();
+        pos += input_velocity.normalize_or_zero() * self.settings.camera_move_speed;
+
+        let yaw = glam::Quat::from_axis_angle(up, input_rotation.y * self.settings.camera_rotation_speed);
+        let pitch = glam::Quat::from_axis_angle(right, input_rotation.x * self.settings.camera_rotation_speed);
+        dir = (yaw * pitch) * dir;
+
+        if reset {
+            self.camera_pos = self.settings.camera_origin;
+            self.camera_facing_direction = self.settings.camera_default_direction;
+        } else {
+            self.camera_pos = pos.into();
+            self.camera_facing_direction = dir.into();
+        }
     }
 }
 
@@ -603,6 +606,11 @@ impl Viewable for TriangulationGraph {
             let settings: TriangulationGraphSettings = TriangulationGraphSettings {
                 dimensions: (full_size.x, full_size.y, self.settings.dimensions.2),
                 screen_origin: screen_origin.into(),
+                camera_origin:  (
+                    full_size.x / 2.0,
+                    full_size.y / 2.0,
+                    -800.0,
+                ),
                 ..Default::default()
             };
             self.re_initialize(settings);
