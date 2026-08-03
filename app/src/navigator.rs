@@ -2,7 +2,7 @@ use crate::triangulation_graph::TriangulationGraph;
 use shared_view::Viewable;
 
 #[derive(Default)]
-enum Overlay {
+enum NavigatorOverlay {
     #[default]
     Navigator,
 
@@ -10,10 +10,10 @@ enum Overlay {
     ExampleNodeTwo,
 }
 
-impl Overlay {
+impl NavigatorOverlay {
     fn draw_overlay(&self, ui: &mut egui::Ui) {
         match self {
-            Overlay::Navigator => {
+            Self::Navigator => {
                 egui::Frame::new()
                     .stroke(egui::Stroke::new(1.0, egui::Color32::WHITE))
                     .fill(egui::Color32::BLACK)
@@ -22,7 +22,7 @@ impl Overlay {
                         ui.label("This is the navigator overlay");
                     });
             }
-            Overlay::ExampleNodeOne => {
+            Self::ExampleNodeOne => {
                 egui::Frame::new()
                     .stroke(egui::Stroke::new(1.0, egui::Color32::WHITE))
                     .fill(egui::Color32::BLACK)
@@ -31,7 +31,7 @@ impl Overlay {
                         ui.label("This is the example one overlay");
                     });
             }
-            Overlay::ExampleNodeTwo => {
+            Self::ExampleNodeTwo => {
                 egui::Frame::new()
                     .stroke(egui::Stroke::new(1.0, egui::Color32::WHITE))
                     .fill(egui::Color32::BLACK)
@@ -44,15 +44,28 @@ impl Overlay {
     }
 }
 
+pub struct NavigatorSettings {
+    mouse_interact_radius: f32,
+}
+
+impl Default for NavigatorSettings {
+    fn default() -> Self {
+        Self {
+            mouse_interact_radius: 10.0,
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct Navigator {
+    settings: NavigatorSettings,
+
     triangulation_graph: TriangulationGraph,
-    overlay: Overlay,
+    overlay: NavigatorOverlay,
 }
 
 // PLAN:
 // Selectable point on triangulation triangulation_graph
-//      - Project mouse position to node that has been clicked
 //      - Set velocity to 0
 //      - Present preview at top left or right of the Project
 //      - Title changes to description of the Project
@@ -60,16 +73,23 @@ pub struct Navigator {
 
 impl Navigator {
     fn handle_input(&mut self, ui: &mut egui::Ui) {
+        let mut debug_value: egui::Pos2 = egui::Pos2::default();
         ui.input(|i| {
             for key in &i.keys_down {
                 match key {
-                    egui::Key::Num1 => self.overlay = Overlay::Navigator,
-                    egui::Key::Num2 => self.overlay = Overlay::ExampleNodeOne,
-                    egui::Key::Num3 => self.overlay = Overlay::ExampleNodeTwo,
+                    egui::Key::Num1 => self.overlay = NavigatorOverlay::Navigator,
+                    egui::Key::Num2 => self.overlay = NavigatorOverlay::ExampleNodeOne,
+                    egui::Key::Num3 => self.overlay = NavigatorOverlay::ExampleNodeTwo,
                     _ => {}
                 }
             }
+
+            if i.pointer.primary_pressed() && let Some(press_origin) = i.pointer.press_origin() {
+                debug_value = press_origin;
+            }
         });
+
+        ui.debug_text(format!("{:?}", debug_value));
     }
 }
 
