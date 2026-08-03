@@ -1,5 +1,5 @@
 use shared_view::Viewable;
-use std::collections::{HashMap, HashSet};
+use std::{cell::RefCell, collections::{HashMap, HashSet}, rc::Rc};
 
 pub struct TriangulationGraphSettings {
     dimensions: (f32, f32, f32),
@@ -27,6 +27,7 @@ pub struct TriangulationGraphSettings {
 
 pub struct TriangulationGraph {
     settings: TriangulationGraphSettings,
+    pub observers: Vec<Rc<RefCell<dyn TriangulationGraphOberserver>>>,
 
     camera_pos: (f32, f32, f32),
     camera_facing_direction: (f32, f32, f32),
@@ -36,6 +37,10 @@ pub struct TriangulationGraph {
     point_velocity: Vec<(f32, f32, f32)>,
 
     edges: HashSet<(usize, usize)>,
+}
+
+pub trait TriangulationGraphOberserver {
+    fn update(&mut self, settings: &TriangulationGraphSettings);
 }
 
 impl Default for TriangulationGraphSettings {
@@ -74,6 +79,7 @@ impl Default for TriangulationGraph {
         let camera_facing_direction = settings.camera_default_direction;
         Self {
             settings,
+            observers: Vec::new(),
 
             camera_pos,
             camera_facing_direction,
@@ -115,6 +121,9 @@ impl TriangulationGraph {
             })
             .collect();
 
+        for observer in &self.observers {
+            observer.borrow_mut().update(&settings);
+        }
         self.settings = settings;
         self.update_edges();
     }
@@ -624,3 +633,5 @@ impl Viewable for TriangulationGraph {
         self.project_visual(ui.painter());
     }
 }
+
+

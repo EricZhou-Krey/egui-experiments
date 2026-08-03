@@ -1,19 +1,20 @@
-use crate::triangulation_graph::TriangulationGraph;
+use std::{cell::RefCell, ops::Deref, rc::Rc};
+use crate::triangulation_graph::{TriangulationGraph, TriangulationGraphSettings, TriangulationGraphOberserver};
 use shared_view::Viewable;
 
 #[derive(Default)]
-enum NavigatorOverlay {
+enum OverlayUi {
     #[default]
-    Navigator,
+    Title,
 
-    ExampleNodeOne,
-    ExampleNodeTwo,
+    ExampleOne,
+    ExampleTwo,
 }
 
-impl NavigatorOverlay {
-    fn draw_overlay(&self, ui: &mut egui::Ui) {
+impl Viewable for OverlayUi {
+    fn draw_ui(&mut self, ui: &mut egui::Ui) {
         match self {
-            Self::Navigator => {
+            Self::Title => {
                 egui::Frame::new()
                     .stroke(egui::Stroke::new(1.0, egui::Color32::WHITE))
                     .fill(egui::Color32::BLACK)
@@ -22,7 +23,7 @@ impl NavigatorOverlay {
                         ui.label("This is the navigator overlay");
                     });
             }
-            Self::ExampleNodeOne => {
+            Self::ExampleOne => {
                 egui::Frame::new()
                     .stroke(egui::Stroke::new(1.0, egui::Color32::WHITE))
                     .fill(egui::Color32::BLACK)
@@ -31,7 +32,7 @@ impl NavigatorOverlay {
                         ui.label("This is the example one overlay");
                     });
             }
-            Self::ExampleNodeTwo => {
+            Self::ExampleTwo => {
                 egui::Frame::new()
                     .stroke(egui::Stroke::new(1.0, egui::Color32::WHITE))
                     .fill(egui::Color32::BLACK)
@@ -41,6 +42,18 @@ impl NavigatorOverlay {
                     });
             }
         }
+    }
+}
+
+#[derive(Default)]
+struct NavigatorInfoOverlay {
+    overlay_ui: OverlayUi,
+    active_indicies: Vec<usize>,
+}
+
+impl TriangulationGraphOberserver for NavigatorInfoOverlay {
+    fn update(&mut self, settings: &TriangulationGraphSettings) {
+        println!("got signal");
     }
 }
 
@@ -61,29 +74,22 @@ pub struct Navigator {
     settings: NavigatorSettings,
 
     triangulation_graph: TriangulationGraph,
-    overlay: NavigatorOverlay,
+    info_overlay: Rc<RefCell<NavigatorInfoOverlay>>,
 }
 
-// PLAN:
-// Selectable point on triangulation triangulation_graph
-//      - Set velocity to 0
-//      - Present preview at top left or right of the Project
-//      - Title changes to description of the Project
-//          - First example will be the tabletop sound Project
-
 impl Navigator {
+    pub fn new() -> Self {
+        let settings = NavigatorSettings::default();
+        let mut triangulation_graph = TriangulationGraph::default();
+        let info_overlay = Rc::new(RefCell::new(NavigatorInfoOverlay::default()));
+
+        triangulation_graph.observers.push(Rc::clone(&info_overlay) as Rc<RefCell<dyn TriangulationGraphOberserver>>);
+        Self { settings, triangulation_graph, info_overlay }
+    }
+
     fn handle_input(&mut self, ui: &mut egui::Ui) {
         let mut debug_value: egui::Pos2 = egui::Pos2::default();
         ui.input(|i| {
-            for key in &i.keys_down {
-                match key {
-                    egui::Key::Num1 => self.overlay = NavigatorOverlay::Navigator,
-                    egui::Key::Num2 => self.overlay = NavigatorOverlay::ExampleNodeOne,
-                    egui::Key::Num3 => self.overlay = NavigatorOverlay::ExampleNodeTwo,
-                    _ => {}
-                }
-            }
-
             if i.pointer.primary_pressed() && let Some(press_origin) = i.pointer.press_origin() {
                 debug_value = press_origin;
             }
@@ -97,6 +103,7 @@ impl Viewable for Navigator {
     fn draw_ui(&mut self, ui: &mut egui::Ui) {
         self.handle_input(ui);
         self.triangulation_graph.draw_ui(ui);
-        self.overlay.draw_overlay(ui);
+        self.info_overlay.take().overlay_ui.draw_ui(ui);
     }
 }
+

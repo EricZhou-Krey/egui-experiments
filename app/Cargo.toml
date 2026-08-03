@@ -10,7 +10,6 @@ egui_dock.workspace = true
 egui-video.workspace = true
 glam.workspace = true
 rand.workspace = true
-itertools.workspace = true
 shared_view = { path = "../shared_view" }
 
 tabletop_sound = { path = "../experiments/tabletop_sound" }

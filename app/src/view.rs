@@ -43,7 +43,7 @@ impl Default for View {
                     $(
                         Tab {
                             label: String::from(stringify!($t)),
-                            view: Box::new(<$t>::default()) as Box<dyn Viewable>,
+                            view: Box::new(<$t>::new()) as Box<dyn Viewable>,
                             is_closeable: $is_closeable,
                         }
                     ),*
