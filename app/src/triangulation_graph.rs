@@ -1,5 +1,21 @@
 use shared_view::Viewable;
-use std::{cell::RefCell, collections::{HashMap, HashSet}, rc::Rc};
+use std::collections::{HashMap, HashSet};
+
+enum RenderPrimitive {
+    Face { pts: [egui::Pos2; 3], depth: f32 },
+    Edge { pts: [egui::Pos2; 2], depth: f32 },
+    Point { point: egui::Pos2, depth: f32 },
+}
+
+impl RenderPrimitive {
+    pub fn depth(&self) -> f32 {
+        match self {
+            Self::Face { depth, .. } => *depth,
+            Self::Edge { depth, .. } => *depth + 0.01,
+            Self::Point { depth, .. } => *depth + 0.02,
+        }
+    }
+}
 
 pub struct TriangulationGraphSettings {
     dimensions: (f32, f32, f32),
@@ -15,7 +31,7 @@ pub struct TriangulationGraphSettings {
     z_far: f32,
     fov_y: f32,
 
-    n_points: usize,
+    pub n_points: usize,
     point_size: f32,
     point_color: egui::Color32,
 
@@ -26,21 +42,18 @@ pub struct TriangulationGraphSettings {
 }
 
 pub struct TriangulationGraph {
-    settings: TriangulationGraphSettings,
-    pub observers: Vec<Rc<RefCell<dyn TriangulationGraphOberserver>>>,
+    pub settings: TriangulationGraphSettings,
 
     camera_pos: (f32, f32, f32),
     camera_facing_direction: (f32, f32, f32),
 
-    screen_points: Vec<Option<((f32, f32), f32)>>,
     points: Vec<(f32, f32, f32)>,
     point_velocity: Vec<(f32, f32, f32)>,
 
     edges: HashSet<(usize, usize)>,
-}
 
-pub trait TriangulationGraphOberserver {
-    fn update(&mut self, settings: &TriangulationGraphSettings);
+    pub screen_points: Vec<((f32, f32), f32)>,
+    primitives_buffer: Vec<RenderPrimitive>,
 }
 
 impl Default for TriangulationGraphSettings {
@@ -79,12 +92,10 @@ impl Default for TriangulationGraph {
         let camera_facing_direction = settings.camera_default_direction;
         Self {
             settings,
-            observers: Vec::new(),
 
             camera_pos,
             camera_facing_direction,
 
-            screen_points: Vec::with_capacity(n_points),
             points: Vec::with_capacity(n_points),
             point_velocity: (0..n_points)
                 .map(|_| {
@@ -97,6 +108,9 @@ impl Default for TriangulationGraph {
                 .collect(),
 
             edges: HashSet::with_capacity(3 * n_points),
+
+            screen_points: Vec::with_capacity(n_points),
+            primitives_buffer: Vec::with_capacity(n_points * 5),
         }
     }
 }
@@ -121,9 +135,6 @@ impl TriangulationGraph {
             })
             .collect();
 
-        for observer in &self.observers {
-            observer.borrow_mut().update(&settings);
-        }
         self.settings = settings;
         self.update_edges();
     }
@@ -206,7 +217,6 @@ impl TriangulationGraph {
         middle: usize,
         right: usize,
     ) -> HashSet<(usize, usize)> {
-
         struct TriangulationCircle {
             a: glam::Vec2,
             b: glam::Vec2,
@@ -224,7 +234,7 @@ impl TriangulationGraph {
                     db.extend(db.length_squared()),
                     dc.extend(dc.length_squared()),
                 )
-                    .determinant()
+                .determinant()
                     > 0.0
             }
         }
@@ -425,71 +435,46 @@ impl TriangulationGraph {
 
         let view_proj_mat: glam::Mat4 = proj_mat * view_mat;
 
-        enum RenderPrimitive {
-            Face {
-                pts: [egui::Pos2; 3],
-                depth: f32,
-            },
-            Edge {
-                pts: [egui::Pos2; 2],
-                depth: f32,
-            },
-            Point {
-                point: egui::Pos2,
-                depth: f32,
-            },
-        }
+        self.screen_points.clear();
+        self.primitives_buffer.clear();
 
-        impl RenderPrimitive {
-            pub fn depth(&self) -> f32 {
-                match self {
-                    Self::Face { depth, .. } => *depth,
-                    Self::Edge { depth, .. } => *depth + 0.01,
-                    Self::Point { depth, .. } => *depth + 0.02,
-                }
+        for &(x, y, z) in self.points.iter() {
+            let world_pos: glam::Vec4 = glam::vec4(x, y, z, 1.0);
+            let clip_space_pos: glam::Vec4 = view_proj_mat * world_pos;
+
+            if clip_space_pos.w <= 0.0 {
+                continue;
             }
+
+            let ndc_x = clip_space_pos.x / clip_space_pos.w;
+            let ndc_y = clip_space_pos.y / clip_space_pos.w;
+
+            let screen_x = (ndc_x + 1.0) * 0.5 * self.settings.dimensions.0;
+            let screen_y = (1.0 - ndc_y) * 0.5 * self.settings.dimensions.1;
+
+            self.screen_points.push((
+                (
+                    screen_x + self.settings.screen_origin.0,
+                    screen_y + self.settings.screen_origin.1,
+                ),
+                clip_space_pos.w,
+            ));
         }
 
-        self.screen_points = self
-            .points
-            .iter()
-            .map(|&(x, y, z)| {
-                let world_pos: glam::Vec4 = glam::vec4(x, y, z, 1.0);
-                let clip_space_pos: glam::Vec4 = view_proj_mat * world_pos;
-
-                if clip_space_pos.w <= 0.0 {
-                    return None;
-                }
-
-                let ndc_x = clip_space_pos.x / clip_space_pos.w;
-                let ndc_y = clip_space_pos.y / clip_space_pos.w;
-
-                let screen_x = (ndc_x + 1.0) * 0.5 * self.settings.dimensions.0;
-                let screen_y = (1.0 - ndc_y) * 0.5 * self.settings.dimensions.1;
-
-                Some((
-                    (
-                        screen_x + self.settings.screen_origin.0,
-                        screen_y + self.settings.screen_origin.1,
-                    ),
-                    clip_space_pos.w
-                ))
-            })
-            .collect();
-
-        let mut primitives: Vec<RenderPrimitive> = Vec::new();
-
-        for &(point, depth) in self.screen_points.iter().flatten() {
-            primitives.push(RenderPrimitive::Point { point: point.into(), depth });
+        for &(point, depth) in self.screen_points.iter() {
+            self.primitives_buffer.push(RenderPrimitive::Point {
+                point: point.into(),
+                depth,
+            });
         }
 
         for &(u, v) in &self.edges {
-            if let (Some((p1_pos, p1_depth)), Some((p2_pos, p2_depth))) = (&self.screen_points[u], &self.screen_points[v]) {
-                primitives.push(RenderPrimitive::Edge {
-                    pts: [(*p1_pos).into(), (*p2_pos).into()],
-                    depth: (p1_depth + p2_depth) / 2.0,
-                });
-            }
+            let ((p1_pos, p1_depth), (p2_pos, p2_depth)) =
+                (&self.screen_points[u], &self.screen_points[v]);
+            self.primitives_buffer.push(RenderPrimitive::Edge {
+                pts: [(*p1_pos).into(), (*p2_pos).into()],
+                depth: (p1_depth + p2_depth) / 2.0,
+            });
         }
 
         let mut adj: Vec<Vec<usize>> = vec![Vec::new(); self.points.len()];
@@ -505,37 +490,42 @@ impl TriangulationGraph {
             for &j in &adj[i] {
                 if j > i {
                     for &k in &adj[j] {
-                        if k > j && has_edge(i, k) && let (Some((pi_pos, pi_depth)), Some((pj_pos, pj_depth)), Some((pk_pos, pk_depth))) =
-                                (&self.screen_points[i], &self.screen_points[j], &self.screen_points[k]) {
+                        if k > j && has_edge(i, k) {
+                            let ((pi_pos, pi_depth), (pj_pos, pj_depth), (pk_pos, pk_depth)) = (
+                                &self.screen_points[i],
+                                &self.screen_points[j],
+                                &self.screen_points[k],
+                            );
 
-                        let p_i: glam::Vec2 = (*pi_pos).into();
-                        let p_j: glam::Vec2 = (*pj_pos).into();
-                        let p_k: glam::Vec2 = (*pk_pos).into();
+                            let p_i: glam::Vec2 = (*pi_pos).into();
+                            let p_j: glam::Vec2 = (*pj_pos).into();
+                            let p_k: glam::Vec2 = (*pk_pos).into();
 
-                        let v1 = p_j - p_i;
-                        let v2 = p_k - p_i;
-                        let v3 = p_k - p_j;
+                            let v1 = p_j - p_i;
+                            let v2 = p_k - p_i;
+                            let v3 = p_k - p_j;
 
-                        let cross = v1.perp_dot(v2).abs();
+                            let cross = v1.perp_dot(v2).abs();
 
-                        let max_edge_sq = v1.length_squared()
-                            .max(v2.length_squared())
-                            .max(v3.length_squared());
+                            let max_edge_sq = v1
+                                .length_squared()
+                                .max(v2.length_squared())
+                                .max(v3.length_squared());
 
-                        if cross * cross > max_edge_sq {
-                            let avg_depth = (pi_depth + pj_depth + pk_depth) / 3.0;
-                            primitives.push(RenderPrimitive::Face {
-                                pts: [(*pi_pos).into(), (*pj_pos).into(), (*pk_pos).into()],
-                                depth: avg_depth,
-                            });
-                        }
+                            if cross * cross > max_edge_sq {
+                                let avg_depth = (pi_depth + pj_depth + pk_depth) / 3.0;
+                                self.primitives_buffer.push(RenderPrimitive::Face {
+                                    pts: [(*pi_pos).into(), (*pj_pos).into(), (*pk_pos).into()],
+                                    depth: avg_depth,
+                                });
+                            }
                         }
                     }
                 }
             }
         }
 
-        primitives.sort_by(|a, b| {
+        self.primitives_buffer.sort_by(|a, b| {
             b.depth()
                 .partial_cmp(&a.depth())
                 .unwrap_or(std::cmp::Ordering::Equal)
@@ -543,7 +533,7 @@ impl TriangulationGraph {
 
         let edge_stroke = egui::Stroke::new(self.settings.edge_width, self.settings.edge_color);
 
-        for prim in primitives {
+        for prim in self.primitives_buffer.iter() {
             match prim {
                 RenderPrimitive::Face { pts, .. } => {
                     painter.add(egui::Shape::convex_polygon(
@@ -553,10 +543,14 @@ impl TriangulationGraph {
                     ));
                 }
                 RenderPrimitive::Edge { pts, .. } => {
-                    painter.line_segment(pts, edge_stroke);
+                    painter.line_segment(*pts, edge_stroke);
                 }
                 RenderPrimitive::Point { point, .. } => {
-                    painter.circle_filled(point, self.settings.point_size, self.settings.point_color);
+                    painter.circle_filled(
+                        *point,
+                        self.settings.point_size,
+                        self.settings.point_color,
+                    );
                 }
             }
         }
@@ -594,8 +588,12 @@ impl TriangulationGraph {
 
         pos += input_velocity.normalize_or_zero() * self.settings.camera_move_speed;
 
-        let yaw = glam::Quat::from_axis_angle(up, input_rotation.y * self.settings.camera_rotation_speed);
-        let pitch = glam::Quat::from_axis_angle(right, input_rotation.x * self.settings.camera_rotation_speed);
+        let yaw =
+            glam::Quat::from_axis_angle(up, input_rotation.y * self.settings.camera_rotation_speed);
+        let pitch = glam::Quat::from_axis_angle(
+            right,
+            input_rotation.x * self.settings.camera_rotation_speed,
+        );
         dir = (yaw * pitch) * dir;
 
         if reset {
@@ -613,15 +611,12 @@ impl Viewable for TriangulationGraph {
         let full_size: egui::Vec2 = ui.available_size();
         let screen_origin: egui::Pos2 = ui.available_rect_before_wrap().min;
 
+        // Inefficent check, could be refactored
         if full_size.x != self.settings.dimensions.0 || full_size.y != self.settings.dimensions.1 {
             let settings: TriangulationGraphSettings = TriangulationGraphSettings {
                 dimensions: (full_size.x, full_size.y, self.settings.dimensions.2),
                 screen_origin: screen_origin.into(),
-                camera_origin:  (
-                    full_size.x / 2.0,
-                    full_size.y / 2.0,
-                    -800.0,
-                ),
+                camera_origin: (full_size.x / 2.0, full_size.y / 2.0, -800.0),
                 ..Default::default()
             };
             self.re_initialize(settings);
@@ -633,5 +628,3 @@ impl Viewable for TriangulationGraph {
         self.project_visual(ui.painter());
     }
 }
-
-

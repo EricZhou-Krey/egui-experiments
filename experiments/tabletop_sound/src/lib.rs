@@ -5,7 +5,7 @@ pub struct TabletopSoundTab;
 
 impl TabletopSoundTab {
     pub fn new() -> Self {
-        Self
+        Self::default()
     }
 }
 
