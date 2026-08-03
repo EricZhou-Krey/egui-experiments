@@ -31,6 +31,7 @@ pub struct TriangulationGraph {
     camera_pos: (f32, f32, f32),
     camera_facing_direction: (f32, f32, f32),
 
+    screen_points: Vec<Option<((f32, f32), f32)>>,
     points: Vec<(f32, f32, f32)>,
     point_velocity: Vec<(f32, f32, f32)>,
 
@@ -77,6 +78,7 @@ impl Default for TriangulationGraph {
             camera_pos,
             camera_facing_direction,
 
+            screen_points: Vec::with_capacity(n_points),
             points: Vec::with_capacity(n_points),
             point_velocity: (0..n_points)
                 .map(|_| {
@@ -397,7 +399,7 @@ impl TriangulationGraph {
         );
     }
 
-    fn project_visual(&self, painter: &egui::Painter) {
+    fn project_visual(&mut self, painter: &egui::Painter) {
         let cam_pos: glam::Vec3 = glam::Vec3::from(self.camera_pos);
         let cam_dir: glam::Vec3 =
             glam::Vec3::from(self.camera_facing_direction).normalize_or_zero();
@@ -439,7 +441,7 @@ impl TriangulationGraph {
             }
         }
 
-        let screen_points: Vec<Option<(egui::Pos2, f32)>> = self
+        self.screen_points = self
             .points
             .iter()
             .map(|&(x, y, z)| {
@@ -457,25 +459,25 @@ impl TriangulationGraph {
                 let screen_y = (1.0 - ndc_y) * 0.5 * self.settings.dimensions.1;
 
                 Some((
-                    egui::Pos2::new(
+                    (
                         screen_x + self.settings.screen_origin.0,
                         screen_y + self.settings.screen_origin.1,
                     ),
-                    clip_space_pos.w)
-                )
+                    clip_space_pos.w
+                ))
             })
             .collect();
 
         let mut primitives: Vec<RenderPrimitive> = Vec::new();
 
-        for &(point, depth) in screen_points.iter().flatten() {
-            primitives.push(RenderPrimitive::Point { point, depth });
+        for &(point, depth) in self.screen_points.iter().flatten() {
+            primitives.push(RenderPrimitive::Point { point: point.into(), depth });
         }
 
         for &(u, v) in &self.edges {
-            if let (Some((p1_pos, p1_depth)), Some((p2_pos, p2_depth))) = (&screen_points[u], &screen_points[v]) {
+            if let (Some((p1_pos, p1_depth)), Some((p2_pos, p2_depth))) = (&self.screen_points[u], &self.screen_points[v]) {
                 primitives.push(RenderPrimitive::Edge {
-                    pts: [*p1_pos, *p2_pos],
+                    pts: [(*p1_pos).into(), (*p2_pos).into()],
                     depth: (p1_depth + p2_depth) / 2.0,
                 });
             }
@@ -495,11 +497,11 @@ impl TriangulationGraph {
                 if j > i {
                     for &k in &adj[j] {
                         if k > j && has_edge(i, k) && let (Some((pi_pos, pi_depth)), Some((pj_pos, pj_depth)), Some((pk_pos, pk_depth))) =
-                                (&screen_points[i], &screen_points[j], &screen_points[k]) {
+                                (&self.screen_points[i], &self.screen_points[j], &self.screen_points[k]) {
 
-                        let p_i = glam::vec2(pi_pos.x, pi_pos.y);
-                        let p_j = glam::vec2(pj_pos.x, pj_pos.y);
-                        let p_k = glam::vec2(pk_pos.x, pk_pos.y);
+                        let p_i: glam::Vec2 = (*pi_pos).into();
+                        let p_j: glam::Vec2 = (*pj_pos).into();
+                        let p_k: glam::Vec2 = (*pk_pos).into();
 
                         let v1 = p_j - p_i;
                         let v2 = p_k - p_i;
@@ -514,7 +516,7 @@ impl TriangulationGraph {
                         if cross * cross > max_edge_sq {
                             let avg_depth = (pi_depth + pj_depth + pk_depth) / 3.0;
                             primitives.push(RenderPrimitive::Face {
-                                pts: [*pi_pos, *pj_pos, *pk_pos],
+                                pts: [(*pi_pos).into(), (*pj_pos).into(), (*pk_pos).into()],
                                 depth: avg_depth,
                             });
                         }

@@ -57,7 +57,7 @@ pub struct Navigator {
 //      - Present preview at top left or right of the Project
 //      - Title changes to description of the Project
 //          - First example will be the tabletop sound Project
-s
+
 impl Navigator {
     fn handle_input(&mut self, ui: &mut egui::Ui) {
         ui.input(|i| {
