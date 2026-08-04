@@ -1,6 +1,7 @@
 use shared_view::Viewable;
 use std::collections::{HashMap, HashSet};
 
+#[derive(Debug, Clone, PartialEq)]
 enum RenderPrimitive {
     Face { pts: [egui::Pos2; 3], depth: f32 },
     Edge { pts: [egui::Pos2; 2], depth: f32 },
@@ -17,6 +18,7 @@ impl RenderPrimitive {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct TriangulationGraphSettings {
     dimensions: (f32, f32, f32),
     screen_origin: (f32, f32),
@@ -39,21 +41,6 @@ pub struct TriangulationGraphSettings {
     edge_color: egui::Color32,
 
     face_color: egui::Color32,
-}
-
-pub struct TriangulationGraph {
-    pub settings: TriangulationGraphSettings,
-
-    camera_pos: (f32, f32, f32),
-    camera_facing_direction: (f32, f32, f32),
-
-    points: Vec<(f32, f32, f32)>,
-    point_velocity: Vec<(f32, f32, f32)>,
-
-    edges: HashSet<(usize, usize)>,
-
-    pub screen_points: Vec<((f32, f32), f32)>,
-    primitives_buffer: Vec<RenderPrimitive>,
 }
 
 impl Default for TriangulationGraphSettings {
@@ -84,8 +71,24 @@ impl Default for TriangulationGraphSettings {
     }
 }
 
-impl Default for TriangulationGraph {
-    fn default() -> Self {
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct TriangulationGraph {
+    pub settings: TriangulationGraphSettings,
+
+    camera_pos: (f32, f32, f32),
+    camera_facing_direction: (f32, f32, f32),
+
+    points: Vec<(f32, f32, f32)>,
+    point_velocity: Vec<(f32, f32, f32)>,
+
+    edges: HashSet<(usize, usize)>,
+
+    pub screen_points: Vec<((f32, f32), f32)>,
+    primitives_buffer: Vec<RenderPrimitive>,
+}
+
+impl TriangulationGraph {
+    pub fn new() -> Self {
         let settings: TriangulationGraphSettings = TriangulationGraphSettings::default();
         let n_points = settings.n_points;
         let camera_pos = settings.camera_origin;
@@ -113,9 +116,7 @@ impl Default for TriangulationGraph {
             primitives_buffer: Vec::with_capacity(n_points * 5),
         }
     }
-}
 
-impl TriangulationGraph {
     pub fn re_initialize(&mut self, mut settings: TriangulationGraphSettings) {
         self.camera_pos = settings.camera_origin;
 
@@ -619,6 +620,7 @@ impl Viewable for TriangulationGraph {
                 camera_origin: (full_size.x / 2.0, full_size.y / 2.0, -800.0),
                 ..Default::default()
             };
+
             self.re_initialize(settings);
         }
 

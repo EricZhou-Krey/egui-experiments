@@ -4,6 +4,9 @@ use egui_dock::{DockArea, DockState, TabViewer};
 use shared_view::Viewable;
 use tabletop_sound::TabletopSoundTab;
 
+// Refactor, need to make this not a dyn, it doesn't really make sense in these contexts, also
+// should be controlled by the navigator
+
 struct Tab {
     label: String,
     view: Box<dyn Viewable>,

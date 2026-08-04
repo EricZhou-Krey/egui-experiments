@@ -1,7 +1,7 @@
 use crate::triangulation_graph::TriangulationGraph;
 use shared_view::Viewable;
 
-#[derive(Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 enum OverlayUi {
     #[default]
     Title,
@@ -47,19 +47,20 @@ impl Viewable for OverlayUi {
     }
 }
 
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct NavigatorSettings {
     mouse_interact_radius: f32,
 }
 
-impl Default for NavigatorSettings {
-    fn default() -> Self {
+impl NavigatorSettings {
+    pub fn new() -> Self {
         Self {
             mouse_interact_radius: 100.0,
         }
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Navigator {
     settings: NavigatorSettings,
 
@@ -73,7 +74,11 @@ pub struct Navigator {
 
 impl Navigator {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            settings: NavigatorSettings::new(),
+            triangulation_graph: TriangulationGraph::new(),
+            ..Default::default()
+        }
     }
 
     fn assign_active_nodes(&mut self) {
@@ -128,6 +133,8 @@ impl Viewable for Navigator {
         // Refactor
         //      - Decouple painter and triangulation graph, send requests to draw ui at the very
         //      end after all calculations and such
+        //      Render struct stores and is passed as &mut to projections and draw_render is called
+        //      once at end of structures, used for graphs and such
 
         let painter: &egui::Painter = ui.painter();
 
