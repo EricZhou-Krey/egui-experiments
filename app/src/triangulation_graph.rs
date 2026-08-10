@@ -1,22 +1,6 @@
+use crate::space_renderer::{RenderPrimitive, SpaceRenderer};
 use shared_view::Viewable;
 use std::collections::{HashMap, HashSet};
-
-#[derive(Debug, Clone, PartialEq)]
-enum RenderPrimitive {
-    Face { pts: [egui::Pos2; 3], depth: f32 },
-    Edge { pts: [egui::Pos2; 2], depth: f32 },
-    Point { point: egui::Pos2, depth: f32 },
-}
-
-impl RenderPrimitive {
-    pub fn depth(&self) -> f32 {
-        match self {
-            Self::Face { depth, .. } => *depth,
-            Self::Edge { depth, .. } => *depth + 0.01,
-            Self::Point { depth, .. } => *depth + 0.02,
-        }
-    }
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TriangulationGraphSettings {
@@ -84,7 +68,6 @@ pub struct TriangulationGraph {
     edges: HashSet<(usize, usize)>,
 
     pub screen_points: Vec<((f32, f32), f32)>,
-    primitives_buffer: Vec<RenderPrimitive>,
 }
 
 impl TriangulationGraph {
@@ -113,7 +96,6 @@ impl TriangulationGraph {
             edges: HashSet::with_capacity(3 * n_points),
 
             screen_points: Vec::with_capacity(n_points),
-            primitives_buffer: Vec::with_capacity(n_points * 5),
         }
     }
 
@@ -419,7 +401,7 @@ impl TriangulationGraph {
         );
     }
 
-    fn project_visual(&mut self, painter: &egui::Painter) {
+    pub fn update_renderer(&mut self, renderer: &mut SpaceRenderer) {
         let cam_pos: glam::Vec3 = glam::Vec3::from(self.camera_pos);
         let cam_dir: glam::Vec3 =
             glam::Vec3::from(self.camera_facing_direction).normalize_or_zero();
@@ -437,7 +419,6 @@ impl TriangulationGraph {
         let view_proj_mat: glam::Mat4 = proj_mat * view_mat;
 
         self.screen_points.clear();
-        self.primitives_buffer.clear();
 
         for &(x, y, z) in self.points.iter() {
             let world_pos: glam::Vec4 = glam::vec4(x, y, z, 1.0);
@@ -463,18 +444,23 @@ impl TriangulationGraph {
         }
 
         for &(point, depth) in self.screen_points.iter() {
-            self.primitives_buffer.push(RenderPrimitive::Point {
+            renderer.primitives_buffer.push(RenderPrimitive::Point {
                 point: point.into(),
                 depth,
+                radius: self.settings.point_size,
+                color: self.settings.point_color,
             });
         }
+
+        let stroke = egui::Stroke::new(self.settings.edge_width, self.settings.edge_color);
 
         for &(u, v) in &self.edges {
             let ((p1_pos, p1_depth), (p2_pos, p2_depth)) =
                 (&self.screen_points[u], &self.screen_points[v]);
-            self.primitives_buffer.push(RenderPrimitive::Edge {
+            renderer.primitives_buffer.push(RenderPrimitive::Edge {
                 pts: [(*p1_pos).into(), (*p2_pos).into()],
                 depth: (p1_depth + p2_depth) / 2.0,
+                stroke,
             });
         }
 
@@ -515,43 +501,15 @@ impl TriangulationGraph {
 
                             if cross * cross > max_edge_sq {
                                 let avg_depth = (pi_depth + pj_depth + pk_depth) / 3.0;
-                                self.primitives_buffer.push(RenderPrimitive::Face {
+                                renderer.primitives_buffer.push(RenderPrimitive::Face {
                                     pts: [(*pi_pos).into(), (*pj_pos).into(), (*pk_pos).into()],
                                     depth: avg_depth,
+                                    face_color: self.settings.face_color,
+                                    stroke: egui::Stroke::NONE,
                                 });
                             }
                         }
                     }
-                }
-            }
-        }
-
-        self.primitives_buffer.sort_by(|a, b| {
-            b.depth()
-                .partial_cmp(&a.depth())
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-
-        let edge_stroke = egui::Stroke::new(self.settings.edge_width, self.settings.edge_color);
-
-        for prim in self.primitives_buffer.iter() {
-            match prim {
-                RenderPrimitive::Face { pts, .. } => {
-                    painter.add(egui::Shape::convex_polygon(
-                        pts.to_vec(),
-                        self.settings.face_color,
-                        egui::Stroke::NONE,
-                    ));
-                }
-                RenderPrimitive::Edge { pts, .. } => {
-                    painter.line_segment(*pts, edge_stroke);
-                }
-                RenderPrimitive::Point { point, .. } => {
-                    painter.circle_filled(
-                        *point,
-                        self.settings.point_size,
-                        self.settings.point_color,
-                    );
                 }
             }
         }
@@ -627,6 +585,5 @@ impl Viewable for TriangulationGraph {
         self.update_points();
         self.update_edges();
         self.handle_input(ui);
-        self.project_visual(ui.painter());
     }
 }

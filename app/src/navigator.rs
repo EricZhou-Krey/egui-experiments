@@ -1,4 +1,7 @@
-use crate::triangulation_graph::TriangulationGraph;
+use crate::{
+    space_renderer::{RenderPrimitive, SpaceRenderer},
+    triangulation_graph::TriangulationGraph,
+};
 use shared_view::Viewable;
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -50,12 +53,24 @@ impl Viewable for OverlayUi {
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct NavigatorSettings {
     mouse_interact_radius: f32,
+
+    interactable_node_radius: f32,
+    interactable_node_color: egui::Color32,
+
+    highlighted_node_radius: f32,
+    highlighted_node_color: egui::Color32,
 }
 
 impl NavigatorSettings {
     pub fn new() -> Self {
         Self {
             mouse_interact_radius: 100.0,
+
+            interactable_node_radius: 10.0,
+            interactable_node_color: egui::Color32::WHITE,
+
+            highlighted_node_radius: 20.0,
+            highlighted_node_color: egui::Color32::GREEN,
         }
     }
 }
@@ -65,6 +80,7 @@ pub struct Navigator {
     settings: NavigatorSettings,
 
     triangulation_graph: TriangulationGraph,
+    renderer: SpaceRenderer,
 
     overlay: OverlayUi,
     active_nodes: Vec<usize>,
@@ -117,6 +133,32 @@ impl Navigator {
             self.active_index = selected_node.unwrap_or(0);
         }
     }
+
+    fn update_renderer(&mut self) {
+        for node in self.active_nodes.iter() {
+            let (point, depth): ((f32, f32), f32) = self.triangulation_graph.screen_points[*node];
+            self.renderer
+                .primitives_buffer
+                .push(RenderPrimitive::Point {
+                    point: point.into(),
+                    depth,
+                    radius: self.settings.interactable_node_radius,
+                    color: self.settings.interactable_node_color,
+                });
+        }
+
+        let (point, depth): ((f32, f32), f32) =
+            self.triangulation_graph.screen_points[self.active_nodes[self.active_index]];
+
+        self.renderer
+            .primitives_buffer
+            .push(RenderPrimitive::Point {
+                point: point.into(),
+                depth,
+                radius: self.settings.highlighted_node_radius,
+                color: self.settings.highlighted_node_color,
+            });
+    }
 }
 
 impl Viewable for Navigator {
@@ -128,33 +170,10 @@ impl Viewable for Navigator {
 
         self.handle_input(ui);
         self.triangulation_graph.draw_ui(ui);
+        self.triangulation_graph.update_renderer(&mut self.renderer);
 
-        // START TEMP
-        // Refactor
-        //      - Decouple painter and triangulation graph, send requests to draw ui at the very
-        //      end after all calculations and such
-        //      Render struct stores and is passed as &mut to projections and draw_render is called
-        //      once at end of structures, used for graphs and such
-
-        let painter: &egui::Painter = ui.painter();
-
-        for node in self.active_nodes.iter() {
-            painter.circle_filled(
-                self.triangulation_graph.screen_points[*node].0.into(),
-                10.0,
-                egui::Color32::WHITE,
-            );
-        }
-
-        painter.circle_filled(
-            self.triangulation_graph.screen_points[self.active_nodes[self.active_index]]
-                .0
-                .into(),
-            20.0,
-            egui::Color32::GREEN,
-        );
-
-        // END TEMP
+        self.update_renderer();
+        self.renderer.draw_ui(ui);
 
         self.overlay = match self.active_index {
             1 => OverlayUi::ExampleOne,
