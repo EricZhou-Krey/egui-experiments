@@ -2,7 +2,7 @@ use crate::{
     space_renderer::{RenderPrimitive, SpaceRenderer},
     triangulation_graph::TriangulationGraph,
 };
-use shared_view::Viewable;
+use shared_view::viewable::Viewable;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 enum OverlayUi {

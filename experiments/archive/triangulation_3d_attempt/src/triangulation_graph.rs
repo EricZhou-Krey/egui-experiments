@@ -1,5 +1,5 @@
 use crate::space_renderer::{RenderPrimitive, SpaceRenderer};
-use shared_view::Viewable;
+use shared_view::viewable::Viewable;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, PartialEq)]
