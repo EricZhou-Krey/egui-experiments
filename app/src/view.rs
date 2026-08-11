@@ -56,7 +56,7 @@ impl Default for View {
             };
         }
 
-        let tabs: Vec<Tab> = create_tabs![(Navigator, true), (TabletopSoundTab, true)];
+        let tabs: Vec<Tab> = create_tabs![(TabletopSoundTab, true)];
 
         let dock_state = DockState::new((0..tabs.len()).collect());
 
@@ -70,12 +70,10 @@ impl Default for View {
 
 impl eframe::App for View {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        /*
+        self.navigator.draw_ui(ui);
         DockArea::new(&mut self.dock_state)
             .style(egui_dock::Style::from_egui(ui.style().as_ref()))
             .show_inside(ui, &mut self.viewer);
-        */
-        self.navigator.draw_ui(ui);
         ui.request_repaint();
     }
 }
