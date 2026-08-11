@@ -217,7 +217,7 @@ dependencies = [
  "rand",
  "shared_view",
  "tabletop_sound",
- "triangulation_3d_attempt",
+ "triangulation_navigator",
 ]
 
 [[package]]
@@ -3529,7 +3529,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "triangulation_3d_attempt"
+name = "triangulation_navigator"
 version = "0.1.0"
 dependencies = [
  "egui 0.36.1",

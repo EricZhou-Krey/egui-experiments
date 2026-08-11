@@ -1,0 +1,10 @@
+[package]
+name = "triangulation_navigator"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+egui.workspace = true
+glam.workspace = true
+rand.workspace = true
+shared_view.workspace = true

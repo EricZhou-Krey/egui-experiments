@@ -13,4 +13,4 @@ rand.workspace = true
 shared_view.workspace = true
 
 tabletop_sound = { path = "../experiments/tabletop_sound" }
-triangulation_3d_attempt = { path = "../experiments/archive/triangulation_3d_attempt" }
+triangulation_navigator = { path = "../experiments/triangulation_navigator" }

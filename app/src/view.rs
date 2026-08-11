@@ -2,7 +2,7 @@ use eframe::egui;
 use egui_dock::{DockArea, DockState, TabViewer};
 use shared_view::viewable::Viewable;
 use tabletop_sound::TabletopSoundTab;
-use triangulation_3d_attempt::navigator::Navigator;
+use triangulation_navigator::Navigator;
 
 struct Tab {
     label: String,
@@ -68,12 +68,20 @@ impl Default for View {
     }
 }
 
+// Next: Give access to navigator to edit the dockstate
+
 impl eframe::App for View {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        self.navigator.draw_ui(ui);
-        DockArea::new(&mut self.dock_state)
-            .style(egui_dock::Style::from_egui(ui.style().as_ref()))
-            .show_inside(ui, &mut self.viewer);
+        egui::CentralPanel::default().show(ui, |ui| {
+            if self.dock_state.main_surface().is_empty() {
+                self.navigator.draw_ui(ui);
+            }
+
+            DockArea::new(&mut self.dock_state)
+                .style(egui_dock::Style::from_egui(ui.style().as_ref()))
+                .show_inside(ui, &mut self.viewer);
+        });
+
         ui.request_repaint();
     }
 }
