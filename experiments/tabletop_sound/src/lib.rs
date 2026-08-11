@@ -1,4 +1,4 @@
-use shared_view::Viewable;
+use shared_view::viewable::Viewable;
 
 #[derive(Default)]
 pub struct TabletopSoundTab {}

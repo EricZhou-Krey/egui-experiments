@@ -1,7 +1,8 @@
-use crate::{Navigator, Viewable};
 use eframe::egui;
 use egui_dock::{DockArea, DockState, TabViewer};
+use shared_view::viewable::Viewable;
 use tabletop_sound::TabletopSoundTab;
+use triangulation_3d_attempt::navigator::Navigator;
 
 struct Tab {
     label: String,
@@ -36,6 +37,7 @@ impl TabViewer for Viewer {
 pub struct View {
     dock_state: DockState<usize>,
     viewer: Viewer,
+    navigator: Navigator,
 }
 
 impl Default for View {
@@ -61,16 +63,19 @@ impl Default for View {
         Self {
             dock_state,
             viewer: Viewer { tabs },
+            navigator: Navigator::new(),
         }
     }
 }
 
 impl eframe::App for View {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        /*
         DockArea::new(&mut self.dock_state)
             .style(egui_dock::Style::from_egui(ui.style().as_ref()))
             .show_inside(ui, &mut self.viewer);
-
+        */
+        self.navigator.draw_ui(ui);
         ui.request_repaint();
     }
 }
