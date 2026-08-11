@@ -1,11 +1,17 @@
 [workspace]
 resolver = "3"
-members = ["app", "shared_view", "experiments/tabletop_sound"]
+members = [
+    "app",
+    "shared_view",
+    "experiments/tabletop_sound",
+    "experiments/archive/triangulation_3d_attempt",
+]
 
 [workspace.dependencies]
-egui = "0.35.0"
-eframe = "0.35.0"
-egui_dock = "0.20.1"
+egui = "0.36.1"
+eframe = "0.36.1"
+egui_dock = "0.21.1"
 egui-video = "0.9.0"
 glam = "0.33.2"
 rand = "0.10.2"
+shared_view = { path = "shared_view" }

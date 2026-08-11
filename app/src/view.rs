@@ -1,11 +1,7 @@
-use crate::navigator::Navigator;
+use crate::{Navigator, Viewable};
 use eframe::egui;
 use egui_dock::{DockArea, DockState, TabViewer};
-use shared_view::Viewable;
 use tabletop_sound::TabletopSoundTab;
-
-// Refactor, need to make this not a dyn, it doesn't really make sense in these contexts, also
-// should be controlled by the navigator
 
 struct Tab {
     label: String,
@@ -19,6 +15,10 @@ pub struct Viewer {
 
 impl TabViewer for Viewer {
     type Tab = usize;
+
+    fn id(&mut self, tab: &mut Self::Tab) -> egui::Id {
+        egui::Id::new(*tab)
+    }
 
     fn title(&mut self, tab: &mut Self::Tab) -> egui::WidgetText {
         self.tabs[*tab].label.clone().into()
@@ -54,7 +54,7 @@ impl Default for View {
             };
         }
 
-        let tabs: Vec<Tab> = create_tabs![(Navigator, false), (TabletopSoundTab, true)];
+        let tabs: Vec<Tab> = create_tabs![(Navigator, true), (TabletopSoundTab, true)];
 
         let dock_state = DockState::new((0..tabs.len()).collect());
 

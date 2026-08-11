@@ -1,8 +1,10 @@
 [package]
-name = "tabletop_sound"
+name = "triangulation_3d_attempt"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 egui.workspace = true
+glam.workspace = true
+rand.workspace = true
 shared_view.workspace = true

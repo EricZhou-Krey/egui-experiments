@@ -1,5 +1,3 @@
-use egui::Ui;
+pub mod viewable;
 
-pub trait Viewable {
-    fn draw_ui(&mut self, ui: &mut Ui);
-}
+pub use viewable::Viewable;
