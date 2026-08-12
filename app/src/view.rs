@@ -56,7 +56,7 @@ impl Default for View {
             };
         }
 
-        let tabs: Vec<Tab> = create_tabs![(TabletopSoundTab, true)];
+        let tabs: Vec<Tab> = create_tabs![];
 
         let dock_state = DockState::new((0..tabs.len()).collect());
 
