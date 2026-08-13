@@ -1,4 +1,3 @@
-use glam::Vec2;
 use std::collections::{HashMap, HashSet};
 
 pub type VertexIndex = usize;
@@ -493,7 +492,7 @@ impl TriangulationMesh {
     }
 }
 
-fn in_circle(a: Vec2, b: Vec2, c: Vec2, d: Vec2) -> bool {
+fn in_circle(a: glam::Vec2, b: glam::Vec2, c: glam::Vec2, d: glam::Vec2) -> bool {
     let da: glam::Vec2 = a - d;
     let db: glam::Vec2 = b - d;
     let dc: glam::Vec2 = c - d;
