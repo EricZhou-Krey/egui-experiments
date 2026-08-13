@@ -413,11 +413,11 @@ impl TriangulationMesh {
             None => return false,
         };
 
-        let e_nextwin_index: HalfEdgeIndex = self.half_edges[edge_index].next;
-        let edge_previous_index: HalfEdgeIndex = self.half_edges[e_nextwin_index].next;
+        let edge_next_twin_index: HalfEdgeIndex = self.half_edges[edge_index].next;
+        let edge_previous_index: HalfEdgeIndex = self.half_edges[edge_next_twin_index].next;
 
-        let t_nextwin_index: HalfEdgeIndex = self.half_edges[twin_index].next;
-        let t_prev_index: HalfEdgeIndex = self.half_edges[t_nextwin_index].next;
+        let triangle_next_twin_index: HalfEdgeIndex = self.half_edges[twin_index].next;
+        let t_prev_index: HalfEdgeIndex = self.half_edges[triangle_next_twin_index].next;
 
         let v1_index: VertexIndex = self.half_edges[edge_index].origin;
         let v2_index: VertexIndex = self.half_edges[twin_index].origin;
@@ -428,24 +428,24 @@ impl TriangulationMesh {
         self.half_edges[twin_index].origin = v3_index;
 
         self.half_edges[edge_index].next = edge_previous_index;
-        self.half_edges[edge_previous_index].next = t_nextwin_index;
-        self.half_edges[t_nextwin_index].next = edge_index;
+        self.half_edges[edge_previous_index].next = triangle_next_twin_index;
+        self.half_edges[triangle_next_twin_index].next = edge_index;
 
         self.half_edges[twin_index].next = t_prev_index;
-        self.half_edges[t_prev_index].next = e_nextwin_index;
-        self.half_edges[e_nextwin_index].next = twin_index;
+        self.half_edges[t_prev_index].next = edge_next_twin_index;
+        self.half_edges[edge_next_twin_index].next = twin_index;
 
         let face_1: FaceIndex = self.half_edges[edge_index].face;
         let face_2: FaceIndex = self.half_edges[twin_index].face;
 
-        self.half_edges[t_nextwin_index].face = face_1;
-        self.half_edges[e_nextwin_index].face = face_2;
+        self.half_edges[triangle_next_twin_index].face = face_1;
+        self.half_edges[edge_next_twin_index].face = face_2;
 
         self.faces[face_1].edge = edge_index;
         self.faces[face_2].edge = twin_index;
 
-        self.vertices[v1_index].incident_edge = Some(e_nextwin_index);
-        self.vertices[v2_index].incident_edge = Some(t_nextwin_index);
+        self.vertices[v1_index].incident_edge = Some(edge_next_twin_index);
+        self.vertices[v2_index].incident_edge = Some(triangle_next_twin_index);
         self.vertices[v3_index].incident_edge = Some(twin_index);
         self.vertices[v4_index].incident_edge = Some(edge_index);
 
@@ -453,10 +453,10 @@ impl TriangulationMesh {
     }
 
     pub fn update_delaunay(&mut self) {
-        let mut edges_to_chalf_edgeck: Vec<HalfEdgeIndex> = (0..self.half_edges.len()).collect();
+        let mut edges_to_check: Vec<HalfEdgeIndex> = (0..self.half_edges.len()).collect();
         let mut flipped_this_frame: HashSet<HalfEdgeIndex> = HashSet::new();
 
-        while let Some(edge_index) = edges_to_chalf_edgeck.pop() {
+        while let Some(edge_index) = edges_to_check.pop() {
             if flipped_this_frame.contains(&edge_index)
                 || self.half_edges[edge_index].twin.is_none()
             {
@@ -483,10 +483,10 @@ impl TriangulationMesh {
                 flipped_this_frame.insert(edge_index);
                 flipped_this_frame.insert(twin_index);
 
-                edges_to_chalf_edgeck.push(self.half_edges[edge_index].next);
-                edges_to_chalf_edgeck.push(self.half_edges[edge_previous].next);
-                edges_to_chalf_edgeck.push(self.half_edges[twin_index].next);
-                edges_to_chalf_edgeck.push(self.half_edges[t_prev].next);
+                edges_to_check.push(self.half_edges[edge_index].next);
+                edges_to_check.push(self.half_edges[edge_previous].next);
+                edges_to_check.push(self.half_edges[twin_index].next);
+                edges_to_check.push(self.half_edges[t_prev].next);
             }
         }
     }

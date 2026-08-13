@@ -1,16 +1,21 @@
+use crate::triangulation_background::TriangulationBackground;
 use shared_view::viewable::Viewable;
 
 #[derive(Debug, Default, Clone)]
-pub struct Navigator {}
+pub struct Navigator {
+    triangulation_background: TriangulationBackground,
+}
 
 impl Navigator {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            triangulation_background: TriangulationBackground::new(),
+        }
     }
 }
 
 impl Viewable for Navigator {
     fn draw_ui(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Hello from Nav Test");
+        self.triangulation_background.draw_ui(ui);
     }
 }

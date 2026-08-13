@@ -2,7 +2,7 @@ use eframe::egui;
 use egui_dock::{DockArea, DockState, TabViewer};
 use shared_view::viewable::Viewable;
 use tabletop_sound::TabletopSoundTab;
-use triangulation_navigator::Navigator;
+use triangulation_navigator::navigator::Navigator;
 
 struct Tab {
     label: String,
@@ -56,7 +56,7 @@ impl Default for View {
             };
         }
 
-        let tabs: Vec<Tab> = create_tabs![];
+        let tabs: Vec<Tab> = create_tabs![(TabletopSoundTab, true)];
 
         let dock_state = DockState::new((0..tabs.len()).collect());
 

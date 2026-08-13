@@ -1,3 +1,3 @@
 pub mod navigator;
-pub mod triangulation;
 pub mod triangulation_background;
+pub mod triangulation_mesh;
