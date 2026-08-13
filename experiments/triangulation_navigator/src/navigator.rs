@@ -1,6 +1,6 @@
 use shared_view::viewable::Viewable;
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone)]
 pub struct Navigator {}
 
 impl Navigator {
