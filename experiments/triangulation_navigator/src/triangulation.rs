@@ -7,7 +7,7 @@ pub type FaceIndex = usize;
 
 #[derive(Debug, Clone)]
 pub struct Vertex {
-    pub pos: Vec2,
+    pub pos: [f32; 2],
     pub incident_edge: Option<HalfEdgeIndex>,
 }
 
@@ -363,7 +363,7 @@ impl TriangulationMesh {
             vertices: points
                 .iter()
                 .map(|&pos| Vertex {
-                    pos: pos.into(),
+                    pos,
                     incident_edge: None,
                 })
                 .collect(),
@@ -466,15 +466,17 @@ impl TriangulationMesh {
 
             let twin_index: HalfEdgeIndex = self.half_edges[edge_index].twin.unwrap();
 
-            let v_a: glam::Vec2 = self.vertices[self.half_edges[edge_index].origin].pos;
-            let v_b: glam::Vec2 = self.vertices[self.half_edges[twin_index].origin].pos;
+            let v_a: glam::Vec2 = self.vertices[self.half_edges[edge_index].origin].pos.into();
+            let v_b: glam::Vec2 = self.vertices[self.half_edges[twin_index].origin].pos.into();
 
             let edge_previous: HalfEdgeIndex =
                 self.half_edges[self.half_edges[edge_index].next].next;
-            let v_c: glam::Vec2 = self.vertices[self.half_edges[edge_previous].origin].pos;
+            let v_c: glam::Vec2 = self.vertices[self.half_edges[edge_previous].origin]
+                .pos
+                .into();
 
             let t_prev: HalfEdgeIndex = self.half_edges[self.half_edges[twin_index].next].next;
-            let v_d: glam::Vec2 = self.vertices[self.half_edges[t_prev].origin].pos;
+            let v_d: glam::Vec2 = self.vertices[self.half_edges[t_prev].origin].pos.into();
 
             if in_circle(v_c, v_a, v_b, v_d) {
                 self.flip_edge(edge_index);
