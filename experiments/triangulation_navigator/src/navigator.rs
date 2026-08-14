@@ -1,15 +1,15 @@
-use crate::triangulation_background::TriangulationBackground;
+use crate::triangulation_graph::TriangulationGraph;
 use shared_view::viewable::Viewable;
 
 #[derive(Debug, Default, Clone)]
 pub struct Navigator {
-    triangulation_background: TriangulationBackground,
+    triangulation_background: TriangulationGraph,
 }
 
 impl Navigator {
     pub fn new() -> Self {
         Self {
-            triangulation_background: TriangulationBackground::new(),
+            triangulation_background: TriangulationGraph::new(),
         }
     }
 }

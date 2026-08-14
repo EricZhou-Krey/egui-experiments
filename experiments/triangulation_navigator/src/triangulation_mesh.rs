@@ -1,4 +1,19 @@
+use glam::{vec2, Mat3, Vec2};
 use std::collections::{HashMap, HashSet};
+
+fn in_circle(a: Vec2, b: Vec2, c: Vec2, d: Vec2) -> bool {
+    let da: Vec2 = a - d;
+    let db: Vec2 = b - d;
+    let dc: Vec2 = c - d;
+
+    Mat3::from_cols(
+        da.extend(da.length_squared()),
+        db.extend(db.length_squared()),
+        dc.extend(dc.length_squared()),
+    )
+    .determinant()
+        > 0.0
+}
 
 pub type VertexIndex = usize;
 pub type HalfEdgeIndex = usize;
@@ -54,9 +69,9 @@ impl TriangulationMesh {
 
             let mut edges: HashSet<(usize, usize)> = HashSet::from([(a, b), (b, c)]);
 
-            let a_p: glam::Vec2 = glam::Vec2::from(points[a]);
-            let b_p: glam::Vec2 = glam::Vec2::from(points[b]);
-            let c_p: glam::Vec2 = glam::Vec2::from(points[c]);
+            let a_p: Vec2 = Vec2::from(points[a]);
+            let b_p: Vec2 = Vec2::from(points[b]);
+            let c_p: Vec2 = Vec2::from(points[c]);
 
             if (b_p - a_p).perp_dot(c_p - a_p).abs() > 1e-4 {
                 edges.insert((c, a));
@@ -92,18 +107,18 @@ impl TriangulationMesh {
         right: usize,
     ) -> HashSet<(usize, usize)> {
         struct TriangulationCircle {
-            a: glam::Vec2,
-            b: glam::Vec2,
-            c: glam::Vec2,
+            a: Vec2,
+            b: Vec2,
+            c: Vec2,
         }
 
         impl TriangulationCircle {
-            fn in_circle(&self, p: glam::Vec2) -> bool {
-                let da: glam::Vec2 = self.a - p;
-                let db: glam::Vec2 = self.b - p;
-                let dc: glam::Vec2 = self.c - p;
+            fn in_circle(&self, p: Vec2) -> bool {
+                let da: Vec2 = self.a - p;
+                let db: Vec2 = self.b - p;
+                let dc: Vec2 = self.c - p;
 
-                glam::Mat3::from_cols(
+                Mat3::from_cols(
                     da.extend(da.length_squared()),
                     db.extend(db.length_squared()),
                     dc.extend(dc.length_squared()),
@@ -114,11 +129,9 @@ impl TriangulationMesh {
         }
 
         let mut middle_edges: HashSet<(usize, usize)> = HashSet::new();
-        let get_point =
-            |index: usize| -> glam::Vec2 { glam::vec2(points[index][0], points[index][1]) };
+        let get_point = |index: usize| -> Vec2 { vec2(points[index][0], points[index][1]) };
 
-        let counter_clockwise =
-            |a: glam::Vec2, b: glam::Vec2, c: glam::Vec2| -> f32 { (b - a).perp_dot(c - a) };
+        let counter_clockwise = |a: Vec2, b: Vec2, c: Vec2| -> f32 { (b - a).perp_dot(c - a) };
 
         let mut left_adjacency: HashMap<usize, Vec<usize>> = HashMap::new();
         for &(u, v) in &left_edges {
@@ -195,10 +208,10 @@ impl TriangulationMesh {
                     }
                 }
 
-                let base_ray: glam::Vec2 = get_point(left_current) - get_point(right_current);
+                let base_ray: Vec2 = get_point(left_current) - get_point(right_current);
                 valid_neighbors.sort_by(|&a, &b| {
-                    let ray_a: glam::Vec2 = get_point(a) - get_point(right_current);
-                    let ray_b: glam::Vec2 = get_point(b) - get_point(right_current);
+                    let ray_a: Vec2 = get_point(a) - get_point(right_current);
+                    let ray_b: Vec2 = get_point(b) - get_point(right_current);
                     let angle_a: f32 = base_ray.perp_dot(ray_a).atan2(base_ray.dot(ray_a));
                     let angle_b: f32 = base_ray.perp_dot(ray_b).atan2(base_ray.dot(ray_b));
                     angle_b.partial_cmp(&angle_a).unwrap()
@@ -243,10 +256,10 @@ impl TriangulationMesh {
                     }
                 }
 
-                let base_ray: glam::Vec2 = get_point(right_current) - get_point(left_current);
+                let base_ray: Vec2 = get_point(right_current) - get_point(left_current);
                 valid_neighbors.sort_by(|&a, &b| {
-                    let ray_a: glam::Vec2 = get_point(a) - get_point(left_current);
-                    let ray_b: glam::Vec2 = get_point(b) - get_point(left_current);
+                    let ray_a: Vec2 = get_point(a) - get_point(left_current);
+                    let ray_b: Vec2 = get_point(b) - get_point(left_current);
                     let angle_a: f32 = base_ray.perp_dot(ray_a).atan2(base_ray.dot(ray_a));
                     let angle_b: f32 = base_ray.perp_dot(ray_b).atan2(base_ray.dot(ray_b));
                     angle_a.partial_cmp(&angle_b).unwrap()
@@ -322,9 +335,9 @@ impl TriangulationMesh {
         for &(u, v) in &edges {
             for &w in &adjacency[u] {
                 if adjacency[v].contains(&w) {
-                    let p_u: glam::Vec2 = glam::vec2(points[u][0], points[u][1]);
-                    let p_v: glam::Vec2 = glam::vec2(points[v][0], points[v][1]);
-                    let p_w: glam::Vec2 = glam::vec2(points[w][0], points[w][1]);
+                    let p_u: Vec2 = vec2(points[u][0], points[u][1]);
+                    let p_v: Vec2 = vec2(points[v][0], points[v][1]);
+                    let p_w: Vec2 = vec2(points[w][0], points[w][1]);
 
                     let triangle: [usize; 3] = if (p_v - p_u).perp_dot(p_w - p_u) > 0.0 {
                         [u, v, w]
@@ -465,17 +478,17 @@ impl TriangulationMesh {
 
             let twin_index: HalfEdgeIndex = self.half_edges[edge_index].twin.unwrap();
 
-            let v_a: glam::Vec2 = self.vertices[self.half_edges[edge_index].origin].pos.into();
-            let v_b: glam::Vec2 = self.vertices[self.half_edges[twin_index].origin].pos.into();
+            let v_a: Vec2 = self.vertices[self.half_edges[edge_index].origin].pos.into();
+            let v_b: Vec2 = self.vertices[self.half_edges[twin_index].origin].pos.into();
 
             let edge_previous: HalfEdgeIndex =
                 self.half_edges[self.half_edges[edge_index].next].next;
-            let v_c: glam::Vec2 = self.vertices[self.half_edges[edge_previous].origin]
+            let v_c: Vec2 = self.vertices[self.half_edges[edge_previous].origin]
                 .pos
                 .into();
 
             let t_prev: HalfEdgeIndex = self.half_edges[self.half_edges[twin_index].next].next;
-            let v_d: glam::Vec2 = self.vertices[self.half_edges[t_prev].origin].pos.into();
+            let v_d: Vec2 = self.vertices[self.half_edges[t_prev].origin].pos.into();
 
             if in_circle(v_c, v_a, v_b, v_d) {
                 self.flip_edge(edge_index);
@@ -490,18 +503,4 @@ impl TriangulationMesh {
             }
         }
     }
-}
-
-fn in_circle(a: glam::Vec2, b: glam::Vec2, c: glam::Vec2, d: glam::Vec2) -> bool {
-    let da: glam::Vec2 = a - d;
-    let db: glam::Vec2 = b - d;
-    let dc: glam::Vec2 = c - d;
-
-    glam::Mat3::from_cols(
-        da.extend(da.length_squared()),
-        db.extend(db.length_squared()),
-        dc.extend(dc.length_squared()),
-    )
-    .determinant()
-        > 0.0
 }
