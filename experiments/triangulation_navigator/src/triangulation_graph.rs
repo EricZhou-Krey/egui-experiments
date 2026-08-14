@@ -5,16 +5,41 @@ use crate::{
 use egui::{Color32, Painter, Pos2, Rect, Shape, Stroke, Ui};
 use shared_view::viewable::Viewable;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
+pub struct TriangulationGraphSettings {
+    n_points: usize,
+    point_speed: f32,
+    mesh_zoom: f32,
+}
+
+impl Default for TriangulationGraphSettings {
+    fn default() -> Self {
+        Self {
+            n_points: 200,
+            point_speed: 0.01,
+            mesh_zoom: 1.15,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct TriangulationGraph {
     pub animated_mesh: AnimatedTriangulationMesh,
+    pub settings: TriangulationGraphSettings,
     pub style: GraphStyle,
 }
 
+impl Default for TriangulationGraph {
+    fn default() -> Self {
+        Self::new(TriangulationGraphSettings::default())
+    }
+}
+
 impl TriangulationGraph {
-    pub fn new(n_points: usize) -> Self {
+    pub fn new(settings: TriangulationGraphSettings) -> Self {
         Self {
-            animated_mesh: AnimatedTriangulationMesh::new(n_points, 0.01),
+            animated_mesh: AnimatedTriangulationMesh::new(settings.n_points, settings.point_speed),
+            settings,
             style: GraphStyle {
                 point: PointStyle {
                     radius: 2.0,
@@ -38,27 +63,31 @@ impl Viewable for TriangulationGraph {
 
         let rect: Rect = ui.available_rect_before_wrap();
 
-        let scale: f32 = rect.width().max(rect.height());
-        let offset_x: f32 = (rect.width() - scale) / 2.0;
-        let offset_y: f32 = (rect.height() - scale) / 2.0;
+        let base_scale: f32 = rect.width().max(rect.height());
+        let base_offset_x: f32 = (rect.width() - base_scale) / 2.0;
+        let base_offset_y: f32 = (rect.height() - base_scale) / 2.0;
 
         let bounds: [f32; 4] = [
-            -offset_x / scale,
-            (rect.width() - offset_x) / scale,
-            -offset_y / scale,
-            (rect.height() - offset_y) / scale,
+            -base_offset_x / base_scale,
+            (rect.width() - base_offset_x) / base_scale,
+            -base_offset_y / base_scale,
+            (rect.height() - base_offset_y) / base_scale,
         ];
 
         self.animated_mesh.update(dt, bounds);
 
         ui.request_repaint();
 
-        let painter: &Painter = ui.painter();
+        let painter: Painter = ui.painter().with_clip_rect(rect);
+
+        let render_scale: f32 = base_scale * self.settings.mesh_zoom;
+        let render_offset_x: f32 = (rect.width() - render_scale) / 2.0;
+        let render_offset_y: f32 = (rect.height() - render_scale) / 2.0;
 
         let to_screen = |pos: [f32; 2]| -> Pos2 {
             Pos2::new(
-                rect.min.x + offset_x + (pos[0] * scale),
-                rect.min.y + offset_y + (pos[1] * scale),
+                rect.min.x + render_offset_x + (pos[0] * render_scale),
+                rect.min.y + render_offset_y + (pos[1] * render_scale),
             )
         };
 

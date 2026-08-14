@@ -9,7 +9,7 @@ pub struct Navigator {
 impl Navigator {
     pub fn new() -> Self {
         Self {
-            triangulation_background: TriangulationGraph::new(200),
+            triangulation_background: TriangulationGraph::default(),
         }
     }
 }

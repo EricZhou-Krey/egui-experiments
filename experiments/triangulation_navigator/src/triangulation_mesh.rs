@@ -214,28 +214,6 @@ impl TriangulationMesh {
         middle: usize,
         right: usize,
     ) -> HashSet<(usize, usize)> {
-        struct TriangulationCircle {
-            a: Vec2,
-            b: Vec2,
-            c: Vec2,
-        }
-
-        impl TriangulationCircle {
-            fn in_circle(&self, p: Vec2) -> bool {
-                let da: Vec2 = self.a - p;
-                let db: Vec2 = self.b - p;
-                let dc: Vec2 = self.c - p;
-
-                Mat3::from_cols(
-                    da.extend(da.length_squared()),
-                    db.extend(db.length_squared()),
-                    dc.extend(dc.length_squared()),
-                )
-                .determinant()
-                    > 0.0
-            }
-        }
-
         let mut middle_edges: HashSet<(usize, usize)> = HashSet::new();
         let get_point = |index: usize| -> Vec2 { vec2(points[index][0], points[index][1]) };
 
@@ -327,19 +305,20 @@ impl TriangulationMesh {
 
                 let mut i: usize = 0;
                 while i < valid_neighbors.len() {
-                    if i + 1 < valid_neighbors.len() {
-                        let c: TriangulationCircle = TriangulationCircle {
-                            a: get_point(left_current),
-                            b: get_point(right_current),
-                            c: get_point(valid_neighbors[i]),
-                        };
-                        if c.in_circle(get_point(valid_neighbors[i + 1])) {
-                            right_edges.remove(&(right_current, valid_neighbors[i]));
-                            right_edges.remove(&(valid_neighbors[i], right_current));
-                            i += 1;
-                            continue;
-                        }
+                    if i + 1 < valid_neighbors.len()
+                        && in_circle(
+                            get_point(left_current),
+                            get_point(right_current),
+                            get_point(valid_neighbors[i]),
+                            get_point(valid_neighbors[i + 1]),
+                        )
+                    {
+                        right_edges.remove(&(right_current, valid_neighbors[i]));
+                        right_edges.remove(&(valid_neighbors[i], right_current));
+                        i += 1;
+                        continue;
                     }
+
                     right_candidate = Some(valid_neighbors[i]);
                     break;
                 }
@@ -375,19 +354,20 @@ impl TriangulationMesh {
 
                 let mut i: usize = 0;
                 while i < valid_neighbors.len() {
-                    if i + 1 < valid_neighbors.len() {
-                        let c: TriangulationCircle = TriangulationCircle {
-                            a: get_point(left_current),
-                            b: get_point(right_current),
-                            c: get_point(valid_neighbors[i]),
-                        };
-                        if c.in_circle(get_point(valid_neighbors[i + 1])) {
-                            left_edges.remove(&(left_current, valid_neighbors[i]));
-                            left_edges.remove(&(valid_neighbors[i], left_current));
-                            i += 1;
-                            continue;
-                        }
+                    if i + 1 < valid_neighbors.len()
+                        && in_circle(
+                            get_point(left_current),
+                            get_point(right_current),
+                            get_point(valid_neighbors[i]),
+                            get_point(valid_neighbors[i + 1]),
+                        )
+                    {
+                        left_edges.remove(&(left_current, valid_neighbors[i]));
+                        left_edges.remove(&(valid_neighbors[i], left_current));
+                        i += 1;
+                        continue;
                     }
+
                     left_candidate = Some(valid_neighbors[i]);
                     break;
                 }
@@ -397,14 +377,12 @@ impl TriangulationMesh {
                 (None, None) => break,
                 (Some(_), None) => false,
                 (None, Some(_)) => true,
-                (Some(lc), Some(rc)) => {
-                    let circle: TriangulationCircle = TriangulationCircle {
-                        a: get_point(left_current),
-                        b: get_point(right_current),
-                        c: get_point(lc),
-                    };
-                    circle.in_circle(get_point(rc))
-                }
+                (Some(lc), Some(rc)) => in_circle(
+                    get_point(left_current),
+                    get_point(right_current),
+                    get_point(lc),
+                    get_point(rc),
+                ),
             };
 
             if is_choosing_right {
@@ -418,95 +396,6 @@ impl TriangulationMesh {
         edges.extend(left_edges);
         edges.extend(right_edges);
         edges
-    }
-
-    fn flip_edge(&mut self, edge_index: HalfEdgeIndex) -> bool {
-        let twin_index: HalfEdgeIndex = match self.half_edges[edge_index].twin {
-            Some(index) => index,
-            None => return false,
-        };
-
-        let edge_next_twin_index: HalfEdgeIndex = self.half_edges[edge_index].next;
-        let edge_previous_index: HalfEdgeIndex = self.half_edges[edge_next_twin_index].next;
-
-        let triangle_next_twin_index: HalfEdgeIndex = self.half_edges[twin_index].next;
-        let t_prev_index: HalfEdgeIndex = self.half_edges[triangle_next_twin_index].next;
-
-        let v1_index: VertexIndex = self.half_edges[edge_index].origin;
-        let v2_index: VertexIndex = self.half_edges[twin_index].origin;
-        let v3_index: VertexIndex = self.half_edges[edge_previous_index].origin;
-        let v4_index: VertexIndex = self.half_edges[t_prev_index].origin;
-
-        self.half_edges[edge_index].origin = v4_index;
-        self.half_edges[twin_index].origin = v3_index;
-
-        self.half_edges[edge_index].next = edge_previous_index;
-        self.half_edges[edge_previous_index].next = triangle_next_twin_index;
-        self.half_edges[triangle_next_twin_index].next = edge_index;
-
-        self.half_edges[twin_index].next = t_prev_index;
-        self.half_edges[t_prev_index].next = edge_next_twin_index;
-        self.half_edges[edge_next_twin_index].next = twin_index;
-
-        let face_1: FaceIndex = self.half_edges[edge_index].face;
-        let face_2: FaceIndex = self.half_edges[twin_index].face;
-
-        self.half_edges[triangle_next_twin_index].face = face_1;
-        self.half_edges[edge_next_twin_index].face = face_2;
-
-        self.faces[face_1].edge = edge_index;
-        self.faces[face_2].edge = twin_index;
-
-        self.vertices[v1_index].incident_edge = Some(edge_next_twin_index);
-        self.vertices[v2_index].incident_edge = Some(triangle_next_twin_index);
-        self.vertices[v3_index].incident_edge = Some(twin_index);
-        self.vertices[v4_index].incident_edge = Some(edge_index);
-
-        true
-    }
-
-    fn update(&mut self) {
-        let mut edges_to_check: Vec<HalfEdgeIndex> = (0..self.half_edges.len()).collect();
-        let mut flipped_this_frame: HashSet<HalfEdgeIndex> = HashSet::new();
-
-        while let Some(edge_index) = edges_to_check.pop() {
-            if flipped_this_frame.contains(&edge_index)
-                || self.half_edges[edge_index].twin.is_none()
-            {
-                continue;
-            }
-
-            let twin_index: HalfEdgeIndex = self.half_edges[edge_index].twin.unwrap();
-
-            let v_a: Vec2 = self.vertices[self.half_edges[edge_index].origin].pos.into();
-            let v_b: Vec2 = self.vertices[self.half_edges[twin_index].origin].pos.into();
-
-            let edge_previous: HalfEdgeIndex =
-                self.half_edges[self.half_edges[edge_index].next].next;
-            let v_c: Vec2 = self.vertices[self.half_edges[edge_previous].origin]
-                .pos
-                .into();
-
-            let t_prev: HalfEdgeIndex = self.half_edges[self.half_edges[twin_index].next].next;
-            let v_d: Vec2 = self.vertices[self.half_edges[t_prev].origin].pos.into();
-
-            let cd_dir: Vec2 = v_d - v_c;
-            let cross_a: f32 = cd_dir.perp_dot(v_a - v_c);
-            let cross_b: f32 = cd_dir.perp_dot(v_b - v_c);
-            let is_convex: bool = (cross_a * cross_b) < 0.0;
-
-            if is_convex && in_circle(v_c, v_a, v_b, v_d) {
-                self.flip_edge(edge_index);
-
-                flipped_this_frame.insert(edge_index);
-                flipped_this_frame.insert(twin_index);
-
-                edges_to_check.push(self.half_edges[edge_index].next);
-                edges_to_check.push(self.half_edges[edge_previous].next);
-                edges_to_check.push(self.half_edges[twin_index].next);
-                edges_to_check.push(self.half_edges[t_prev].next);
-            }
-        }
     }
 }
 
@@ -549,17 +438,20 @@ impl AnimatedTriangulationMesh {
     }
 
     pub fn update(&mut self, dt: f32, bounds: [f32; 4]) {
-        self.mesh.vertices[0].pos = [bounds[0], bounds[2]];
-        self.mesh.vertices[1].pos = [bounds[1], bounds[2]];
-        self.mesh.vertices[2].pos = [bounds[1], bounds[3]];
-        self.mesh.vertices[3].pos = [bounds[0], bounds[3]];
+        let mut current_points: Vec<[f32; 2]> =
+            self.mesh.vertices.iter().map(|v: &Vertex| v.pos).collect();
+
+        current_points[0] = [bounds[0], bounds[2]];
+        current_points[1] = [bounds[1], bounds[2]];
+        current_points[2] = [bounds[1], bounds[3]];
+        current_points[3] = [bounds[0], bounds[3]];
 
         for (i, v) in self.velocities.iter_mut().enumerate() {
             if v.x == 0.0 && v.y == 0.0 {
                 continue;
             }
 
-            let mut pos: [f32; 2] = self.mesh.vertices[i].pos;
+            let mut pos: [f32; 2] = current_points[i];
 
             pos[0] += v.x * dt;
             pos[1] += v.y * dt;
@@ -584,9 +476,9 @@ impl AnimatedTriangulationMesh {
                 v.y = -v.y.abs();
             }
 
-            self.mesh.vertices[i].pos = pos;
+            current_points[i] = pos;
         }
 
-        self.mesh.update();
+        self.mesh = TriangulationMesh::from_points(&current_points);
     }
 }
