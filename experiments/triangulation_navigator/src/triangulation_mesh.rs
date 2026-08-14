@@ -46,6 +46,114 @@ pub struct TriangulationMesh {
 }
 
 impl TriangulationMesh {
+    pub fn from_points(points: &[[f32; 2]]) -> Self {
+        if points.len() < 3 {
+            return Self::default();
+        }
+
+        let mut x_sorted_indices: Vec<usize> = (0..points.len()).collect();
+        x_sorted_indices
+            .sort_unstable_by(|&a, &b| points[a][0].partial_cmp(&points[b][0]).unwrap());
+
+        let edges: HashSet<(usize, usize)> =
+            TriangulationMesh::triangulation(points, &x_sorted_indices, 0, points.len() - 1);
+
+        let mut adjacency: Vec<Vec<usize>> = vec![Vec::new(); points.len()];
+        for &(u, v) in &edges {
+            adjacency[u].push(v);
+            adjacency[v].push(u);
+        }
+
+        let mut triangles: HashSet<[usize; 3]> = HashSet::new();
+
+        for &(u, v) in &edges {
+            for &w in &adjacency[u] {
+                if adjacency[v].contains(&w) {
+                    let p_u: Vec2 = vec2(points[u][0], points[u][1]);
+                    let p_v: Vec2 = vec2(points[v][0], points[v][1]);
+                    let p_w: Vec2 = vec2(points[w][0], points[w][1]);
+
+                    let triangle: [usize; 3] = if (p_v - p_u).perp_dot(p_w - p_u) > 0.0 {
+                        [u, v, w]
+                    } else {
+                        [u, w, v]
+                    };
+
+                    let min_index: usize = if triangle[0] < triangle[1] && triangle[0] < triangle[2]
+                    {
+                        0
+                    } else if triangle[1] < triangle[0] && triangle[1] < triangle[2] {
+                        1
+                    } else {
+                        2
+                    };
+
+                    let normalized_triangle: [usize; 3] = match min_index {
+                        0 => [triangle[0], triangle[1], triangle[2]],
+                        1 => [triangle[1], triangle[2], triangle[0]],
+                        _ => [triangle[2], triangle[0], triangle[1]],
+                    };
+
+                    triangles.insert(normalized_triangle);
+                }
+            }
+        }
+
+        let triangles: Vec<[usize; 3]> = triangles.into_iter().collect();
+
+        Self::from_triangles(points, &triangles)
+    }
+
+    pub fn from_triangles(points: &[[f32; 2]], triangles: &[[usize; 3]]) -> Self {
+        let mut mesh: TriangulationMesh = TriangulationMesh {
+            vertices: points
+                .iter()
+                .map(|&pos| Vertex {
+                    pos,
+                    incident_edge: None,
+                })
+                .collect(),
+            half_edges: Vec::with_capacity(triangles.len() * 3),
+            faces: Vec::with_capacity(triangles.len()),
+        };
+
+        let mut edge_map: HashMap<(usize, usize), HalfEdgeIndex> = HashMap::new();
+
+        for (face_index, &triangle) in triangles.iter().enumerate() {
+            let half_edge_start_index: usize = mesh.half_edges.len();
+
+            mesh.faces.push(Face {
+                edge: half_edge_start_index,
+            });
+
+            for i in 0..3 {
+                let v_current: VertexIndex = triangle[i];
+                let v_next: VertexIndex = triangle[(i + 1) % 3];
+
+                let half_edge_index: HalfEdgeIndex = half_edge_start_index + i;
+                let half_edge_next_index: HalfEdgeIndex = half_edge_start_index + ((i + 1) % 3);
+
+                mesh.half_edges.push(HalfEdge {
+                    origin: v_current,
+                    twin: None,
+                    next: half_edge_next_index,
+                    face: face_index,
+                });
+
+                mesh.vertices[v_current].incident_edge = Some(half_edge_index);
+
+                if let Some(&twin_index) = edge_map.get(&(v_next, v_current)) {
+                    mesh.half_edges[half_edge_index].twin = Some(twin_index);
+                    mesh.half_edges[twin_index].twin = Some(half_edge_index);
+                } else {
+                    edge_map.insert((v_current, v_next), half_edge_index);
+                }
+            }
+        }
+
+        mesh
+    }
+
     fn triangulation(
         points: &[[f32; 2]],
         x_sorted_indicies: &[usize],
@@ -312,115 +420,7 @@ impl TriangulationMesh {
         edges
     }
 
-    pub fn from_points(points: &[[f32; 2]]) -> Self {
-        if points.len() < 3 {
-            return Self::default();
-        }
-
-        let mut x_sorted_indices: Vec<usize> = (0..points.len()).collect();
-        x_sorted_indices
-            .sort_unstable_by(|&a, &b| points[a][0].partial_cmp(&points[b][0]).unwrap());
-
-        let edges: HashSet<(usize, usize)> =
-            TriangulationMesh::triangulation(points, &x_sorted_indices, 0, points.len() - 1);
-
-        let mut adjacency: Vec<Vec<usize>> = vec![Vec::new(); points.len()];
-        for &(u, v) in &edges {
-            adjacency[u].push(v);
-            adjacency[v].push(u);
-        }
-
-        let mut triangles: HashSet<[usize; 3]> = HashSet::new();
-
-        for &(u, v) in &edges {
-            for &w in &adjacency[u] {
-                if adjacency[v].contains(&w) {
-                    let p_u: Vec2 = vec2(points[u][0], points[u][1]);
-                    let p_v: Vec2 = vec2(points[v][0], points[v][1]);
-                    let p_w: Vec2 = vec2(points[w][0], points[w][1]);
-
-                    let triangle: [usize; 3] = if (p_v - p_u).perp_dot(p_w - p_u) > 0.0 {
-                        [u, v, w]
-                    } else {
-                        [u, w, v]
-                    };
-
-                    let min_index: usize = if triangle[0] < triangle[1] && triangle[0] < triangle[2]
-                    {
-                        0
-                    } else if triangle[1] < triangle[0] && triangle[1] < triangle[2] {
-                        1
-                    } else {
-                        2
-                    };
-
-                    let normalized_triangle: [usize; 3] = match min_index {
-                        0 => [triangle[0], triangle[1], triangle[2]],
-                        1 => [triangle[1], triangle[2], triangle[0]],
-                        _ => [triangle[2], triangle[0], triangle[1]],
-                    };
-
-                    triangles.insert(normalized_triangle);
-                }
-            }
-        }
-
-        let triangles: Vec<[usize; 3]> = triangles.into_iter().collect();
-
-        Self::from_triangles(points, &triangles)
-    }
-
-    pub fn from_triangles(points: &[[f32; 2]], triangles: &[[usize; 3]]) -> Self {
-        let mut mesh: TriangulationMesh = TriangulationMesh {
-            vertices: points
-                .iter()
-                .map(|&pos| Vertex {
-                    pos,
-                    incident_edge: None,
-                })
-                .collect(),
-            half_edges: Vec::with_capacity(triangles.len() * 3),
-            faces: Vec::with_capacity(triangles.len()),
-        };
-
-        let mut edge_map: HashMap<(usize, usize), HalfEdgeIndex> = HashMap::new();
-
-        for (face_index, &triangle) in triangles.iter().enumerate() {
-            let half_edge_start_index: usize = mesh.half_edges.len();
-
-            mesh.faces.push(Face {
-                edge: half_edge_start_index,
-            });
-
-            for i in 0..3 {
-                let v_current: VertexIndex = triangle[i];
-                let v_next: VertexIndex = triangle[(i + 1) % 3];
-
-                let half_edge_index: HalfEdgeIndex = half_edge_start_index + i;
-                let half_edge_next_index: HalfEdgeIndex = half_edge_start_index + ((i + 1) % 3);
-
-                mesh.half_edges.push(HalfEdge {
-                    origin: v_current,
-                    twin: None,
-                    next: half_edge_next_index,
-                    face: face_index,
-                });
-
-                mesh.vertices[v_current].incident_edge = Some(half_edge_index);
-
-                if let Some(&twin_index) = edge_map.get(&(v_next, v_current)) {
-                    mesh.half_edges[half_edge_index].twin = Some(twin_index);
-                    mesh.half_edges[twin_index].twin = Some(half_edge_index);
-                } else {
-                    edge_map.insert((v_current, v_next), half_edge_index);
-                }
-            }
-        }
-
-        mesh
-    }
-
-    pub fn flip_edge(&mut self, edge_index: HalfEdgeIndex) -> bool {
+    fn flip_edge(&mut self, edge_index: HalfEdgeIndex) -> bool {
         let twin_index: HalfEdgeIndex = match self.half_edges[edge_index].twin {
             Some(index) => index,
             None => return false,
@@ -465,7 +465,7 @@ impl TriangulationMesh {
         true
     }
 
-    pub fn update_delaunay(&mut self) {
+    fn update(&mut self) {
         let mut edges_to_check: Vec<HalfEdgeIndex> = (0..self.half_edges.len()).collect();
         let mut flipped_this_frame: HashSet<HalfEdgeIndex> = HashSet::new();
 
@@ -490,7 +490,12 @@ impl TriangulationMesh {
             let t_prev: HalfEdgeIndex = self.half_edges[self.half_edges[twin_index].next].next;
             let v_d: Vec2 = self.vertices[self.half_edges[t_prev].origin].pos.into();
 
-            if in_circle(v_c, v_a, v_b, v_d) {
+            let cd_dir: Vec2 = v_d - v_c;
+            let cross_a: f32 = cd_dir.perp_dot(v_a - v_c);
+            let cross_b: f32 = cd_dir.perp_dot(v_b - v_c);
+            let is_convex: bool = (cross_a * cross_b) < 0.0;
+
+            if is_convex && in_circle(v_c, v_a, v_b, v_d) {
                 self.flip_edge(edge_index);
 
                 flipped_this_frame.insert(edge_index);
@@ -502,5 +507,86 @@ impl TriangulationMesh {
                 edges_to_check.push(self.half_edges[t_prev].next);
             }
         }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct AnimatedTriangulationMesh {
+    pub velocities: Vec<Vec2>,
+    pub mesh: TriangulationMesh,
+}
+
+impl AnimatedTriangulationMesh {
+    pub fn new(n_points: usize, speed: f32) -> Self {
+        let mut points: Vec<[f32; 2]> = vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
+
+        let mut velocities: Vec<Vec2> = vec![
+            vec2(0.0, 0.0),
+            vec2(0.0, 0.0),
+            vec2(0.0, 0.0),
+            vec2(0.0, 0.0),
+        ];
+
+        let random_points: Vec<[f32; 2]> =
+            std::iter::repeat_with(|| [rand::random::<f32>(), rand::random::<f32>()])
+                .take(n_points)
+                .collect();
+
+        let random_velocities: Vec<Vec2> = std::iter::repeat_with(|| {
+            let angle: f32 = rand::random::<f32>() * std::f32::consts::TAU;
+            vec2(angle.cos(), angle.sin()) * speed
+        })
+        .take(n_points)
+        .collect();
+
+        points.extend(random_points);
+        velocities.extend(random_velocities);
+
+        Self {
+            velocities,
+            mesh: TriangulationMesh::from_points(&points),
+        }
+    }
+
+    pub fn update(&mut self, dt: f32, bounds: [f32; 4]) {
+        self.mesh.vertices[0].pos = [bounds[0], bounds[2]];
+        self.mesh.vertices[1].pos = [bounds[1], bounds[2]];
+        self.mesh.vertices[2].pos = [bounds[1], bounds[3]];
+        self.mesh.vertices[3].pos = [bounds[0], bounds[3]];
+
+        for (i, v) in self.velocities.iter_mut().enumerate() {
+            if v.x == 0.0 && v.y == 0.0 {
+                continue;
+            }
+
+            let mut pos: [f32; 2] = self.mesh.vertices[i].pos;
+
+            pos[0] += v.x * dt;
+            pos[1] += v.y * dt;
+
+            if pos[0] < bounds[0] {
+                pos[0] = 2.0 * bounds[0] - pos[0];
+                pos[0] = pos[0].max(bounds[0]).min(bounds[1]);
+                v.x = v.x.abs();
+            } else if pos[0] > bounds[1] {
+                pos[0] = 2.0 * bounds[1] - pos[0];
+                pos[0] = pos[0].max(bounds[0]).min(bounds[1]);
+                v.x = -v.x.abs();
+            }
+
+            if pos[1] < bounds[2] {
+                pos[1] = 2.0 * bounds[2] - pos[1];
+                pos[1] = pos[1].max(bounds[2]).min(bounds[3]);
+                v.y = v.y.abs();
+            } else if pos[1] > bounds[3] {
+                pos[1] = 2.0 * bounds[3] - pos[1];
+                pos[1] = pos[1].max(bounds[2]).min(bounds[3]);
+                v.y = -v.y.abs();
+            }
+
+            self.mesh.vertices[i].pos = pos;
+        }
+
+        self.mesh.update();
     }
 }

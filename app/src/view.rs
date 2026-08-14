@@ -81,7 +81,5 @@ impl eframe::App for View {
                 .style(egui_dock::Style::from_egui(ui.style().as_ref()))
                 .show_inside(ui, &mut self.viewer);
         });
-
-        ui.request_repaint();
     }
 }
