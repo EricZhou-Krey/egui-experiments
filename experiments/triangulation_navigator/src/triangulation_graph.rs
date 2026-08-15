@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use crate::{
     style::{FaceStyle, GraphStyle, LineStyle, PointStyle},
     triangulation_mesh::{AnimatedTriangulationMesh, HalfEdge},
@@ -6,40 +8,83 @@ use egui::{Color32, Painter, Pos2, Rect, Shape, Stroke, Ui};
 use shared_view::viewable::Viewable;
 
 #[derive(Debug, Clone)]
-pub struct TriangulationGraphSettings {
-    n_points: usize,
-    point_speed: f32,
-    mesh_zoom: f32,
+pub struct InteractableTriangulationMeshSettings {
+    pub n_points: usize,
+    pub point_speed: f32,
 }
 
-impl Default for TriangulationGraphSettings {
+impl Default for InteractableTriangulationMeshSettings {
     fn default() -> Self {
         Self {
             n_points: 200,
-            point_speed: 0.01,
-            mesh_zoom: 1.15,
+            point_speed: 0.05,
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct InteractableTriangulationMesh {
+    pub animated_mesh: AnimatedTriangulationMesh,
+    // pub highlighted_vertices: Vec<usize>,
+}
+
+impl Deref for InteractableTriangulationMesh {
+    type Target = AnimatedTriangulationMesh;
+
+    fn deref(&self) -> &Self::Target {
+        &self.animated_mesh
+    }
+}
+
+impl DerefMut for InteractableTriangulationMesh {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.animated_mesh
+    }
+}
+
+impl InteractableTriangulationMesh {
+    fn new(settings: InteractableTriangulationMeshSettings) -> Self {
+        InteractableTriangulationMesh {
+            animated_mesh: AnimatedTriangulationMesh::new(settings.n_points, settings.point_speed),
         }
     }
 }
 
 #[derive(Debug, Clone)]
+pub struct TriangulationGraphSettings {
+    pub mesh_zoom: f32,
+}
+
+impl Default for TriangulationGraphSettings {
+    fn default() -> Self {
+        Self { mesh_zoom: 1.15 }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct TriangulationGraph {
-    pub animated_mesh: AnimatedTriangulationMesh,
+    pub mesh: InteractableTriangulationMesh,
     pub settings: TriangulationGraphSettings,
     pub style: GraphStyle,
 }
 
 impl Default for TriangulationGraph {
     fn default() -> Self {
-        Self::new(TriangulationGraphSettings::default())
+        Self::new(
+            TriangulationGraphSettings::default(),
+            InteractableTriangulationMeshSettings::default(),
+        )
     }
 }
 
 impl TriangulationGraph {
-    pub fn new(settings: TriangulationGraphSettings) -> Self {
+    pub fn new(
+        graph_settings: TriangulationGraphSettings,
+        mesh_settings: InteractableTriangulationMeshSettings,
+    ) -> Self {
         Self {
-            animated_mesh: AnimatedTriangulationMesh::new(settings.n_points, settings.point_speed),
-            settings,
+            mesh: InteractableTriangulationMesh::new(mesh_settings),
+            settings: graph_settings,
             style: GraphStyle {
                 point: PointStyle {
                     radius: 2.0,
@@ -74,7 +119,7 @@ impl Viewable for TriangulationGraph {
             (rect.height() - base_offset_y) / base_scale,
         ];
 
-        self.animated_mesh.update(dt, bounds);
+        self.mesh.update(dt, bounds);
 
         ui.request_repaint();
 
@@ -91,15 +136,14 @@ impl Viewable for TriangulationGraph {
             )
         };
 
-        for face in self.animated_mesh.mesh.faces.iter() {
+        for face in self.mesh.mesh.faces.iter() {
             let mut points: Vec<Pos2> = Vec::new();
-            let mut current_half_edge: &HalfEdge = &self.animated_mesh.mesh.half_edges[face.edge];
+            let mut current_half_edge: &HalfEdge = &self.mesh.mesh.half_edges[face.edge];
 
             for _ in 0..3 {
-                let raw_pos: [f32; 2] =
-                    self.animated_mesh.mesh.vertices[current_half_edge.origin].pos;
+                let raw_pos: [f32; 2] = self.mesh.mesh.vertices[current_half_edge.origin].pos;
                 points.push(to_screen(raw_pos));
-                current_half_edge = &self.animated_mesh.mesh.half_edges[current_half_edge.next];
+                current_half_edge = &self.mesh.mesh.half_edges[current_half_edge.next];
             }
 
             painter.add(Shape::convex_polygon(
@@ -109,13 +153,11 @@ impl Viewable for TriangulationGraph {
             ));
         }
 
-        for (edge_index, edge) in self.animated_mesh.mesh.half_edges.iter().enumerate() {
+        for (edge_index, edge) in self.mesh.mesh.half_edges.iter().enumerate() {
             if edge_index < edge.twin.unwrap_or(usize::MAX) {
-                let p1: Pos2 = to_screen(self.animated_mesh.mesh.vertices[edge.origin].pos);
+                let p1: Pos2 = to_screen(self.mesh.mesh.vertices[edge.origin].pos);
                 let p2: Pos2 = to_screen(
-                    self.animated_mesh.mesh.vertices
-                        [self.animated_mesh.mesh.half_edges[edge.next].origin]
-                        .pos,
+                    self.mesh.mesh.vertices[self.mesh.mesh.half_edges[edge.next].origin].pos,
                 );
 
                 painter.line_segment([p1, p2], self.style.line.stroke);
