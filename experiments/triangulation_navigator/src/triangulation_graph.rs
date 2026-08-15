@@ -136,14 +136,14 @@ impl Viewable for TriangulationGraph {
             )
         };
 
-        for face in self.mesh.mesh.faces.iter() {
+        for face in self.mesh.faces.iter() {
             let mut points: Vec<Pos2> = Vec::new();
-            let mut current_half_edge: &HalfEdge = &self.mesh.mesh.half_edges[face.edge];
+            let mut current_half_edge: &HalfEdge = &self.mesh.half_edges[face.edge];
 
             for _ in 0..3 {
-                let raw_pos: [f32; 2] = self.mesh.mesh.vertices[current_half_edge.origin].pos;
+                let raw_pos: [f32; 2] = self.mesh.vertices[current_half_edge.origin].pos;
                 points.push(to_screen(raw_pos));
-                current_half_edge = &self.mesh.mesh.half_edges[current_half_edge.next];
+                current_half_edge = &self.mesh.half_edges[current_half_edge.next];
             }
 
             painter.add(Shape::convex_polygon(
@@ -153,12 +153,11 @@ impl Viewable for TriangulationGraph {
             ));
         }
 
-        for (edge_index, edge) in self.mesh.mesh.half_edges.iter().enumerate() {
+        for (edge_index, edge) in self.mesh.half_edges.iter().enumerate() {
             if edge_index < edge.twin.unwrap_or(usize::MAX) {
-                let p1: Pos2 = to_screen(self.mesh.mesh.vertices[edge.origin].pos);
-                let p2: Pos2 = to_screen(
-                    self.mesh.mesh.vertices[self.mesh.mesh.half_edges[edge.next].origin].pos,
-                );
+                let p1: Pos2 = to_screen(self.mesh.vertices[edge.origin].pos);
+                let p2: Pos2 =
+                    to_screen(self.mesh.vertices[self.mesh.half_edges[edge.next].origin].pos);
 
                 painter.line_segment([p1, p2], self.style.line.stroke);
             }

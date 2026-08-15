@@ -1,5 +1,8 @@
 use glam::{vec2, Mat3, Vec2};
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    ops::{Deref, DerefMut},
+};
 
 fn in_circle(a: Vec2, b: Vec2, c: Vec2, d: Vec2) -> bool {
     let da: Vec2 = a - d;
@@ -403,6 +406,20 @@ impl TriangulationMesh {
 pub struct AnimatedTriangulationMesh {
     pub velocities: Vec<Vec2>,
     pub mesh: TriangulationMesh,
+}
+
+impl Deref for AnimatedTriangulationMesh {
+    type Target = TriangulationMesh;
+
+    fn deref(&self) -> &Self::Target {
+        &self.mesh
+    }
+}
+
+impl DerefMut for AnimatedTriangulationMesh {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.mesh
+    }
 }
 
 impl AnimatedTriangulationMesh {
