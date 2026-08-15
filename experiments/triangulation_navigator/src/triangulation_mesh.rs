@@ -423,7 +423,7 @@ impl DerefMut for AnimatedTriangulationMesh {
 }
 
 impl AnimatedTriangulationMesh {
-    pub fn new(n_points: usize, speed: f32) -> Self {
+    pub fn new(n_internal_verticies: usize, speed: f32) -> Self {
         let mut points: Vec<[f32; 2]> = vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
 
         let mut velocities: Vec<Vec2> = vec![
@@ -435,14 +435,14 @@ impl AnimatedTriangulationMesh {
 
         let random_points: Vec<[f32; 2]> =
             std::iter::repeat_with(|| [rand::random::<f32>(), rand::random::<f32>()])
-                .take(n_points)
+                .take(n_internal_verticies)
                 .collect();
 
         let random_velocities: Vec<Vec2> = std::iter::repeat_with(|| {
             let angle: f32 = rand::random::<f32>() * std::f32::consts::TAU;
             vec2(angle.cos(), angle.sin()) * speed
         })
-        .take(n_points)
+        .take(n_internal_verticies)
         .collect();
 
         points.extend(random_points);
@@ -455,20 +455,20 @@ impl AnimatedTriangulationMesh {
     }
 
     pub fn update(&mut self, dt: f32, bounds: [f32; 4]) {
-        let mut current_points: Vec<[f32; 2]> =
+        let mut current_verticies: Vec<[f32; 2]> =
             self.mesh.vertices.iter().map(|v: &Vertex| v.pos).collect();
 
-        current_points[0] = [bounds[0], bounds[2]];
-        current_points[1] = [bounds[1], bounds[2]];
-        current_points[2] = [bounds[1], bounds[3]];
-        current_points[3] = [bounds[0], bounds[3]];
+        current_verticies[0] = [bounds[0], bounds[2]];
+        current_verticies[1] = [bounds[1], bounds[2]];
+        current_verticies[2] = [bounds[1], bounds[3]];
+        current_verticies[3] = [bounds[0], bounds[3]];
 
         for (i, v) in self.velocities.iter_mut().enumerate() {
             if v.x == 0.0 && v.y == 0.0 {
                 continue;
             }
 
-            let mut pos: [f32; 2] = current_points[i];
+            let mut pos: [f32; 2] = current_verticies[i];
 
             pos[0] += v.x * dt;
             pos[1] += v.y * dt;
@@ -493,9 +493,9 @@ impl AnimatedTriangulationMesh {
                 v.y = -v.y.abs();
             }
 
-            current_points[i] = pos;
+            current_verticies[i] = pos;
         }
 
-        self.mesh = TriangulationMesh::from_points(&current_points);
+        self.mesh = TriangulationMesh::from_points(&current_verticies);
     }
 }

@@ -19,7 +19,13 @@ pub struct FaceStyle {
 
 #[derive(Debug, Default, Clone)]
 pub struct GraphStyle {
+    pub point_light: PointStyle,
     pub point: PointStyle,
+    pub point_heavy: PointStyle,
+    pub line_light: LineStyle,
     pub line: LineStyle,
+    pub line_heavy: LineStyle,
+    pub face_light: FaceStyle,
     pub face: FaceStyle,
+    pub face_heavy: FaceStyle,
 }

@@ -9,15 +9,19 @@ use shared_view::viewable::Viewable;
 
 #[derive(Debug, Clone)]
 pub struct InteractableTriangulationMeshSettings {
-    pub n_points: usize,
-    pub point_speed: f32,
+    pub n_internal_verticies: usize,
+    pub vertex_speed: f32,
+    pub n_interactable: usize,
+    pub interaction_radius: f32,
 }
 
 impl Default for InteractableTriangulationMeshSettings {
     fn default() -> Self {
         Self {
-            n_points: 200,
-            point_speed: 0.05,
+            n_internal_verticies: 200,
+            vertex_speed: 0.01,
+            n_interactable: 10,
+            interaction_radius: 0.05,
         }
     }
 }
@@ -25,7 +29,9 @@ impl Default for InteractableTriangulationMeshSettings {
 #[derive(Debug, Default, Clone)]
 pub struct InteractableTriangulationMesh {
     pub animated_mesh: AnimatedTriangulationMesh,
-    // pub highlighted_vertices: Vec<usize>,
+    pub interactable_vertices: Vec<usize>,
+    pub interact_vertex: Option<usize>,
+    pub settings: InteractableTriangulationMeshSettings,
 }
 
 impl Deref for InteractableTriangulationMesh {
@@ -42,10 +48,59 @@ impl DerefMut for InteractableTriangulationMesh {
     }
 }
 
+pub enum InteractionType {
+    Deselect,
+    Select(usize),
+    Reselect(usize),
+}
+
 impl InteractableTriangulationMesh {
     fn new(settings: InteractableTriangulationMeshSettings) -> Self {
         InteractableTriangulationMesh {
-            animated_mesh: AnimatedTriangulationMesh::new(settings.n_points, settings.point_speed),
+            animated_mesh: AnimatedTriangulationMesh::new(
+                settings.n_internal_verticies,
+                settings.vertex_speed,
+            ),
+            interactable_vertices: rand::seq::index::sample(
+                &mut rand::rng(),
+                settings.n_internal_verticies,
+                settings.n_interactable,
+            )
+            .into_iter()
+            .map(|i| i + 4)
+            .collect(),
+            interact_vertex: None,
+            settings,
+        }
+    }
+
+    fn interact(&mut self, position: [f32; 2]) -> InteractionType {
+        let mut new_interaction: Option<usize> = None;
+        let mut interaction_radius: f32 = self.settings.interaction_radius;
+
+        for v_index in self.interactable_vertices.iter() {
+            let distance: f32 =
+                glam::Vec2::from(position).distance(glam::Vec2::from(self.vertices[*v_index].pos));
+
+            if distance < interaction_radius {
+                interaction_radius = distance;
+                new_interaction = Some(*v_index);
+            }
+        }
+
+        match new_interaction {
+            Some(index) => {
+                if self.interact_vertex == Some(index) {
+                    InteractionType::Reselect(index)
+                } else {
+                    self.interact_vertex = Some(index);
+                    InteractionType::Select(index)
+                }
+            }
+            None => {
+                self.interact_vertex = None;
+                InteractionType::Deselect
+            }
         }
     }
 }
@@ -64,8 +119,8 @@ impl Default for TriangulationGraphSettings {
 #[derive(Debug, Clone)]
 pub struct TriangulationGraph {
     pub mesh: InteractableTriangulationMesh,
-    pub settings: TriangulationGraphSettings,
     pub style: GraphStyle,
+    pub settings: TriangulationGraphSettings,
 }
 
 impl Default for TriangulationGraph {
@@ -84,11 +139,14 @@ impl TriangulationGraph {
     ) -> Self {
         Self {
             mesh: InteractableTriangulationMesh::new(mesh_settings),
-            settings: graph_settings,
             style: GraphStyle {
                 point: PointStyle {
-                    radius: 2.0,
-                    color: Color32::WHITE,
+                    radius: 5.0,
+                    color: Color32::LIGHT_GREEN,
+                },
+                point_heavy: PointStyle {
+                    radius: 7.0,
+                    color: Color32::GREEN,
                 },
                 line: LineStyle {
                     stroke: Stroke::new(1.5, Color32::LIGHT_GRAY),
@@ -97,20 +155,51 @@ impl TriangulationGraph {
                     fill_color: Color32::from_rgb(40, 44, 52),
                     border_stroke: Stroke::NONE,
                 },
+                ..Default::default()
             },
+            settings: graph_settings,
         }
     }
 }
 
 impl Viewable for TriangulationGraph {
     fn draw_ui(&mut self, ui: &mut Ui) {
-        let dt: f32 = ui.input(|i| i.stable_dt).min(0.1);
-
         let rect: Rect = ui.available_rect_before_wrap();
 
         let base_scale: f32 = rect.width().max(rect.height());
         let base_offset_x: f32 = (rect.width() - base_scale) / 2.0;
         let base_offset_y: f32 = (rect.height() - base_scale) / 2.0;
+
+        let render_scale: f32 = base_scale * self.settings.mesh_zoom;
+        let render_offset_x: f32 = (rect.width() - render_scale) / 2.0;
+        let render_offset_y: f32 = (rect.height() - render_scale) / 2.0;
+
+        let to_screen = |position: [f32; 2]| -> Pos2 {
+            Pos2::new(
+                rect.min.x + render_offset_x + (position[0] * render_scale),
+                rect.min.y + render_offset_y + (position[1] * render_scale),
+            )
+        };
+
+        let to_uv = |position: Pos2| -> [f32; 2] {
+            [
+                (position.x - rect.min.x - render_offset_x) / render_scale,
+                (position.y - rect.min.y - render_offset_y) / render_scale,
+            ]
+        };
+
+        let mut mouse_click_position: Option<Pos2> = None;
+        ui.input(|i| {
+            if i.pointer.primary_pressed() {
+                mouse_click_position = i.pointer.interact_pos();
+            }
+        });
+
+        if let Some(screen_position) = mouse_click_position {
+            self.mesh.interact(to_uv(screen_position));
+        }
+
+        let dt: f32 = ui.input(|i| i.stable_dt).min(0.1);
 
         let bounds: [f32; 4] = [
             -base_offset_x / base_scale,
@@ -125,24 +214,13 @@ impl Viewable for TriangulationGraph {
 
         let painter: Painter = ui.painter().with_clip_rect(rect);
 
-        let render_scale: f32 = base_scale * self.settings.mesh_zoom;
-        let render_offset_x: f32 = (rect.width() - render_scale) / 2.0;
-        let render_offset_y: f32 = (rect.height() - render_scale) / 2.0;
-
-        let to_screen = |pos: [f32; 2]| -> Pos2 {
-            Pos2::new(
-                rect.min.x + render_offset_x + (pos[0] * render_scale),
-                rect.min.y + render_offset_y + (pos[1] * render_scale),
-            )
-        };
-
         for face in self.mesh.faces.iter() {
             let mut points: Vec<Pos2> = Vec::new();
             let mut current_half_edge: &HalfEdge = &self.mesh.half_edges[face.edge];
 
             for _ in 0..3 {
-                let raw_pos: [f32; 2] = self.mesh.vertices[current_half_edge.origin].pos;
-                points.push(to_screen(raw_pos));
+                let raw_position: [f32; 2] = self.mesh.vertices[current_half_edge.origin].pos;
+                points.push(to_screen(raw_position));
                 current_half_edge = &self.mesh.half_edges[current_half_edge.next];
             }
 
@@ -161,6 +239,25 @@ impl Viewable for TriangulationGraph {
 
                 painter.line_segment([p1, p2], self.style.line.stroke);
             }
+        }
+
+        for v_index in self.mesh.interactable_vertices.iter() {
+            let raw_position: [f32; 2] = self.mesh.vertices[*v_index].pos;
+            let screen_position: Pos2 = to_screen(raw_position);
+
+            painter.circle_filled(
+                screen_position,
+                self.style.point.radius,
+                self.style.point.color,
+            );
+        }
+
+        if let Some(interacted_index) = self.mesh.interact_vertex {
+            painter.circle_filled(
+                to_screen(self.mesh.vertices[interacted_index].pos),
+                self.style.point_heavy.radius,
+                self.style.point_heavy.color,
+            );
         }
     }
 }
