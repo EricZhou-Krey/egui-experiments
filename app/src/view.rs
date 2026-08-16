@@ -4,10 +4,28 @@ use shared_view::viewable::Viewable;
 use tabletop_sound::TabletopSoundTab;
 use triangulation_navigator::navigator::Navigator;
 
+#[derive(Default, Debug)]
+pub enum TabView {
+    #[default]
+    None,
+    Navigator(Box<Navigator>),
+    TabletopSoundTab(Box<TabletopSoundTab>),
+}
+
+impl Viewable for TabView {
+    fn draw_ui(&mut self, ui: &mut egui::Ui) {
+        match self {
+            TabView::None => (),
+            TabView::Navigator(t) => t.draw_ui(ui),
+            TabView::TabletopSoundTab(t) => t.draw_ui(ui),
+        }
+    }
+}
+
 struct Tab {
     label: String,
-    view: Box<dyn Viewable>,
-    is_closeable: bool, // Memory alignment :(
+    view: TabView,
+    is_closeable: bool,
 }
 
 pub struct Viewer {
@@ -34,6 +52,9 @@ impl TabViewer for Viewer {
     }
 }
 
+// EDITING BELOW, refactoring and considering tab handler to mantain the tabs in the dock
+// locations, figuring out how this works
+
 pub struct View {
     dock_state: DockState<usize>,
     viewer: Viewer,
@@ -42,21 +63,18 @@ pub struct View {
 
 impl Default for View {
     fn default() -> Self {
-        macro_rules! create_tabs {
-            [$(($t:ident, $is_closeable:expr)),* $(,)?] => {
-                vec![
-                    $(
-                        Tab {
-                            label: String::from(stringify!($t)),
-                            view: Box::new(<$t>::new()) as Box<dyn Viewable>,
-                            is_closeable: $is_closeable,
-                        }
-                    ),*
-                ]
-            };
-        }
-
-        let tabs: Vec<Tab> = create_tabs![(TabletopSoundTab, true)];
+        let tabs: Vec<Tab> = vec![
+            Tab {
+                label: String::from("Navigator"),
+                view: TabView::Navigator(Box::new(Navigator::new())),
+                is_closeable: true,
+            },
+            Tab {
+                label: String::from("TabletopSound"),
+                view: TabView::TabletopSoundTab(Box::new(TabletopSoundTab::new())),
+                is_closeable: true,
+            },
+        ];
 
         let dock_state = DockState::new((0..tabs.len()).collect());
 
@@ -81,5 +99,7 @@ impl eframe::App for View {
                 .style(egui_dock::Style::from_egui(ui.style().as_ref()))
                 .show_inside(ui, &mut self.viewer);
         });
+
+        ui.request_repaint();
     }
 }

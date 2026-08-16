@@ -7,7 +7,7 @@ use crate::{
 use egui::{Color32, Painter, Pos2, Rect, Shape, Stroke, Ui};
 use shared_view::viewable::Viewable;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct InteractableTriangulationMeshSettings {
     pub n_internal_verticies: usize,
     pub vertex_speed: f32,
@@ -26,7 +26,7 @@ impl Default for InteractableTriangulationMeshSettings {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct InteractableTriangulationMesh {
     pub animated_mesh: AnimatedTriangulationMesh,
     pub interactable_vertices: Vec<usize>,
@@ -105,7 +105,7 @@ impl InteractableTriangulationMesh {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TriangulationGraphSettings {
     pub mesh_zoom: f32,
 }
@@ -116,7 +116,7 @@ impl Default for TriangulationGraphSettings {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TriangulationGraph {
     pub mesh: InteractableTriangulationMesh,
     pub style: GraphStyle,

@@ -22,13 +22,13 @@ pub type VertexIndex = usize;
 pub type HalfEdgeIndex = usize;
 pub type FaceIndex = usize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Vertex {
     pub pos: [f32; 2],
     pub incident_edge: Option<HalfEdgeIndex>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct HalfEdge {
     pub origin: VertexIndex,
     pub twin: Option<HalfEdgeIndex>,
@@ -36,12 +36,12 @@ pub struct HalfEdge {
     pub face: FaceIndex,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Face {
     pub edge: HalfEdgeIndex,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct TriangulationMesh {
     pub vertices: Vec<Vertex>,
     pub half_edges: Vec<HalfEdge>,
@@ -402,7 +402,7 @@ impl TriangulationMesh {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct AnimatedTriangulationMesh {
     pub velocities: Vec<Vec2>,
     pub mesh: TriangulationMesh,

@@ -1,7 +1,7 @@
 use crate::triangulation_graph::TriangulationGraph;
 use shared_view::viewable::Viewable;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Navigator {
     triangulation_background: TriangulationGraph,
 }

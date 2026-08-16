@@ -1,6 +1,6 @@
 use shared_view::viewable::Viewable;
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct TabletopSoundTab {}
 
 impl TabletopSoundTab {
