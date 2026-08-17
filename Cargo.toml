@@ -2,7 +2,6 @@
 resolver = "3"
 members = [
     "app",
-    "shared_view",
     "experiments/tabletop_sound",
     "experiments/triangulation_navigator",
 ]

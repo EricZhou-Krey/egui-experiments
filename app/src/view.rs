@@ -1,6 +1,5 @@
 use eframe::egui;
 use egui_dock::{DockArea, DockState, TabViewer};
-use shared_view::viewable::Viewable;
 use tabletop_sound::TabletopSoundTab;
 use triangulation_navigator::navigator::Navigator;
 
@@ -12,7 +11,7 @@ pub enum TabView {
     TabletopSoundTab(Box<TabletopSoundTab>),
 }
 
-impl Viewable for TabView {
+impl TabView {
     fn draw_ui(&mut self, ui: &mut egui::Ui) {
         match self {
             TabView::None => (),

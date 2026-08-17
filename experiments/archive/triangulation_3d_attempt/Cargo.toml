@@ -7,4 +7,3 @@ edition = "2024"
 egui.workspace = true
 glam.workspace = true
 rand.workspace = true
-shared_view.workspace = true

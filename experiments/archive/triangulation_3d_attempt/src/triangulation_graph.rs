@@ -1,5 +1,4 @@
 use crate::space_renderer::{RenderPrimitive, SpaceRenderer};
-use shared_view::viewable::Viewable;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -563,10 +562,8 @@ impl TriangulationGraph {
             self.camera_facing_direction = dir.into();
         }
     }
-}
 
-impl Viewable for TriangulationGraph {
-    fn draw_ui(&mut self, ui: &mut egui::Ui) {
+    pub fn draw_ui(&mut self, ui: &mut egui::Ui) {
         let full_size: egui::Vec2 = ui.available_size();
         let screen_origin: egui::Pos2 = ui.available_rect_before_wrap().min;
 

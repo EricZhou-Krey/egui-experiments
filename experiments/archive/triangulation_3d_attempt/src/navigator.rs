@@ -2,7 +2,6 @@ use crate::{
     space_renderer::{RenderPrimitive, SpaceRenderer},
     triangulation_graph::TriangulationGraph,
 };
-use shared_view::viewable::Viewable;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 enum OverlayUi {
@@ -15,7 +14,7 @@ enum OverlayUi {
     VariantCount, // Dummy discrimant variable
 }
 
-impl Viewable for OverlayUi {
+impl OverlayUi {
     fn draw_ui(&mut self, ui: &mut egui::Ui) {
         match self {
             Self::Title => {
@@ -159,10 +158,8 @@ impl Navigator {
                 color: self.settings.highlighted_node_color,
             });
     }
-}
 
-impl Viewable for Navigator {
-    fn draw_ui(&mut self, ui: &mut egui::Ui) {
+    pub fn draw_ui(&mut self, ui: &mut egui::Ui) {
         // Inefficient checking, could refactor
         if self.triangulation_graph.settings.n_points != self.max_index {
             self.assign_active_nodes()

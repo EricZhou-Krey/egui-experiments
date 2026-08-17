@@ -1,5 +1,3 @@
-use shared_view::viewable::Viewable;
-
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct TabletopSoundTab {}
 
@@ -9,8 +7,8 @@ impl TabletopSoundTab {
     }
 }
 
-impl Viewable for TabletopSoundTab {
-    fn draw_ui(&mut self, ui: &mut egui::Ui) {
+impl TabletopSoundTab {
+    pub fn draw_ui(&mut self, ui: &mut egui::Ui) {
         ui.heading("Hello from TTS Test");
     }
 }

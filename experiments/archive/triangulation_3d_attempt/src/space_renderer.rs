@@ -1,5 +1,3 @@
-use shared_view::viewable::Viewable;
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum RenderPrimitive {
     Face {
@@ -40,8 +38,8 @@ pub struct SpaceRenderer {
     pub primitives_buffer: Vec<RenderPrimitive>,
 }
 
-impl Viewable for SpaceRenderer {
-    fn draw_ui(&mut self, ui: &mut egui::Ui) {
+impl SpaceRenderer {
+    pub fn draw_ui(&mut self, ui: &mut egui::Ui) {
         let painter: &egui::Painter = ui.painter();
 
         self.primitives_buffer.sort_by(|a, b| {

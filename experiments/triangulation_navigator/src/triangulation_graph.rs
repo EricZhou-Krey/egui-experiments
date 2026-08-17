@@ -5,7 +5,6 @@ use crate::{
     triangulation_mesh::{AnimatedTriangulationMesh, HalfEdge},
 };
 use egui::{Color32, Painter, Pos2, Rect, Shape, Stroke, Ui};
-use shared_view::viewable::Viewable;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct InteractableTriangulationMeshSettings {
@@ -160,15 +159,11 @@ impl TriangulationGraph {
             settings: graph_settings,
         }
     }
-}
 
-impl Viewable for TriangulationGraph {
-    fn draw_ui(&mut self, ui: &mut Ui) {
+    pub fn draw_ui(&mut self, ui: &mut Ui) {
         let rect: Rect = ui.available_rect_before_wrap();
 
-        let base_scale: f32 = rect.width().max(rect.height());
-        let base_offset_x: f32 = (rect.width() - base_scale) / 2.0;
-        let base_offset_y: f32 = (rect.height() - base_scale) / 2.0;
+        let base_scale: f32 = rect.width().max(rect.height()).max(1.0);
 
         let render_scale: f32 = base_scale * self.settings.mesh_zoom;
         let render_offset_x: f32 = (rect.width() - render_scale) / 2.0;
@@ -201,12 +196,7 @@ impl Viewable for TriangulationGraph {
 
         let dt: f32 = ui.input(|i| i.stable_dt).min(0.1);
 
-        let bounds: [f32; 4] = [
-            -base_offset_x / base_scale,
-            (rect.width() - base_offset_x) / base_scale,
-            -base_offset_y / base_scale,
-            (rect.height() - base_offset_y) / base_scale,
-        ];
+        let bounds: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
 
         self.mesh.update(dt, bounds);
 
