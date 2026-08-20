@@ -159,8 +159,10 @@ impl TriangulationGraph {
             settings: graph_settings,
         }
     }
+}
 
-    pub fn draw_ui(&mut self, ui: &mut Ui) {
+impl eframe::App for TriangulationGraph {
+    fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
         let rect: Rect = ui.available_rect_before_wrap();
 
         let base_scale: f32 = rect.width().max(rect.height()).max(1.0);

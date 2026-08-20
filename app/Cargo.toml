@@ -10,6 +10,7 @@ egui_dock.workspace = true
 egui-video.workspace = true
 glam.workspace = true
 rand.workspace = true
+glow.workspace = true
 
 tabletop_sound = { path = "../experiments/tabletop_sound" }
 triangulation_navigator = { path = "../experiments/triangulation_navigator" }

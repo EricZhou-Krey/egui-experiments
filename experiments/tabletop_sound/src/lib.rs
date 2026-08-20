@@ -7,8 +7,8 @@ impl TabletopSoundTab {
     }
 }
 
-impl TabletopSoundTab {
-    pub fn draw_ui(&mut self, ui: &mut egui::Ui) {
+impl eframe::App for TabletopSoundTab {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         ui.heading("Hello from TTS Test");
     }
 }

@@ -1,4 +1,4 @@
-use app::view::View;
+use app::app::App;
 
 fn main() -> eframe::Result {
     let native_options = eframe::NativeOptions {
@@ -9,6 +9,6 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "egui-experiments",
         native_options,
-        Box::new(|_cc| Ok(Box::<View>::default())),
+        Box::new(|_cc| Ok(Box::<App>::default())),
     )
 }

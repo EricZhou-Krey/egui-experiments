@@ -11,8 +11,10 @@ impl Navigator {
             triangulation_background: TriangulationGraph::default(),
         }
     }
+}
 
-    pub fn draw_ui(&mut self, ui: &mut egui::Ui) {
-        self.triangulation_background.draw_ui(ui);
+impl eframe::App for Navigator {
+    fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        self.triangulation_background.ui(ui, frame);
     }
 }
