@@ -105,6 +105,44 @@ impl InteractableTriangulationMesh {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct GraphViewTransform {
+    pub rect: Rect,
+    pub render_scale: f32,
+    pub render_offset_x: f32,
+    pub render_offset_y: f32,
+}
+
+impl GraphViewTransform {
+    pub fn new(rect: Rect, mesh_zoom: f32) -> Self {
+        let base_scale = rect.width().max(rect.height()).max(1.0);
+        let render_scale = base_scale * mesh_zoom;
+        let render_offset_x = (rect.width() - render_scale) / 2.0;
+        let render_offset_y = (rect.height() - render_scale) / 2.0;
+
+        Self {
+            rect,
+            render_scale,
+            render_offset_x,
+            render_offset_y,
+        }
+    }
+
+    pub fn to_screen(&self, position: [f32; 2]) -> Pos2 {
+        Pos2::new(
+            self.rect.min.x + self.render_offset_x + (position[0] * self.render_scale),
+            self.rect.min.y + self.render_offset_y + (position[1] * self.render_scale),
+        )
+    }
+
+    pub fn to_uv(&self, position: Pos2) -> [f32; 2] {
+        [
+            (position.x - self.rect.min.x - self.render_offset_x) / self.render_scale,
+            (position.y - self.rect.min.y - self.render_offset_y) / self.render_scale,
+        ]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct TriangulationGraphSettings {
     pub mesh_zoom: f32,
 }
@@ -118,6 +156,7 @@ impl Default for TriangulationGraphSettings {
 #[derive(Debug, Clone, PartialEq)]
 pub struct TriangulationGraph {
     pub mesh: InteractableTriangulationMesh,
+    pub graph_view_transform: GraphViewTransform,
     pub style: GraphStyle,
     pub settings: TriangulationGraphSettings,
 }
@@ -138,6 +177,7 @@ impl TriangulationGraph {
     ) -> Self {
         Self {
             mesh: InteractableTriangulationMesh::new(mesh_settings),
+            graph_view_transform: GraphViewTransform::new(Rect::ZERO, graph_settings.mesh_zoom),
             style: GraphStyle {
                 point: PointStyle {
                     radius: 5.0,
@@ -165,44 +205,11 @@ impl eframe::App for TriangulationGraph {
     fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
         let rect: Rect = ui.available_rect_before_wrap();
 
-        let base_scale: f32 = rect.width().max(rect.height()).max(1.0);
-
-        let render_scale: f32 = base_scale * self.settings.mesh_zoom;
-        let render_offset_x: f32 = (rect.width() - render_scale) / 2.0;
-        let render_offset_y: f32 = (rect.height() - render_scale) / 2.0;
-
-        let to_screen = |position: [f32; 2]| -> Pos2 {
-            Pos2::new(
-                rect.min.x + render_offset_x + (position[0] * render_scale),
-                rect.min.y + render_offset_y + (position[1] * render_scale),
-            )
-        };
-
-        let to_uv = |position: Pos2| -> [f32; 2] {
-            [
-                (position.x - rect.min.x - render_offset_x) / render_scale,
-                (position.y - rect.min.y - render_offset_y) / render_scale,
-            ]
-        };
-
-        let mut mouse_click_position: Option<Pos2> = None;
-        ui.input(|i| {
-            if i.pointer.primary_pressed() {
-                mouse_click_position = i.pointer.interact_pos();
-            }
-        });
-
-        if let Some(screen_position) = mouse_click_position {
-            self.mesh.interact(to_uv(screen_position));
-        }
-
-        let dt: f32 = ui.input(|i| i.stable_dt).min(0.1);
-
-        let bounds: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
-
-        self.mesh.update(dt, bounds);
-
         ui.request_repaint();
+
+        if self.graph_view_transform.rect != rect {
+            self.graph_view_transform = GraphViewTransform::new(rect, self.settings.mesh_zoom);
+        }
 
         let painter: Painter = ui.painter().with_clip_rect(rect);
 
@@ -212,7 +219,7 @@ impl eframe::App for TriangulationGraph {
 
             for _ in 0..3 {
                 let raw_position: [f32; 2] = self.mesh.vertices[current_half_edge.origin].pos;
-                points.push(to_screen(raw_position));
+                points.push(self.graph_view_transform.to_screen(raw_position));
                 current_half_edge = &self.mesh.half_edges[current_half_edge.next];
             }
 
@@ -225,9 +232,12 @@ impl eframe::App for TriangulationGraph {
 
         for (edge_index, edge) in self.mesh.half_edges.iter().enumerate() {
             if edge_index < edge.twin.unwrap_or(usize::MAX) {
-                let p1: Pos2 = to_screen(self.mesh.vertices[edge.origin].pos);
-                let p2: Pos2 =
-                    to_screen(self.mesh.vertices[self.mesh.half_edges[edge.next].origin].pos);
+                let p1: Pos2 = self
+                    .graph_view_transform
+                    .to_screen(self.mesh.vertices[edge.origin].pos);
+                let p2: Pos2 = self
+                    .graph_view_transform
+                    .to_screen(self.mesh.vertices[self.mesh.half_edges[edge.next].origin].pos);
 
                 painter.line_segment([p1, p2], self.style.line.stroke);
             }
@@ -235,7 +245,7 @@ impl eframe::App for TriangulationGraph {
 
         for v_index in self.mesh.interactable_vertices.iter() {
             let raw_position: [f32; 2] = self.mesh.vertices[*v_index].pos;
-            let screen_position: Pos2 = to_screen(raw_position);
+            let screen_position: Pos2 = self.graph_view_transform.to_screen(raw_position);
 
             painter.circle_filled(
                 screen_position,
@@ -246,10 +256,31 @@ impl eframe::App for TriangulationGraph {
 
         if let Some(interacted_index) = self.mesh.interact_vertex {
             painter.circle_filled(
-                to_screen(self.mesh.vertices[interacted_index].pos),
+                self.graph_view_transform
+                    .to_screen(self.mesh.vertices[interacted_index].pos),
                 self.style.point_heavy.radius,
                 self.style.point_heavy.color,
             );
         }
+    }
+
+    fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let mut mouse_click_position: Option<Pos2> = None;
+        ctx.input(|i| {
+            if i.pointer.primary_pressed() {
+                mouse_click_position = i.pointer.interact_pos();
+            }
+        });
+
+        if let Some(screen_position) = mouse_click_position {
+            self.mesh
+                .interact(self.graph_view_transform.to_uv(screen_position));
+        }
+
+        let dt: f32 = ctx.input(|i| i.stable_dt).min(0.1);
+
+        let bounds: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
+
+        self.mesh.update(dt, bounds);
     }
 }
