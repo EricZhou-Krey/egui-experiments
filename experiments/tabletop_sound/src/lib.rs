@@ -1,14 +1,12 @@
-#[derive(Default, Debug, Clone, PartialEq)]
-pub struct TabletopSoundTab {}
+pub mod state;
+pub mod tab;
+pub mod tabletop_sound;
 
-impl TabletopSoundTab {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
-impl eframe::App for TabletopSoundTab {
-    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        ui.heading("Hello from TTS Test");
-    }
-}
+// TODO:
+// Consider each of the states of each tab and create them approriately,
+// need to create:
+// Node Preview/ controls
+// Tools
+// View Space
+// Debug log
+// Etc...
