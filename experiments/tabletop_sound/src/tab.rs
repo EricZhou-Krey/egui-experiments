@@ -1,3 +1,5 @@
+use crate::state::TTSState;
+
 #[derive(Debug, Default, Clone, PartialEq, Hash)]
 pub enum Tab {
     #[default]
@@ -20,7 +22,7 @@ impl Tab {
         Tab::PlayControls,
     ];
 
-    pub fn title(&self) -> egui::WidgetText {
+    pub fn title(&self, _state: &mut TTSState) -> egui::WidgetText {
         match self {
             Tab::Empty => "".into(),
             Tab::MapView => "Map".into(),
@@ -32,7 +34,7 @@ impl Tab {
         }
     }
 
-    pub fn ui(&mut self, ui: &mut egui::Ui) {
+    pub fn ui(&mut self, _state: &mut TTSState, ui: &mut egui::Ui) {
         match self {
             Tab::Empty => {}
             Tab::MapView => {
@@ -53,6 +55,18 @@ impl Tab {
             Tab::PlayControls => {
                 ui.centered_and_justified(|ui| ui.heading("PlayControls"));
             }
+        }
+    }
+
+    pub fn logic(&mut self, _state: &mut TTSState, _ctx: &mut egui::Context) {
+        match self {
+            Tab::Empty => {}
+            Tab::MapView => {}
+            Tab::NodeDetails => {}
+            Tab::Console => {}
+            Tab::NodeTree => {}
+            Tab::SoundView => {}
+            Tab::PlayControls => {}
         }
     }
 }

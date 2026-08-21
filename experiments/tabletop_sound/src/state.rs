@@ -35,10 +35,10 @@ impl TabViewer for TTSState {
     }
 
     fn title(&mut self, tab: &mut Self::Tab) -> egui::WidgetText {
-        tab.title()
+        tab.title(self)
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, tab: &mut Self::Tab) {
-        tab.ui(ui);
+        tab.ui(self, ui);
     }
 }

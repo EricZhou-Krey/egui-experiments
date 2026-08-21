@@ -26,7 +26,10 @@ impl eframe::App for TabletopSound {
                 for tab in Tab::ALL {
                     let is_open = self.dock.find_tab(tab).is_some();
 
-                    if ui.selectable_label(is_open, tab.title()).clicked() {
+                    if ui
+                        .selectable_label(is_open, tab.title(&mut self.state))
+                        .clicked()
+                    {
                         if let Some(locator) = self.dock.find_tab(tab) {
                             self.dock.remove_tab(locator);
                         } else {
@@ -38,10 +41,17 @@ impl eframe::App for TabletopSound {
                 }
             });
         });
+
         egui::CentralPanel::default().show(ui, |ui: &mut egui::Ui| {
             DockArea::new(&mut self.dock)
                 .style(egui_dock::Style::from_egui(ui.style().as_ref()))
                 .show_inside(ui, &mut self.state);
         });
+    }
+
+    fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        for (_, tab) in self.dock.iter_all_tabs_mut() {
+            tab.logic(self, ctx, frame);
+        }
     }
 }
