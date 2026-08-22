@@ -1,7 +1,9 @@
 pub mod scene;
 pub mod state;
+pub mod style;
 pub mod tab;
 pub mod tabletop_sound;
+pub mod tabs;
 
 /*
 TODO:

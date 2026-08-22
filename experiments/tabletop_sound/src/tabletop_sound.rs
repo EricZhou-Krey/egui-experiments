@@ -50,8 +50,6 @@ impl eframe::App for TabletopSound {
     }
 
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        for (_, tab) in self.dock.iter_all_tabs_mut() {
-            tab.logic(self, ctx, frame);
-        }
+        self.state.logic(ctx, frame);
     }
 }

@@ -1,8 +1,31 @@
-use crate::tab::Tab;
+use crate::{scene::Scene, style::MapStyle, tab::Tab};
 use egui_dock::{DockState, NodeIndex, TabViewer, Tree};
 
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct TTSState {}
+pub struct TTSSettings {
+    default_map_style: MapStyle,
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct TTSState {
+    scene: Scene,
+    settings: TTSSettings,
+}
+
+impl TabViewer for TTSState {
+    type Tab = Tab;
+    fn id(&mut self, tab: &mut Self::Tab) -> egui::Id {
+        egui::Id::new(tab)
+    }
+
+    fn title(&mut self, tab: &mut Self::Tab) -> egui::WidgetText {
+        tab.title(self)
+    }
+
+    fn ui(&mut self, ui: &mut egui::Ui, tab: &mut Self::Tab) {
+        tab.ui(self, ui);
+    }
+}
 
 impl TTSState {
     pub fn default_dock() -> DockState<Tab> {
@@ -26,19 +49,6 @@ impl TTSState {
 
         dock
     }
-}
 
-impl TabViewer for TTSState {
-    type Tab = Tab;
-    fn id(&mut self, tab: &mut Self::Tab) -> egui::Id {
-        egui::Id::new(tab)
-    }
-
-    fn title(&mut self, tab: &mut Self::Tab) -> egui::WidgetText {
-        tab.title(self)
-    }
-
-    fn ui(&mut self, ui: &mut egui::Ui, tab: &mut Self::Tab) {
-        tab.ui(self, ui);
-    }
+    pub fn logic(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame) {}
 }

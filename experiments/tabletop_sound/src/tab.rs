@@ -1,5 +1,14 @@
 use crate::state::TTSState;
 
+use crate::tabs::{
+    console::{console_title, console_ui},
+    mapview::{mapview_title, mapview_ui},
+    nodedetails::{nodedetails_title, nodedetails_ui},
+    nodetree::{nodetree_title, nodetree_ui},
+    playcontrols::{playcontrols_title, playcontrols_ui},
+    soundview::{soundview_title, soundview_ui},
+};
+
 #[derive(Debug, Default, Clone, PartialEq, Hash)]
 pub enum Tab {
     #[default]
@@ -22,51 +31,27 @@ impl Tab {
         Tab::PlayControls,
     ];
 
-    pub fn title(&self, _state: &mut TTSState) -> egui::WidgetText {
+    pub fn title(&self, state: &mut TTSState) -> egui::WidgetText {
         match self {
             Tab::Empty => "".into(),
-            Tab::MapView => "Map".into(),
-            Tab::NodeDetails => "NodeDetails".into(),
-            Tab::Console => "Console".into(),
-            Tab::NodeTree => "NodeTree".into(),
-            Tab::SoundView => "Sound".into(),
-            Tab::PlayControls => "PlayControls".into(),
+            Tab::MapView => mapview_title(state),
+            Tab::NodeDetails => nodedetails_title(state),
+            Tab::Console => console_title(state),
+            Tab::NodeTree => nodetree_title(state),
+            Tab::SoundView => soundview_title(state),
+            Tab::PlayControls => playcontrols_title(state),
         }
     }
 
-    pub fn ui(&mut self, _state: &mut TTSState, ui: &mut egui::Ui) {
+    pub fn ui(&mut self, state: &mut TTSState, ui: &mut egui::Ui) {
         match self {
             Tab::Empty => {}
-            Tab::MapView => {
-                ui.centered_and_justified(|ui| ui.heading("Map"));
-            }
-            Tab::NodeDetails => {
-                ui.centered_and_justified(|ui| ui.heading("NodeDetails"));
-            }
-            Tab::Console => {
-                ui.centered_and_justified(|ui| ui.heading("Console"));
-            }
-            Tab::NodeTree => {
-                ui.centered_and_justified(|ui| ui.heading("NodeTree"));
-            }
-            Tab::SoundView => {
-                ui.centered_and_justified(|ui| ui.heading("Sound"));
-            }
-            Tab::PlayControls => {
-                ui.centered_and_justified(|ui| ui.heading("PlayControls"));
-            }
-        }
-    }
-
-    pub fn logic(&mut self, _state: &mut TTSState, _ctx: &mut egui::Context) {
-        match self {
-            Tab::Empty => {}
-            Tab::MapView => {}
-            Tab::NodeDetails => {}
-            Tab::Console => {}
-            Tab::NodeTree => {}
-            Tab::SoundView => {}
-            Tab::PlayControls => {}
+            Tab::MapView => mapview_ui(state, ui),
+            Tab::NodeDetails => nodedetails_ui(state, ui),
+            Tab::Console => console_ui(state, ui),
+            Tab::NodeTree => nodetree_ui(state, ui),
+            Tab::SoundView => soundview_ui(state, ui),
+            Tab::PlayControls => playcontrols_ui(state, ui),
         }
     }
 }

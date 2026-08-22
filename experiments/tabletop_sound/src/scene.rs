@@ -1,17 +1,30 @@
-use std::collections::HashSet;
+#[derive(Debug, Clone, PartialEq)]
+pub struct Wall {
+    pub verticies: Vec<[f32; 2]>,
+}
 
 #[derive(Debug, Clone, PartialEq)]
-enum SceneObject {
-    Wall,
-    Reciever,
-    Transmitter,
+pub struct Receiver {
+    pub position: [f32; 2],
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Transmitter {
+    pub position: [f32; 2],
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum SceneObject {
+    Wall(Wall),
+    Receiver(Receiver),
+    Transmitter(Transmitter),
 }
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct SceneSettings;
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct Scene {
-    objects: HashSet<SceneObject>,
-    settings: SceneSettings,
+    pub objects: Vec<SceneObject>,
+    pub settings: SceneSettings,
 }
