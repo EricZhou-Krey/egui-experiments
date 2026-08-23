@@ -18,7 +18,7 @@ impl Default for TabletopSound {
 
 impl eframe::App for TabletopSound {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        egui::Panel::top("top").show(ui, |ui| {
+        egui::Panel::top("DockerBar").show(ui, |ui| {
             ui.horizontal_wrapped(|ui| {
                 if ui.button("Reset").clicked() {
                     self.dock = TTSState::default_dock();

@@ -1,7 +1,7 @@
 use eframe::App;
 use egui_dock::{DockState, TabViewer};
 use std::ops::{Deref, DerefMut};
-use tabletop_sound::TabletopSound;
+use tabletop_sound::tabletop_sound::TabletopSound;
 use triangulation_navigator::navigator::Navigator;
 
 macro_rules! define_app_tabs {
@@ -65,14 +65,14 @@ macro_rules! define_app_tabs {
 }
 
 define_app_tabs! {
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone)]
     pub enum Tab {
         Navigator(Box<Navigator>) => "Navigator",
         TabletopSound(Box<TabletopSound>) => "TabletopSound",
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct AppTab {
     pub id: usize,
     pub content: Tab,

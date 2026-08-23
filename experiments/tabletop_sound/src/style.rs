@@ -1,5 +1,12 @@
 use egui::{Color32, Stroke};
 
+use crate::style_sheet::{
+    MAP_ADD_ICON, MAP_BACKGROUND_COLOR, MAP_FACE_BORDER_COLOR, MAP_FACE_BORDER_STROKE_WIDTH,
+    MAP_FACE_FILL_COLOR, MAP_LINE_COLOR, MAP_LINE_STROKE_WIDTH, MAP_PAN_ICON, MAP_RECEIVER_COLOR,
+    MAP_RECEIVER_RADIUS, MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TRANSMITTER_COLOR,
+    MAP_TRANSMITTER_RADIUS,
+};
+
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct PointStyle {
     pub radius: f32,
@@ -22,6 +29,14 @@ pub struct BackgroundStyle {
     pub color: Color32,
 }
 
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct MapIcons {
+    pub select_tool: &'static str,
+    pub pan_tool: &'static str,
+    pub add_tool: &'static str,
+    pub remove_tool: &'static str,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct MapStyle {
     pub receiver: PointStyle,
@@ -29,31 +44,35 @@ pub struct MapStyle {
     pub line: LineStyle,
     pub face: FaceStyle,
     pub background: BackgroundStyle,
+    pub icons: MapIcons,
 }
 
 impl Default for MapStyle {
     fn default() -> Self {
         Self {
             receiver: PointStyle {
-                radius: 5.0,
-                color: Color32::from_rgb(50, 150, 255),
+                radius: MAP_RECEIVER_RADIUS,
+                color: MAP_RECEIVER_COLOR,
             },
             transmitter: PointStyle {
-                radius: 6.0,
-                color: Color32::from_rgb(255, 80, 80),
+                radius: MAP_TRANSMITTER_RADIUS,
+                color: MAP_TRANSMITTER_COLOR,
             },
             line: LineStyle {
-                stroke: Stroke::new(2.0, Color32::from_rgb(180, 180, 180)),
+                stroke: Stroke::new(MAP_LINE_STROKE_WIDTH, MAP_LINE_COLOR),
             },
             face: FaceStyle {
-                fill_color: Color32::from_rgba_unmultiplied(100, 150, 200, 30),
-                border_stroke: Stroke::new(
-                    1.0,
-                    Color32::from_rgba_unmultiplied(100, 150, 200, 100),
-                ),
+                fill_color: MAP_FACE_FILL_COLOR,
+                border_stroke: Stroke::new(MAP_FACE_BORDER_STROKE_WIDTH, MAP_FACE_BORDER_COLOR),
             },
             background: BackgroundStyle {
-                color: Color32::from_rgb(30, 30, 30),
+                color: MAP_BACKGROUND_COLOR,
+            },
+            icons: MapIcons {
+                select_tool: MAP_SELECT_ICON,
+                pan_tool: MAP_PAN_ICON,
+                add_tool: MAP_ADD_ICON,
+                remove_tool: MAP_REMOVE_ICON,
             },
         }
     }

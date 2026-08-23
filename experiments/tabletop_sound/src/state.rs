@@ -1,4 +1,10 @@
-use crate::{scene::Scene, style::MapStyle, tab::Tab};
+use crate::{
+    scene::Scene,
+    style::MapStyle,
+    style_sheet::{LEFT_PANEL_WIDTH, TOP_LEFT_PANEL_HEIGHT, TOP_RIGHT_PANEL_HEIGHT},
+    tab::Tab,
+    tabs::mapview::MapState,
+};
 use egui_dock::{DockState, NodeIndex, TabViewer, Tree};
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -8,8 +14,11 @@ pub struct TTSSettings {
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct TTSState {
-    scene: Scene,
-    settings: TTSSettings,
+    pub scene: Scene,
+
+    pub map_state: MapState,
+
+    pub settings: TTSSettings,
 }
 
 impl TabViewer for TTSState {
@@ -33,19 +42,22 @@ impl TTSState {
 
         let surface: &mut Tree<Tab> = dock.main_surface_mut();
 
-        let map_node: NodeIndex = NodeIndex::root();
+        let root_panel: NodeIndex = NodeIndex::root();
 
-        let [left_pane, map_node]: [NodeIndex; 2] =
-            surface.split_left(map_node, 0.2, vec![Tab::NodeTree]);
+        let [right_panel, left_panel]: [NodeIndex; 2] =
+            surface.split_left(root_panel, LEFT_PANEL_WIDTH, vec![Tab::NodeDetails]);
 
-        let [map_node, _details_node]: [NodeIndex; 2] =
-            surface.split_right(map_node, 0.75, vec![Tab::NodeDetails]);
+        let [_map_panel, _console_sound_panel]: [NodeIndex; 2] = surface.split_below(
+            right_panel,
+            TOP_RIGHT_PANEL_HEIGHT,
+            vec![Tab::Console, Tab::SoundView],
+        );
 
-        let [_map_node, _bottom_node]: [NodeIndex; 2] =
-            surface.split_below(map_node, 0.7, vec![Tab::Console, Tab::SoundView]);
-
-        let [_play_node, _tree_node]: [NodeIndex; 2] =
-            surface.split_above(left_pane, 0.15, vec![Tab::PlayControls]);
+        let [_play_node_details_panel, _node_tree_panel]: [NodeIndex; 2] = surface.split_below(
+            left_panel,
+            TOP_LEFT_PANEL_HEIGHT,
+            vec![Tab::NodeTree, Tab::PlayControls],
+        );
 
         dock
     }
