@@ -39,5 +39,5 @@ or other beizer function defined by user
 
 Random notes:
 - For walls specifically, implment quadtree for optimized ray collision search
-
+- Add responsivness for adding convex hull, add effect for selected nodes
 */

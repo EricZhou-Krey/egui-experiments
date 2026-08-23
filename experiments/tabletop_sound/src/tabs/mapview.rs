@@ -3,13 +3,10 @@ use std::ops::{Deref, DerefMut};
 use egui::{Painter, Shape};
 
 use crate::{
-    scene::{Receiver, Transmitter},
+    scene::{Receiver, Transmitter, Wall},
     state::TTSState,
     style::MapStyle,
-    style_sheet::{   MAP_ADDWALL_ICON, 
-        MAP_ADDRECEIVER_ICON, MAP_ADDTRANSMITTER_ICON, MAP_PAN_ICON,
-        MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_BUTTON_SIZE, MAP_TOOLBAR_CORNER_RADIUS,
-        MAP_TOOLBAR_MARGIN, MAP_TOOLBAR_PADDING,
+    style_sheet::{   MAP_ADDRECEIVER_ICON, MAP_ADDTRANSMITTER_ICON, MAP_ADDWALL_ICON, MAP_PAN_ICON, MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_BUTTON_SIZE, MAP_TOOLBAR_CORNER_RADIUS, MAP_TOOLBAR_MARGIN, MAP_TOOLBAR_PADDING
     },
 };
 
@@ -22,6 +19,13 @@ pub enum MapTool {
     AddReceiver,
     AddTransmitter,
     AddWall,
+}
+
+#[derive(Default, Debug, Clone, PartialEq)]
+pub enum MapAction {
+    #[default]
+    None,
+    AddingConvexHull(Vec<[f32; 2]>),
 }
 
 impl MapTool {
@@ -55,7 +59,26 @@ impl MapTool {
                     });
                 }
             }),
-            MapTool::AddWall => {}
+            MapTool::AddWall => ui.input(|ui| {
+                if ui.pointer.primary_clicked() && let Some(position) = ui.pointer.interact_pos() {
+                    match &mut state.map_state.action_in_progress {
+                        MapAction::None => state.map_state.action_in_progress = MapAction::AddingConvexHull(vec![position.into()]),
+                        MapAction::AddingConvexHull(verticies) => verticies.push(position.into()),
+                    }
+                }
+
+                if ui.focused && ui.key_pressed(egui::Key::Enter) {
+                    let completed_action: MapAction = std::mem::replace(&mut state.map_state.action_in_progress, MapAction::None);
+                    if let MapAction::AddingConvexHull(verticies) = completed_action && verticies.len() >= 3 {
+                        state.scene.walls.push(Wall {
+                            verticies,
+                            style: state.map_state.style.wall.clone()
+                        });
+                    }
+
+                    state.map_state.action_in_progress = MapAction::None;
+                }
+            })
         }
     }
 }
@@ -68,6 +91,7 @@ pub struct MapSettings {
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct MapState {
     pub map_tool: MapTool,
+    pub action_in_progress: MapAction,
 
     pub settings: MapSettings,
 }
@@ -170,6 +194,7 @@ fn toolbar(state: &mut TTSState, ui: &mut egui::Ui, position: egui::Pos2) {
                             )
                             .clicked()
                         {
+                            state.map_state.action_in_progress = MapAction::None;
                             state.map_state.map_tool = map_tool.clone();
                         }
                     }

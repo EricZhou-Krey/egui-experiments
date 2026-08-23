@@ -2,9 +2,9 @@ use egui::{Color32, Stroke};
 
 use crate::style_sheet::{
     MAP_ADDRECEIVER_ICON, MAP_ADDTRANSMITTER_ICON, MAP_ADDWALL_ICON, MAP_BACKGROUND_COLOR,
-    MAP_FACE_BORDER_COLOR, MAP_FACE_BORDER_STROKE_WIDTH, MAP_FACE_FILL_COLOR, MAP_LINE_COLOR,
-    MAP_LINE_STROKE_WIDTH, MAP_PAN_ICON, MAP_RECEIVER_COLOR, MAP_RECEIVER_RADIUS, MAP_REMOVE_ICON,
-    MAP_SELECT_ICON, MAP_TRANSMITTER_COLOR, MAP_TRANSMITTER_RADIUS,
+    MAP_PAN_ICON, MAP_RECEIVER_COLOR, MAP_RECEIVER_RADIUS, MAP_REMOVE_ICON, MAP_SELECT_ICON,
+    MAP_TRANSMITTER_COLOR, MAP_TRANSMITTER_RADIUS, MAP_WALL_BORDER_COLOR,
+    MAP_WALL_BORDER_STROKE_WIDTH, MAP_WALL_FILL_COLOR,
 };
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -43,8 +43,7 @@ pub struct MapIcons {
 pub struct MapStyle {
     pub receiver: PointStyle,
     pub transmitter: PointStyle,
-    pub line: LineStyle,
-    pub face: FaceStyle,
+    pub wall: FaceStyle,
     pub background: BackgroundStyle,
     pub icons: MapIcons,
 }
@@ -60,12 +59,9 @@ impl Default for MapStyle {
                 radius: MAP_TRANSMITTER_RADIUS,
                 color: MAP_TRANSMITTER_COLOR,
             },
-            line: LineStyle {
-                stroke: Stroke::new(MAP_LINE_STROKE_WIDTH, MAP_LINE_COLOR),
-            },
-            face: FaceStyle {
-                fill_color: MAP_FACE_FILL_COLOR,
-                border_stroke: Stroke::new(MAP_FACE_BORDER_STROKE_WIDTH, MAP_FACE_BORDER_COLOR),
+            wall: FaceStyle {
+                fill_color: MAP_WALL_FILL_COLOR,
+                border_stroke: Stroke::new(MAP_WALL_BORDER_STROKE_WIDTH, MAP_WALL_BORDER_COLOR),
             },
             background: BackgroundStyle {
                 color: MAP_BACKGROUND_COLOR,
