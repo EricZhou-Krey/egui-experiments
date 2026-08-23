@@ -36,4 +36,8 @@ or other beizer function defined by user
 - WGPU ray calculations
 
 - Workout directional sounds,
+
+Random notes:
+- For walls specifically, implment quadtree for optimized ray collision search
+
 */

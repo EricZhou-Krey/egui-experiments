@@ -1,10 +1,10 @@
 use egui::{Color32, Stroke};
 
 use crate::style_sheet::{
-    MAP_ADD_ICON, MAP_BACKGROUND_COLOR, MAP_FACE_BORDER_COLOR, MAP_FACE_BORDER_STROKE_WIDTH,
-    MAP_FACE_FILL_COLOR, MAP_LINE_COLOR, MAP_LINE_STROKE_WIDTH, MAP_PAN_ICON, MAP_RECEIVER_COLOR,
-    MAP_RECEIVER_RADIUS, MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TRANSMITTER_COLOR,
-    MAP_TRANSMITTER_RADIUS,
+    MAP_ADDRECEIVER_ICON, MAP_ADDTRANSMITTER_ICON, MAP_ADDWALL_ICON, MAP_BACKGROUND_COLOR,
+    MAP_FACE_BORDER_COLOR, MAP_FACE_BORDER_STROKE_WIDTH, MAP_FACE_FILL_COLOR, MAP_LINE_COLOR,
+    MAP_LINE_STROKE_WIDTH, MAP_PAN_ICON, MAP_RECEIVER_COLOR, MAP_RECEIVER_RADIUS, MAP_REMOVE_ICON,
+    MAP_SELECT_ICON, MAP_TRANSMITTER_COLOR, MAP_TRANSMITTER_RADIUS,
 };
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -33,8 +33,10 @@ pub struct BackgroundStyle {
 pub struct MapIcons {
     pub select_tool: &'static str,
     pub pan_tool: &'static str,
-    pub add_tool: &'static str,
     pub remove_tool: &'static str,
+    pub add_wall_tool: &'static str,
+    pub add_receiver_tool: &'static str,
+    pub add_transmitter_tool: &'static str,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -71,8 +73,10 @@ impl Default for MapStyle {
             icons: MapIcons {
                 select_tool: MAP_SELECT_ICON,
                 pan_tool: MAP_PAN_ICON,
-                add_tool: MAP_ADD_ICON,
                 remove_tool: MAP_REMOVE_ICON,
+                add_wall_tool: MAP_ADDWALL_ICON,
+                add_receiver_tool: MAP_ADDRECEIVER_ICON,
+                add_transmitter_tool: MAP_ADDTRANSMITTER_ICON,
             },
         }
     }

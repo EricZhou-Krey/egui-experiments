@@ -1,6 +1,7 @@
+use std::ops::{Deref, DerefMut};
+
 use crate::{
     scene::Scene,
-    style::MapStyle,
     style_sheet::{LEFT_PANEL_WIDTH, TOP_LEFT_PANEL_HEIGHT, TOP_RIGHT_PANEL_HEIGHT},
     tab::Tab,
     tabs::mapview::MapState,
@@ -8,9 +9,7 @@ use crate::{
 use egui_dock::{DockState, NodeIndex, TabViewer, Tree};
 
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct TTSSettings {
-    default_map_style: MapStyle,
-}
+pub struct TTSSettings {}
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct TTSState {
@@ -19,6 +18,19 @@ pub struct TTSState {
     pub map_state: MapState,
 
     pub settings: TTSSettings,
+}
+
+impl Deref for TTSState {
+    type Target = TTSSettings;
+    fn deref(&self) -> &Self::Target {
+        &self.settings
+    }
+}
+
+impl DerefMut for TTSState {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.settings
+    }
 }
 
 impl TabViewer for TTSState {
