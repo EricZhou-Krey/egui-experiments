@@ -1,7 +1,8 @@
 use crate::{
     state::TTSState,
     style_sheet::{
-        MAP_CONVEXHULL_ICON, MAP_PAN_ICON, MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_PADDING,
+        MAP_ADDRECEIVER_ICON, MAP_ADDTRANSMITTER_ICON, MAP_CONVEXHULL_ICON, MAP_PAN_ICON,
+        MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_PADDING,
     },
 };
 
@@ -12,6 +13,8 @@ pub enum MapTool {
     Select,
     Remove,
     ConvexHull,
+    AddReceiver,
+    AddTransmitter,
 }
 
 impl MapTool {
@@ -20,6 +23,8 @@ impl MapTool {
         MapTool::Select,
         MapTool::Remove,
         MapTool::ConvexHull,
+        MapTool::AddReceiver,
+        MapTool::AddTransmitter,
     ];
 }
 
@@ -35,6 +40,8 @@ impl MapTool {
             MapTool::Select => MAP_SELECT_ICON.into(),
             MapTool::Remove => MAP_REMOVE_ICON.into(),
             MapTool::ConvexHull => MAP_CONVEXHULL_ICON.into(),
+            MapTool::AddReceiver => MAP_ADDRECEIVER_ICON.into(),
+            MapTool::AddTransmitter => MAP_ADDTRANSMITTER_ICON.into(),
         }
     }
 }
@@ -53,10 +60,8 @@ pub fn mapview_ui(state: &mut TTSState, ui: &mut egui::Ui) {
 
 fn main_view(_state: &mut TTSState, ui: &mut egui::Ui) {
     ui.centered_and_justified(|ui| ui.heading("Map"));
-}
-
-fn input(state: &mut TTSState, ui: &mut egui::Ui) {
-    todo!()
+    // pan, select, remove, add convex hull
+    ui.input(|_ui| {})
 }
 
 fn toolbar(state: &mut TTSState, ui: &mut egui::Ui, position: egui::Pos2) {

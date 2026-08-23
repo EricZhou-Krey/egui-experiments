@@ -102,7 +102,7 @@ function! AddMapTool(tool_name)
     call cursor(1, 1)
     call search('style_sheet::{')
     let l:style_line = getline('.')
-    let l:style_line = substitute(l:style_line, '}', ', ' . l:const_name . '}', '')
+    let l:style_line = substitute(l:style_line, 'style_sheet::{', 'style_sheet::{' . l:const_name . ', ', '')
     call setline('.', l:style_line)
 
     call cursor(1, 1)
