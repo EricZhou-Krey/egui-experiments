@@ -7,6 +7,8 @@ pub const MAP_CONVEXHULL_ICON: &str = "C";
 pub const MAP_REMOVE_ICON: &str = "R";
 pub const MAP_PAN_ICON: &str = "P";
 
+pub const MAP_TOOLBAR_PADDING: egui::Vec2 = egui::vec2(8.0, 8.0);
+
 pub const MAP_RECEIVER_RADIUS: f32 = 5.0;
 pub const MAP_RECEIVER_COLOR: egui::Color32 = egui::Color32::from_rgb(50, 150, 255);
 

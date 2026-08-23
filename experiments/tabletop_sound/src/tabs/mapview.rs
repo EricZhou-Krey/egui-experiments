@@ -1,6 +1,8 @@
 use crate::{
     state::TTSState,
-    style_sheet::{MAP_CONVEXHULL_ICON, MAP_PAN_ICON, MAP_REMOVE_ICON, MAP_SELECT_ICON},
+    style_sheet::{
+        MAP_CONVEXHULL_ICON, MAP_PAN_ICON, MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_PADDING,
+    },
 };
 
 #[derive(Default, Debug, Clone, PartialEq)]
@@ -43,13 +45,23 @@ pub fn mapview_title(_state: &mut TTSState) -> egui::WidgetText {
 
 pub fn mapview_ui(state: &mut TTSState, ui: &mut egui::Ui) {
     let dock_rect: egui::Rect = ui.available_rect_before_wrap();
-    let padding: egui::Vec2 = egui::vec2(8.0, 8.0);
-    let toolbar_pos: egui::Pos2 = dock_rect.min + padding;
+    let toolbar_position: egui::Pos2 = dock_rect.min + MAP_TOOLBAR_PADDING;
 
+    main_view(state, ui);
+    toolbar(state, ui, toolbar_position);
+}
+
+fn main_view(_state: &mut TTSState, ui: &mut egui::Ui) {
     ui.centered_and_justified(|ui| ui.heading("Map"));
+}
 
+fn input(state: &mut TTSState, ui: &mut egui::Ui) {
+    todo!()
+}
+
+fn toolbar(state: &mut TTSState, ui: &mut egui::Ui, position: egui::Pos2) {
     egui::Area::new("MapToolbar".into())
-        .fixed_pos(toolbar_pos)
+        .fixed_pos(position)
         .interactable(true)
         .show(ui, |ui| {
             egui::Frame::window(ui.style())
