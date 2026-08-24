@@ -5,7 +5,7 @@ use crate::style_sheet::{
     MAP_MOVE_ICON, MAP_PAN_ICON, MAP_RECEIVER_COLOR, MAP_RECEIVER_RADIUS, MAP_REMOVE_ICON,
     MAP_SELECT_ICON, MAP_TRANSMITTER_COLOR, MAP_TRANSMITTER_RADIUS, MAP_WALL_BORDER_COLOR,
     MAP_WALL_BORDER_STROKE_WIDTH, MAP_WALL_FILL_COLOR, MAP_WALL_VERTEX_COLOR,
-    MAP_WALL_VERTEX_RADIUS,
+    MAP_WALL_VERTEX_RADIUS, MAP_ZOOM_ICON,
 };
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -39,6 +39,7 @@ pub struct MapIcons {
     pub add_receiver_tool: &'static str,
     pub add_transmitter_tool: &'static str,
     pub move_tool: &'static str,
+    pub zoom_tool: &'static str,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -81,6 +82,7 @@ impl Default for MapStyle {
                 add_receiver_tool: MAP_ADDRECEIVER_ICON,
                 add_transmitter_tool: MAP_ADDTRANSMITTER_ICON,
                 move_tool: MAP_MOVE_ICON,
+                zoom_tool: MAP_ZOOM_ICON,
             },
         }
     }

@@ -1,3 +1,7 @@
+use kira::{
+    sound::static_sound::StaticSoundData, AudioManager, AudioManagerSettings, DefaultBackend,
+};
+
 use crate::style::{FaceStyle, PointStyle};
 use std::ops::{Deref, DerefMut};
 
@@ -17,23 +21,48 @@ pub struct Receiver {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Transmitter {
     pub position: [f32; 2],
+    pub sound_data: StaticSoundData,
     pub style: PointStyle,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SceneObject {
-    Wall(Wall),
-    Receiver(Receiver),
-    Transmitter(Transmitter),
+    Wall(Box<Wall>),
+    Receiver(Box<Receiver>),
+    Transmitter(Box<Transmitter>),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SceneAudioSettings {
+    pub volume: f32,
+}
+
+impl Default for SceneAudioSettings {
+    fn default() -> Self {
+        Self { volume: 1.0 }
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq)]
-pub struct SceneSettings;
+pub struct SceneSettings {
+    pub audio: SceneAudioSettings,
+}
 
-#[derive(Default, Debug, Clone, PartialEq)]
 pub struct Scene {
-    pub objects: Vec<SceneObject>,
+    objects: Vec<SceneObject>,
+    audio_manager: AudioManager,
     pub settings: SceneSettings,
+}
+
+impl Default for Scene {
+    fn default() -> Self {
+        Self {
+            objects: Vec::default(),
+            audio_manager: AudioManager::<DefaultBackend>::new(AudioManagerSettings::default())
+                .unwrap(),
+            settings: SceneSettings::default(),
+        }
+    }
 }
 
 impl Deref for Scene {
@@ -89,5 +118,47 @@ impl Scene {
                     }
                 }
             })
+    }
+
+    pub fn objects(&self) -> &Vec<SceneObject> {
+        &self.objects
+    }
+
+    pub fn add_object(&mut self, object: SceneObject) {
+        // TODO: TEMP
+        if let SceneObject::Transmitter(transmitter) = &object {
+            self.audio_manager
+                .play(transmitter.sound_data.clone())
+                .unwrap();
+        }
+
+        self.objects.push(object);
+    }
+
+    pub fn move_object(&mut self, index: usize, delta: [f32; 2]) -> bool {
+        if let Some(object) = self.objects.get_mut(index) {
+            match object {
+                SceneObject::Wall(wall) => {
+                    for vertex in &mut wall.verticies {
+                        vertex[0] += delta[0];
+                        vertex[1] += delta[1];
+                    }
+                }
+                SceneObject::Receiver(receiver) => {
+                    receiver.position[0] += delta[0];
+                    receiver.position[1] += delta[1];
+                }
+                SceneObject::Transmitter(transmitter) => {
+                    transmitter.position[0] += delta[0];
+                    transmitter.position[1] += delta[1];
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+    pub fn remove_object(&mut self, index: usize) {
+        self.objects.remove(index);
     }
 }

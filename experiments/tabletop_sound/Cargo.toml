@@ -7,4 +7,6 @@ edition = "2024"
 egui.workspace = true
 eframe.workspace = true
 egui_dock.workspace = true
-
+kira.workspace = true
+mint.workspace = true
+glam.workspace = true

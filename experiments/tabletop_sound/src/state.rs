@@ -11,7 +11,7 @@ use egui_dock::{DockState, NodeIndex, TabViewer, Tree};
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct TTSSettings {}
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Default)]
 pub struct TTSState {
     pub scene: Scene,
 

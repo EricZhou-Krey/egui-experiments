@@ -3,6 +3,7 @@ pub const TOP_LEFT_PANEL_HEIGHT: f32 = 0.8;
 pub const TOP_RIGHT_PANEL_HEIGHT: f32 = 0.8;
 
 pub const MAP_SELECT_ICON: &str = "S";
+pub const MAP_ZOOM_ICON: &str = "Z";
 pub const MAP_MOVE_ICON: &str = "M";
 pub const MAP_ADDWALL_ICON: &str = "A";
 pub const MAP_ADDTRANSMITTER_ICON: &str = "A";

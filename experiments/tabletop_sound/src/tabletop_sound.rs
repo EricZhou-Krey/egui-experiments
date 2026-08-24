@@ -1,7 +1,6 @@
 use crate::{state::TTSState, tab::Tab};
 use egui_dock::{DockArea, DockState};
 
-#[derive(Debug, Clone)]
 pub struct TabletopSound {
     dock: DockState<Tab>,
     state: TTSState,
