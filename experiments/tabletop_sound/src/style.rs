@@ -2,9 +2,10 @@ use egui::{Color32, Stroke};
 
 use crate::style_sheet::{
     MAP_ADDRECEIVER_ICON, MAP_ADDTRANSMITTER_ICON, MAP_ADDWALL_ICON, MAP_BACKGROUND_COLOR,
-    MAP_PAN_ICON, MAP_RECEIVER_COLOR, MAP_RECEIVER_RADIUS, MAP_REMOVE_ICON, MAP_SELECT_ICON,
-    MAP_TRANSMITTER_COLOR, MAP_TRANSMITTER_RADIUS, MAP_WALL_BORDER_COLOR,
-    MAP_WALL_BORDER_STROKE_WIDTH, MAP_WALL_FILL_COLOR,
+    MAP_MOVE_ICON, MAP_PAN_ICON, MAP_RECEIVER_COLOR, MAP_RECEIVER_RADIUS, MAP_REMOVE_ICON,
+    MAP_SELECT_ICON, MAP_TRANSMITTER_COLOR, MAP_TRANSMITTER_RADIUS, MAP_WALL_BORDER_COLOR,
+    MAP_WALL_BORDER_STROKE_WIDTH, MAP_WALL_FILL_COLOR, MAP_WALL_VERTEX_COLOR,
+    MAP_WALL_VERTEX_RADIUS,
 };
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -37,13 +38,15 @@ pub struct MapIcons {
     pub add_wall_tool: &'static str,
     pub add_receiver_tool: &'static str,
     pub add_transmitter_tool: &'static str,
+    pub move_tool: &'static str,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MapStyle {
     pub receiver: PointStyle,
     pub transmitter: PointStyle,
-    pub wall: FaceStyle,
+    pub wall_vertex: PointStyle,
+    pub wall_face: FaceStyle,
     pub background: BackgroundStyle,
     pub icons: MapIcons,
 }
@@ -59,7 +62,11 @@ impl Default for MapStyle {
                 radius: MAP_TRANSMITTER_RADIUS,
                 color: MAP_TRANSMITTER_COLOR,
             },
-            wall: FaceStyle {
+            wall_vertex: PointStyle {
+                radius: MAP_WALL_VERTEX_RADIUS,
+                color: MAP_WALL_VERTEX_COLOR,
+            },
+            wall_face: FaceStyle {
                 fill_color: MAP_WALL_FILL_COLOR,
                 border_stroke: Stroke::new(MAP_WALL_BORDER_STROKE_WIDTH, MAP_WALL_BORDER_COLOR),
             },
@@ -73,6 +80,7 @@ impl Default for MapStyle {
                 add_wall_tool: MAP_ADDWALL_ICON,
                 add_receiver_tool: MAP_ADDRECEIVER_ICON,
                 add_transmitter_tool: MAP_ADDTRANSMITTER_ICON,
+                move_tool: MAP_MOVE_ICON,
             },
         }
     }

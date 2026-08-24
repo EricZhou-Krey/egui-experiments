@@ -15,7 +15,7 @@ pub struct TTSSettings {}
 pub struct TTSState {
     pub scene: Scene,
 
-    pub map_state: MapState,
+    pub map: MapState,
 
     pub settings: TTSSettings,
 }

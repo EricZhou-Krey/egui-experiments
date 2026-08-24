@@ -1,3 +1,4 @@
+pub mod logic_sheet;
 pub mod scene;
 pub mod state;
 pub mod style;
@@ -18,10 +19,7 @@ need to create:
     Tab::SoundView,
     Tab::PlayControls,
 
-- Add vertices to scene
-- Click position placement
-- Draw shapes using polygons
-    - Add macros to make rects, sqaures, and approximate circles, triangles, etc
+- Add macros to make rects, sqaures, and approximate circles, triangles, etc
 - Attach ambient noise to each node irrelevant or applied to fading out linearly/
 or other beizer function defined by user
 
@@ -40,4 +38,7 @@ or other beizer function defined by user
 Random notes:
 - For walls specifically, implment quadtree for optimized ray collision search
 - Add responsivness for adding convex hull, add effect for selected nodes
+- Decouple mapview tools usage
+- Redo drawing nodes to the mapview
+- Naive Removal used, should use quadtrees later
 */

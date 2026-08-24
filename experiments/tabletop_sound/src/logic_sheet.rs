@@ -1,0 +1,1 @@
+pub const MAP_INTERACTION_RADIUS: f32 = 15.0;

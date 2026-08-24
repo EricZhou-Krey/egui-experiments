@@ -1,14 +1,12 @@
-use std::ops::{Deref, DerefMut};
-
-use egui::{Painter, Shape};
-
 use crate::{
-    scene::{Receiver, Transmitter, Wall},
-    state::TTSState,
-    style::MapStyle,
-    style_sheet::{   MAP_ADDRECEIVER_ICON, MAP_ADDTRANSMITTER_ICON, MAP_ADDWALL_ICON, MAP_PAN_ICON, MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_BUTTON_SIZE, MAP_TOOLBAR_CORNER_RADIUS, MAP_TOOLBAR_MARGIN, MAP_TOOLBAR_PADDING
-    },
+    logic_sheet::MAP_INTERACTION_RADIUS, scene::{Receiver, SceneObject, Transmitter, Wall}, state::TTSState, style::MapStyle, style_sheet::{MAP_MOVE_ICON, 
+        MAP_ADDRECEIVER_ICON, MAP_ADDTRANSMITTER_ICON, MAP_ADDWALL_ICON, MAP_PAN_ICON,
+        MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_BUTTON_SIZE, MAP_TOOLBAR_CORNER_RADIUS,
+        MAP_TOOLBAR_MARGIN, MAP_TOOLBAR_PADDING,
+    }
 };
+use egui::{Painter, Shape};
+use std::ops::{Deref, DerefMut};
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub enum MapTool {
@@ -19,6 +17,7 @@ pub enum MapTool {
     AddReceiver,
     AddTransmitter,
     AddWall,
+    Move,
 }
 
 #[derive(Default, Debug, Clone, PartialEq)]
@@ -26,6 +25,7 @@ pub enum MapAction {
     #[default]
     None,
     AddingConvexHull(Vec<[f32; 2]>),
+    Moving(usize),
 }
 
 impl MapTool {
@@ -36,63 +36,168 @@ impl MapTool {
         MapTool::AddReceiver,
         MapTool::AddTransmitter,
         MapTool::AddWall,
+        MapTool::Move,
     ];
 
     pub fn interact(state: &mut TTSState, ui: &mut egui::Ui) {
-        match state.map_state.map_tool {
-            MapTool::Pan => {}
-            MapTool::Select => {}
-            MapTool::Remove => {}
-            MapTool::AddReceiver => ui.input(|ui| {
-                if ui.pointer.primary_clicked() && let Some(position) = ui.pointer.interact_pos() {
-                    state.scene.receivers.push(Receiver {
-                        position: position.into(),
-                        style: state.map_state.style.receiver.clone(),
-                    });
+        match state.map.map_selected_tool {
+            MapTool::Move => ui.input(|input_state: &egui::InputState| {
+                if input_state.pointer.primary_pressed()
+                    && let Some(pointer_position) = input_state.pointer.interact_pos()
+                    && let Some(object_index) = state.scene.find_object_index_around(pointer_position.into(), state.map.interaction_radius)
+                {
+                    state.map.action_in_progress = MapAction::Moving(object_index);
                 }
-            }),
-            MapTool::AddTransmitter => ui.input(|ui| {
-                if ui.pointer.primary_clicked() && let Some(position) = ui.pointer.interact_pos() {
-                    state.scene.transmitters.push(Transmitter {
-                        position: position.into(),
-                        style: state.map_state.style.transmitter.clone(),
-                    });
-                }
-            }),
-            MapTool::AddWall => ui.input(|ui| {
-                if ui.pointer.primary_clicked() && let Some(position) = ui.pointer.interact_pos() {
-                    match &mut state.map_state.action_in_progress {
-                        MapAction::None => state.map_state.action_in_progress = MapAction::AddingConvexHull(vec![position.into()]),
-                        MapAction::AddingConvexHull(verticies) => verticies.push(position.into()),
+
+                if input_state.pointer.primary_down()
+                    && let MapAction::Moving(object_index) = state.map.action_in_progress
+                    && let Some(scene_object) = state.scene.objects.get_mut(object_index)
+                {
+                    let pointer_delta: egui::Vec2 = input_state.pointer.delta();
+                    match scene_object {
+                        SceneObject::Wall(wall) => {
+                            for vertex in &mut wall.verticies {
+                                vertex[0] += pointer_delta.x;
+                                vertex[1] += pointer_delta.y;
+                            }
+                        }
+                        SceneObject::Receiver(receiver) => {
+                            receiver.position[0] += pointer_delta.x;
+                            receiver.position[1] += pointer_delta.y;
+                        }
+                        SceneObject::Transmitter(transmitter) => {
+                            transmitter.position[0] += pointer_delta.x;
+                            transmitter.position[1] += pointer_delta.y;
+                        }
                     }
                 }
 
-                if ui.focused && ui.key_pressed(egui::Key::Enter) {
-                    let completed_action: MapAction = std::mem::replace(&mut state.map_state.action_in_progress, MapAction::None);
-                    if let MapAction::AddingConvexHull(verticies) = completed_action && verticies.len() >= 3 {
-                        state.scene.walls.push(Wall {
-                            verticies,
-                            style: state.map_state.style.wall.clone()
-                        });
-                    }
-
-                    state.map_state.action_in_progress = MapAction::None;
+                if input_state.pointer.primary_released() {
+                    state.map.action_in_progress = MapAction::None;
                 }
-            })
+            }),
+            MapTool::Pan => ui.input(|input_state: &egui::InputState| {
+                if input_state.pointer.primary_down() {
+                    let pointer_delta: egui::Vec2 = input_state.pointer.delta();
+                    for scene_object in &mut state.scene.objects {
+                        match scene_object {
+                            SceneObject::Wall(wall) => {
+                                for vertex in &mut wall.verticies {
+                                    vertex[0] += pointer_delta.x;
+                                    vertex[1] += pointer_delta.y;
+                                }
+                            }
+                            SceneObject::Receiver(receiver) => {
+                                receiver.position[0] += pointer_delta.x;
+                                receiver.position[1] += pointer_delta.y;
+                            }
+                            SceneObject::Transmitter(transmitter) => {
+                                transmitter.position[0] += pointer_delta.x;
+                                transmitter.position[1] += pointer_delta.y;
+                            }
+                        }
+                    }
+                }
+            }),
+            MapTool::Select => ui.input(|input_state: &egui::InputState| {
+                if input_state.pointer.primary_clicked()
+                    && let Some(pointer_position) = input_state.pointer.interact_pos()
+                {
+                    state.map.selected_object_index = state.scene.find_object_index_around(pointer_position.into(), state.map.interaction_radius); 
+                }
+            }),
+            MapTool::Remove => ui.input(|input_state: &egui::InputState| {
+                if input_state.pointer.primary_clicked()
+                    && let Some(pointer_position) = input_state.pointer.interact_pos()
+                    && let Some(object_index) = state.scene.find_object_index_around(pointer_position.into(), state.map.interaction_radius)
+                {
+                    state.scene.objects.remove(object_index);
+                }
+            }),
+            MapTool::AddReceiver => ui.input(|input_state: &egui::InputState| {
+                if input_state.pointer.primary_clicked()
+                    && let Some(pointer_position) = input_state.pointer.interact_pos()
+                {
+                    state.scene.objects.push(SceneObject::Receiver(Receiver {
+                        position: pointer_position.into(),
+                        style: state.map.style.receiver.clone(),
+                    }));
+                }
+            }),
+            MapTool::AddTransmitter => ui.input(|input_state: &egui::InputState| {
+                if input_state.pointer.primary_clicked()
+                    && let Some(pointer_position) = input_state.pointer.interact_pos()
+                {
+                    state
+                        .scene
+                        .objects
+                        .push(SceneObject::Transmitter(Transmitter {
+                            position: pointer_position.into(),
+                            style: state.map.style.transmitter.clone(),
+                        }));
+                }
+            }),
+            MapTool::AddWall => ui.input(|input_state: &egui::InputState| {
+                if input_state.pointer.primary_clicked()
+                    && let Some(pointer_position) = input_state.pointer.interact_pos()
+                {
+                    match &mut state.map.action_in_progress {
+                        MapAction::None => {
+                            state.map.action_in_progress =
+                                MapAction::AddingConvexHull(vec![pointer_position.into()])
+                        }
+                        MapAction::AddingConvexHull(vertices) => {
+                            vertices.push(pointer_position.into())
+                        }
+                        MapAction::Moving(_) => {}
+                    }
+                }
+
+                if input_state.focused && input_state.key_pressed(egui::Key::Enter) {
+                    let completed_action: MapAction = std::mem::replace(
+                        &mut state.map.action_in_progress,
+                        MapAction::None,
+                    );
+
+                    if let MapAction::AddingConvexHull(vertices) = completed_action
+                        && vertices.len() >= 3
+                    {
+                        state.scene.objects.push(SceneObject::Wall(Wall {
+                            verticies: vertices,
+                            face_style: state.map.style.wall_face.clone(),
+                            vertex_style: state.map.style.wall_vertex.clone(),
+                        }));
+                    }
+                }
+
+                if input_state.focused && input_state.key_pressed(egui::Key::Escape) {
+                    state.map.action_in_progress = MapAction::None;
+                }
+            }),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct MapSettings {
+    pub interaction_radius: f32,
+    pub style: MapStyle,
+}
+
+impl Default for MapSettings {
+    fn default() -> Self {
+        Self {
+            interaction_radius: MAP_INTERACTION_RADIUS,
+            style: MapStyle::default(),
         }
     }
 }
 
 #[derive(Default, Debug, Clone, PartialEq)]
-pub struct MapSettings {
-    pub style: MapStyle,
-}
-
-#[derive(Default, Debug, Clone, PartialEq)]
 pub struct MapState {
-    pub map_tool: MapTool,
+    pub map_selected_tool: MapTool,
     pub action_in_progress: MapAction,
-
+    pub selected_object_index: Option<usize>,
     pub settings: MapSettings,
 }
 
@@ -118,6 +223,7 @@ impl MapTool {
             MapTool::AddReceiver => MAP_ADDRECEIVER_ICON.into(),
             MapTool::AddTransmitter => MAP_ADDTRANSMITTER_ICON.into(),
             MapTool::AddWall => MAP_ADDWALL_ICON.into(),
+            MapTool::Move => MAP_MOVE_ICON.into(),
         }
     }
 }
@@ -139,34 +245,57 @@ fn main_view(state: &mut TTSState, ui: &mut egui::Ui) {
 
     let painter: &Painter = ui.painter();
 
-    for wall in &state.scene.walls {
-        painter.add(
-            Shape::convex_polygon(
-                wall.verticies.iter().map(|p| p.into()).collect(),
-                wall.style.fill_color,
-                wall.style.border_stroke,
-            )
-        );
+    for scene_object in &state.scene.objects {
+        match scene_object {
+            SceneObject::Wall(wall) => {
+                let points: Vec<egui::Pos2> = wall
+                    .verticies
+                    .iter()
+                    .map(|point: &[f32; 2]| (*point).into())
+                    .collect();
+                painter.add(Shape::convex_polygon(
+                    points,
+                    wall.face_style.fill_color,
+                    wall.face_style.border_stroke,
+                ));
+
+                for wall_vertex in &wall.verticies {
+                    painter.add(Shape::circle_filled(
+                        (*wall_vertex).into(),
+                        wall.vertex_style.radius,
+                        wall.vertex_style.color,
+                    ));
+                }
+            }
+            SceneObject::Receiver(receiver) => {
+                painter.add(Shape::circle_filled(
+                    receiver.position.into(),
+                    receiver.style.radius,
+                    receiver.style.color,
+                ));
+            }
+            SceneObject::Transmitter(transmitter) => {
+                painter.add(Shape::circle_filled(
+                    transmitter.position.into(),
+                    transmitter.style.radius,
+                    transmitter.style.color,
+                ));
+            }
+        }
     }
 
-    for receiver in &state.scene.receivers {
-        painter.add(
-            Shape::circle_filled(
-                receiver.position.into(),
-                receiver.style.radius,
-                receiver.style.color,
-            )
-        );
-    }
-
-    for transmitter in &state.scene.transmitters {
-        painter.add(
-            Shape::circle_filled(
-                transmitter.position.into(),
-                transmitter.style.radius,
-                transmitter.style.color
-            )
-        );
+    match &state.map.action_in_progress {
+        MapAction::None => {}
+        MapAction::AddingConvexHull(vertices) => {
+            for wall_vertex in vertices {
+                painter.add(Shape::circle_filled(
+                    (*wall_vertex).into(),
+                    state.map.style.wall_vertex.radius,
+                    state.map.style.wall_vertex.color,
+                ));
+            }
+        }
+        MapAction::Moving(_) => {}
     }
 }
 
@@ -174,28 +303,25 @@ fn toolbar(state: &mut TTSState, ui: &mut egui::Ui, position: egui::Pos2) {
     egui::Area::new("MapToolbar".into())
         .fixed_pos(position)
         .interactable(true)
-        .show(ui, |ui| {
+        .show(ui, |ui: &mut egui::Ui| {
             egui::Frame::window(ui.style())
                 .inner_margin(MAP_TOOLBAR_MARGIN)
                 .corner_radius(MAP_TOOLBAR_CORNER_RADIUS)
-                .show(ui, |ui| {
-                    let tool_selected: Vec<bool> = {
-                        let mut tool_selected: Vec<bool> = vec![false; MapTool::ALL.len()];
-                        tool_selected[state.map_state.map_tool.clone() as usize] = true;
-                        tool_selected
-                    };
+                .show(ui, |ui: &mut egui::Ui| {
+                    let mut tool_selected: Vec<bool> = vec![false; MapTool::ALL.len()];
+                    tool_selected[state.map.map_selected_tool.clone() as usize] = true;
 
-                    for map_tool in MapTool::ALL {
+                    for map_selected_tool in MapTool::ALL {
                         if ui
                             .add(
-                                egui::Button::new(map_tool.icon())
-                                    .selected(tool_selected[map_tool.clone() as usize])
+                                egui::Button::new(map_selected_tool.icon())
+                                    .selected(tool_selected[map_selected_tool.clone() as usize])
                                     .min_size(MAP_TOOLBAR_BUTTON_SIZE),
                             )
                             .clicked()
                         {
-                            state.map_state.action_in_progress = MapAction::None;
-                            state.map_state.map_tool = map_tool.clone();
+                            state.map.action_in_progress = MapAction::None;
+                            state.map.map_selected_tool = map_selected_tool.clone();
                         }
                     }
                 })

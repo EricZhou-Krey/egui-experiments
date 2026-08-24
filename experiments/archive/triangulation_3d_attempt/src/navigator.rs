@@ -159,7 +159,7 @@ impl Navigator {
             });
     }
 
-    pub fn draw_ui(&mut self, ui: &mut egui::Ui) {
+    fn draw_ui(&mut self, ui: &mut egui::Ui) {
         // Inefficient checking, could refactor
         if self.triangulation_graph.settings.n_points != self.max_index {
             self.assign_active_nodes()
