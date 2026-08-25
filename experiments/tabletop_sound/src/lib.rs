@@ -1,5 +1,6 @@
 pub mod logic_sheet;
 pub mod scene;
+pub mod scene_object;
 pub mod state;
 pub mod style;
 pub mod style_sheet;
@@ -8,8 +9,6 @@ pub mod tabletop_sound;
 pub mod tabs;
 
 /*
-
-TODO: PLAN BETTER
 Consider each of the states of each tab and create them approriately,
 need to create:
     Tab::MapView,
@@ -22,9 +21,10 @@ need to create:
 * - Add macros to make rects, sqaures, and approximate circles, triangles, etc
 * - Make it look a bit nice
 
+TODO: Scene object refactor, make the map centered at a world origin by default, implement a translation to work coordiantes by default be a uv scale
+
  -> 1 - Define receiver and be able move the reveiver around to catpure ambient sound via linear distance or beizer
 
- -> Redine how objects and shapes are drawn and stored
 
 2 - Define ray tracer for sound (edit above if necessary)
     - Define emitter and parameters

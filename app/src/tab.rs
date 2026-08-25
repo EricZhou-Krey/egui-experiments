@@ -6,12 +6,10 @@ use triangulation_navigator::navigator::Navigator;
 
 macro_rules! define_app_tabs {
     (
-        #[derive($($derive:ident),*)]
         pub enum $enum_name:ident {
             $( $variant:ident($inner:ty) => $title:expr ),* $(,)?
         }
     ) => {
-        #[derive($($derive),*)]
         pub enum $enum_name {
             Empty,
             $( $variant($inner), )*
@@ -65,14 +63,12 @@ macro_rules! define_app_tabs {
 }
 
 define_app_tabs! {
-    #[derive(Debug, Clone)]
     pub enum Tab {
         Navigator(Box<Navigator>) => "Navigator",
         TabletopSound(Box<TabletopSound>) => "TabletopSound",
     }
 }
 
-#[derive(Debug, Clone)]
 pub struct AppTab {
     pub id: usize,
     pub content: Tab,
@@ -111,7 +107,6 @@ impl<'a> TabViewer for AppTabViewer<'a> {
     }
 }
 
-#[derive(Debug, Clone)]
 pub struct AppTabHandler {
     pub dock: DockState<AppTab>,
     next_tab_id: usize,

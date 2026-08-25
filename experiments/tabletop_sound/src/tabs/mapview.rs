@@ -1,15 +1,12 @@
 use crate::{
-    logic_sheet::{MAP_INTERACTION_RADIUS, generate_sample_transmitter_sound},
-    scene::{Receiver, SceneObject, Transmitter, Wall},
-    state::TTSState,
-    style::MapStyle,
-    style_sheet::{
-        MAP_ADDRECEIVER_ICON, MAP_ADDTRANSMITTER_ICON, MAP_ADDWALL_ICON, MAP_MOVE_ICON,
-        MAP_PAN_ICON, MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_BUTTON_SIZE,
-        MAP_TOOLBAR_CORNER_RADIUS, MAP_TOOLBAR_MARGIN, MAP_TOOLBAR_PADDING, MAP_ZOOM_ICON,
-    },
+    logic_sheet::{
+        MAP_BASE_ZOOM, MAP_INTERACTION_RADIUS, MAP_ZOOM_LIMIT, MAP_ZOOM_SENSITIVITY, generate_sample_transmitter_sound
+    }, scene_object::{Emitter, Receiver, SceneObject, Shape, Wall}, state::TTSState, style::MapStyle, style_sheet::{
+        MAP_ADDEMITTER_ICON, MAP_ADDRECEIVER_ICON, MAP_ADDWALL_ICON, MAP_MOVE_ICON, MAP_PAN_ICON, MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_BUTTON_SIZE, MAP_TOOLBAR_CORNER_RADIUS, MAP_TOOLBAR_MARGIN, MAP_TOOLBAR_PADDING, MAP_ZOOM_ICON
+    }
 };
-use egui::{Painter, Shape};
+use egui::Painter;
+use glam::Vec2;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Default, Debug, Clone, PartialEq)]
@@ -19,7 +16,7 @@ pub enum MapTool {
     Select,
     Remove,
     AddReceiver,
-    AddTransmitter,
+    AddEmitter,
     AddWall,
     Move,
     Zoom,
@@ -29,7 +26,7 @@ pub enum MapTool {
 pub enum MapAction {
     #[default]
     None,
-    AddingConvexHull(Vec<[f32; 2]>),
+    AddingPolygon(Vec<Vec2>),
     Moving(usize),
 }
 
@@ -39,7 +36,7 @@ impl MapTool {
         MapTool::Select,
         MapTool::Remove,
         MapTool::AddReceiver,
-        MapTool::AddTransmitter,
+        MapTool::AddEmitter,
         MapTool::AddWall,
         MapTool::Move,
         MapTool::Zoom,
@@ -49,10 +46,10 @@ impl MapTool {
         match state.map.map_selected_tool {
             MapTool::Zoom => ui.input(|input_state: &egui::InputState| {
                 if input_state.pointer.primary_down() {
-                    let pointer_delta: [f32; 2] = input_state.pointer.delta().into();
-                    state.map.zoom *= 1.0 + (pointer_delta[1] * -0.01);
-                    if state.map.zoom < 0.1 {
-                        state.map.zoom = 0.1;
+                    let pointer_delta: egui::Vec2 = input_state.pointer.delta();
+                    state.map.zoom *= 1.0 + (pointer_delta.y * -MAP_ZOOM_SENSITIVITY);
+                    if state.map.zoom < MAP_ZOOM_LIMIT {
+                        state.map.zoom = MAP_ZOOM_LIMIT;
                     }
                 }
             }),
@@ -61,8 +58,8 @@ impl MapTool {
                 if input_state.pointer.primary_pressed()
                     && let Some(pointer_position) = input_state.pointer.interact_pos()
                 {
-                    let pointer_coordinates: [f32; 2] = pointer_position.into();
-                    let world_position: [f32; 2] = state.map.screen_to_world(pointer_coordinates);
+                    let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
+                    let world_position: Vec2 = state.map.screen_to_world(screen_position);
                     let search_radius: f32 = state.map.interaction_radius / state.map.zoom;
                     if let Some(object_index) = state
                         .scene
@@ -75,13 +72,11 @@ impl MapTool {
                 if input_state.pointer.primary_down()
                     && let MapAction::Moving(object_index) = state.map.action_in_progress
                 {
-                    let pointer_delta: [f32; 2] = input_state.pointer.delta().into();
-                    let world_delta: [f32; 2] = [
-                        pointer_delta[0] / state.map.zoom,
-                        pointer_delta[1] / state.map.zoom,
-                    ];
+                    let pointer_delta: egui::Vec2 = input_state.pointer.delta();
+                    let delta_vec: Vec2 = Vec2::new(pointer_delta.x, pointer_delta.y);
+                    let world_delta: Vec2 = delta_vec / state.map.zoom;
 
-                    state.scene.move_object(object_index, world_delta);
+                    state.scene.objects[object_index].mut_shape().translate(world_delta);
                 }
 
                 if input_state.pointer.primary_released() {
@@ -91,9 +86,9 @@ impl MapTool {
 
             MapTool::Pan => ui.input(|input_state: &egui::InputState| {
                 if input_state.pointer.primary_down() {
-                    let pointer_delta: [f32; 2] = input_state.pointer.delta().into();
-                    state.map.pan[0] += pointer_delta[0];
-                    state.map.pan[1] += pointer_delta[1];
+                    let pointer_delta: egui::Vec2 = input_state.pointer.delta();
+                    let delta_vec: Vec2 = Vec2::new(pointer_delta.x, pointer_delta.y);
+                    state.map.pan += delta_vec;
                 }
             }),
 
@@ -101,8 +96,8 @@ impl MapTool {
                 if input_state.pointer.primary_clicked()
                     && let Some(pointer_position) = input_state.pointer.interact_pos()
                 {
-                    let pointer_coordinates: [f32; 2] = pointer_position.into();
-                    let world_position: [f32; 2] = state.map.screen_to_world(pointer_coordinates);
+                    let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
+                    let world_position: Vec2 = state.map.screen_to_world(screen_position);
                     let search_radius: f32 = state.map.interaction_radius / state.map.zoom;
                     state.map.selected_object_index = state
                         .scene
@@ -114,14 +109,14 @@ impl MapTool {
                 if input_state.pointer.primary_clicked()
                     && let Some(pointer_position) = input_state.pointer.interact_pos()
                 {
-                    let pointer_coordinates: [f32; 2] = pointer_position.into();
-                    let world_position: [f32; 2] = state.map.screen_to_world(pointer_coordinates);
+                    let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
+                    let world_position: Vec2 = state.map.screen_to_world(screen_position);
                     let search_radius: f32 = state.map.interaction_radius / state.map.zoom;
                     if let Some(object_index) = state
                         .scene
                         .find_object_index_around(world_position, search_radius)
                     {
-                        state.scene.remove_object(object_index);
+                        state.scene.objects.remove(object_index);
                     }
                 }
             }),
@@ -130,28 +125,28 @@ impl MapTool {
                 if input_state.pointer.primary_clicked()
                     && let Some(pointer_position) = input_state.pointer.interact_pos()
                 {
-                    let pointer_coordinates: [f32; 2] = pointer_position.into();
-                    let world_position: [f32; 2] = state.map.screen_to_world(pointer_coordinates);
-                    state.scene.add_object(SceneObject::Receiver(Box::new(Receiver {
-                        position: world_position,
-                        style: state.map.style.receiver.clone(),
+                    let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
+                    let world_position: Vec2 = state.map.screen_to_world(screen_position);
+                    state.scene.objects.push(SceneObject::Receiver(Box::new(Receiver {
+                        shape: Shape::Point(world_position, state.map.style.receiver.clone()),
                     })));
                 }
             }),
 
-            MapTool::AddTransmitter => ui.input(|input_state: &egui::InputState| {
+            MapTool::AddEmitter => ui.input(|input_state: &egui::InputState| {
                 if input_state.pointer.primary_clicked()
                     && let Some(pointer_position) = input_state.pointer.interact_pos()
                 {
-                    let pointer_coordinates: [f32; 2] = pointer_position.into();
-                    let world_position: [f32; 2] = state.map.screen_to_world(pointer_coordinates);
-                    state
-                        .scene
-                        .add_object(SceneObject::Transmitter(Box::new(Transmitter {
-                            position: world_position,
-                            sound_data: generate_sample_transmitter_sound(), 
-                            style: state.map.style.transmitter.clone(),
+                    let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
+                    let world_position: Vec2 = state.map.screen_to_world(screen_position);
+                    state.scene.objects.push(
+                        SceneObject::Emitter(Box::new(Emitter {
+                            shape: Shape::Point(world_position, state.map.style.transmitter.clone()),
+                            sound_data: generate_sample_transmitter_sound(),
                         })));
+
+                    // TODO: TEMP TEST
+                    state.scene.audio_manager.play(generate_sample_transmitter_sound()).unwrap();
                 }
             }),
 
@@ -159,15 +154,15 @@ impl MapTool {
                 if input_state.pointer.primary_clicked()
                     && let Some(pointer_position) = input_state.pointer.interact_pos()
                 {
-                    let pointer_coordinates: [f32; 2] = pointer_position.into();
-                    let world_position: [f32; 2] = state.map.screen_to_world(pointer_coordinates);
+                    let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
+                    let world_position: Vec2 = state.map.screen_to_world(screen_position);
                     match &mut state.map.action_in_progress {
                         MapAction::None => {
                             state.map.action_in_progress =
-                                MapAction::AddingConvexHull(vec![world_position])
+                                MapAction::AddingPolygon(vec![world_position]);
                         }
-                        MapAction::AddingConvexHull(vertices) => {
-                            vertices.push(world_position)
+                        MapAction::AddingPolygon(vertices) => {
+                            vertices.push(world_position);
                         }
                         MapAction::Moving(_) => {}
                     }
@@ -179,13 +174,11 @@ impl MapTool {
                         MapAction::None,
                     );
 
-                    if let MapAction::AddingConvexHull(vertices) = completed_action
+                    if let MapAction::AddingPolygon(vertices) = completed_action
                         && vertices.len() >= 3
                     {
-                        state.scene.add_object(SceneObject::Wall(Box::new(Wall {
-                            verticies: vertices,
-                            face_style: state.map.style.wall_face.clone(),
-                            vertex_style: state.map.style.wall_vertex.clone(),
+                        state.scene.objects.push(SceneObject::Wall(Box::new(Wall {
+                            shape: Shape::Polygon(vertices, state.map.style.wall.clone()),
                         })));
                     }
                 }
@@ -220,7 +213,7 @@ pub struct MapState {
     pub selected_object_index: Option<usize>,
     pub settings: MapSettings,
     pub zoom: f32,
-    pub pan: [f32; 2],
+    pub pan: Vec2,
 }
 
 impl Default for MapState {
@@ -230,25 +223,19 @@ impl Default for MapState {
             action_in_progress: MapAction::default(),
             selected_object_index: None,
             settings: MapSettings::default(),
-            zoom: 1.0,
-            pan: [0.0, 0.0],
+            zoom: MAP_BASE_ZOOM,
+            pan: Vec2::ZERO,
         }
     }
 }
 
 impl MapState {
-    pub fn world_to_screen(&self, world_position: [f32; 2]) -> [f32; 2] {
-        [
-            (world_position[0] * self.zoom) + self.pan[0],
-            (world_position[1] * self.zoom) + self.pan[1],
-        ]
+    pub fn world_to_screen(&self, world_position: Vec2) -> Vec2 {
+        (world_position * self.zoom) + self.pan
     }
 
-    pub fn screen_to_world(&self, screen_position: [f32; 2]) -> [f32; 2] {
-        [
-            (screen_position[0] - self.pan[0]) / self.zoom,
-            (screen_position[1] - self.pan[1]) / self.zoom,
-        ]
+    pub fn screen_to_world(&self, screen_position: Vec2) -> Vec2 {
+        (screen_position - self.pan) / self.zoom
     }
 }
 
@@ -272,7 +259,7 @@ impl MapTool {
             MapTool::Select => MAP_SELECT_ICON.into(),
             MapTool::Remove => MAP_REMOVE_ICON.into(),
             MapTool::AddReceiver => MAP_ADDRECEIVER_ICON.into(),
-            MapTool::AddTransmitter => MAP_ADDTRANSMITTER_ICON.into(),
+            MapTool::AddEmitter => MAP_ADDEMITTER_ICON.into(),
             MapTool::AddWall => MAP_ADDWALL_ICON.into(),
             MapTool::Move => MAP_MOVE_ICON.into(),
             MapTool::Zoom => MAP_ZOOM_ICON.into(),
@@ -286,7 +273,8 @@ pub fn mapview_title(_state: &mut TTSState) -> egui::WidgetText {
 
 pub fn mapview_ui(state: &mut TTSState, ui: &mut egui::Ui) {
     let dock_rectangle: egui::Rect = ui.available_rect_before_wrap();
-    let toolbar_position: [f32; 2] = (dock_rectangle.min + MAP_TOOLBAR_PADDING).into();
+    let toolbar_pos: egui::Pos2 = dock_rectangle.min + MAP_TOOLBAR_PADDING;
+    let toolbar_position: Vec2 = Vec2::new(toolbar_pos.x, toolbar_pos.y);
 
     main_view(state, ui);
     toolbar(state, ui, toolbar_position);
@@ -297,57 +285,57 @@ fn main_view(state: &mut TTSState, ui: &mut egui::Ui) {
 
     let painter: &Painter = ui.painter();
 
-    for scene_object in state.scene.objects() {
+    for scene_object in &state.scene.objects {
         match scene_object {
             SceneObject::Wall(wall) => {
-                let points: Vec<egui::Pos2> = wall
-                    .verticies
-                    .iter()
-                    .map(|point: &[f32; 2]| state.map.world_to_screen(*point).into())
-                    .collect();
-                painter.add(Shape::convex_polygon(
-                    points,
-                    wall.face_style.fill_color,
-                    wall.face_style.border_stroke,
-                ));
+                if let Shape::Polygon(vertices, face_style) = &wall.shape {
+                    let points: Vec<egui::Pos2> = vertices
+                        .iter()
+                        .map(|point: &Vec2| {
+                            let screen_position: Vec2 = state.map.world_to_screen(*point);
+                            egui::Pos2::new(screen_position.x, screen_position.y)
+                        })
+                        .collect();
 
-                for wall_vertex in &wall.verticies {
-                    let screen_position: [f32; 2] = state.map.world_to_screen(*wall_vertex);
-                    painter.add(Shape::circle_filled(
-                        screen_position.into(),
-                        wall.vertex_style.radius * state.map.zoom,
-                        wall.vertex_style.color,
+                    painter.add(egui::Shape::convex_polygon(
+                        points,
+                        face_style.fill_color,
+                        face_style.border_stroke,
                     ));
                 }
             }
             SceneObject::Receiver(receiver) => {
-                let screen_position: [f32; 2] = state.map.world_to_screen(receiver.position);
-                painter.add(Shape::circle_filled(
-                    screen_position.into(),
-                    receiver.style.radius * state.map.zoom,
-                    receiver.style.color,
-                ));
+                if let Shape::Point(position, point_style) = &receiver.shape {
+                    let screen_position: Vec2 = state.map.world_to_screen(*position);
+                    painter.add(egui::Shape::circle_filled(
+                        egui::Pos2::new(screen_position.x, screen_position.y),
+                        point_style.radius * state.map.zoom,
+                        point_style.color,
+                    ));
+                }
             }
-            SceneObject::Transmitter(transmitter) => {
-                let screen_position: [f32; 2] = state.map.world_to_screen(transmitter.position);
-                painter.add(Shape::circle_filled(
-                    screen_position.into(),
-                    transmitter.style.radius * state.map.zoom,
-                    transmitter.style.color,
-                ));
+            SceneObject::Emitter(emitter) => {
+                if let Shape::Point(position, point_style) = &emitter.shape {
+                    let screen_position: Vec2 = state.map.world_to_screen(*position);
+                    painter.add(egui::Shape::circle_filled(
+                        egui::Pos2::new(screen_position.x, screen_position.y),
+                        point_style.radius * state.map.zoom,
+                        point_style.color,
+                    ));
+                }
             }
         }
     }
 
     match &state.map.action_in_progress {
         MapAction::None => {}
-        MapAction::AddingConvexHull(vertices) => {
+        MapAction::AddingPolygon(vertices) => {
             for wall_vertex in vertices {
-                let screen_position: [f32; 2] = state.map.world_to_screen(*wall_vertex);
-                painter.add(Shape::circle_filled(
-                    screen_position.into(),
-                    state.map.style.wall_vertex.radius * state.map.zoom,
-                    state.map.style.wall_vertex.color,
+                let screen_position: Vec2 = state.map.world_to_screen(*wall_vertex);
+                painter.add(egui::Shape::circle_filled(
+                    egui::Pos2::new(screen_position.x, screen_position.y),
+                    state.map.style.wall.vertex_radius * state.map.zoom,
+                    state.map.style.wall.vertex_color,
                 ));
             }
         }
@@ -355,9 +343,9 @@ fn main_view(state: &mut TTSState, ui: &mut egui::Ui) {
     }
 }
 
-fn toolbar(state: &mut TTSState, ui: &mut egui::Ui, position: [f32; 2]) {
+fn toolbar(state: &mut TTSState, ui: &mut egui::Ui, position: Vec2) {
     egui::Area::new("MapToolbar".into())
-        .fixed_pos(position)
+        .fixed_pos(egui::Pos2::new(position.x, position.y))
         .interactable(true)
         .show(ui, |ui: &mut egui::Ui| {
             egui::Frame::window(ui.style())

@@ -5,10 +5,10 @@ pub const TOP_RIGHT_PANEL_HEIGHT: f32 = 0.8;
 pub const MAP_SELECT_ICON: &str = "S";
 pub const MAP_ZOOM_ICON: &str = "Z";
 pub const MAP_MOVE_ICON: &str = "M";
-pub const MAP_ADDWALL_ICON: &str = "A";
-pub const MAP_ADDTRANSMITTER_ICON: &str = "A";
-pub const MAP_ADDRECEIVER_ICON: &str = "A";
-pub const MAP_REMOVE_ICON: &str = "R";
+pub const MAP_ADDWALL_ICON: &str = "+W";
+pub const MAP_ADDEMITTER_ICON: &str = "+E";
+pub const MAP_ADDRECEIVER_ICON: &str = "+R";
+pub const MAP_REMOVE_ICON: &str = "-";
 pub const MAP_PAN_ICON: &str = "P";
 
 pub const MAP_TOOLBAR_PADDING: egui::Vec2 = egui::vec2(8.0, 8.0);

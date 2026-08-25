@@ -1,4 +1,7 @@
 pub const MAP_INTERACTION_RADIUS: f32 = 15.0;
+pub const MAP_ZOOM_SENSITIVITY: f32 = 0.01;
+pub const MAP_ZOOM_LIMIT: f32 = 0.1;
+pub const MAP_BASE_ZOOM: f32 = 1.0;
 
 pub fn generate_sample_transmitter_sound() -> kira::sound::static_sound::StaticSoundData {
     let sample_rate: u32 = 44100;

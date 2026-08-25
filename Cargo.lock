@@ -3744,7 +3744,6 @@ dependencies = [
  "egui_dock",
  "glam",
  "kira",
- "mint",
 ]
 
 [[package]]
