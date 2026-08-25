@@ -158,6 +158,7 @@ impl Scene {
             false
         }
     }
+
     pub fn remove_object(&mut self, index: usize) {
         self.objects.remove(index);
     }

@@ -12,7 +12,7 @@ pub mod tabs;
 TODO: PLAN BETTER
 Consider each of the states of each tab and create them approriately,
 need to create:
-     -> Tab::MapView,
+    Tab::MapView,
     Tab::NodeDetails,
     Tab::Console,
     Tab::NodeTree,
@@ -22,7 +22,9 @@ need to create:
 * - Add macros to make rects, sqaures, and approximate circles, triangles, etc
 * - Make it look a bit nice
 
-1 - Define receiver and be able move the reveiver around to catpure ambient sound via linear distance or beizer
+ -> 1 - Define receiver and be able move the reveiver around to catpure ambient sound via linear distance or beizer
+
+ -> Redine how objects and shapes are drawn and stored
 
 2 - Define ray tracer for sound (edit above if necessary)
     - Define emitter and parameters
