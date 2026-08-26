@@ -4,7 +4,7 @@ use crate::{
     scene::Scene,
     style_sheet::{LEFT_PANEL_WIDTH, TOP_LEFT_PANEL_HEIGHT, TOP_RIGHT_PANEL_HEIGHT},
     tab::Tab,
-    tabs::mapview::MapState,
+    tabs::{mapview::MapState, terminal::TTSTerminal},
 };
 use egui_dock::{DockState, NodeIndex, TabViewer, Tree};
 
@@ -16,6 +16,7 @@ pub struct TTSState {
     pub scene: Scene,
 
     pub map: MapState,
+    pub terminal: TTSTerminal,
 
     pub settings: TTSSettings,
 }
@@ -62,7 +63,7 @@ impl TTSState {
         let [_map_panel, _console_sound_panel]: [NodeIndex; 2] = surface.split_below(
             right_panel,
             TOP_RIGHT_PANEL_HEIGHT,
-            vec![Tab::Console, Tab::SoundView],
+            vec![Tab::Terminal, Tab::SoundView],
         );
 
         let [_play_node_details_panel, _node_tree_panel]: [NodeIndex; 2] = surface.split_below(

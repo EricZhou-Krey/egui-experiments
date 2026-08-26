@@ -1,15 +1,15 @@
-use crate::state::TTSState;
+use crate::{scene_object::SceneObject, state::TTSState};
 
 pub fn nodedetails_title(_state: &mut TTSState) -> egui::WidgetText {
     "NodeDetails".into()
 }
 
 pub fn nodedetails_ui(state: &mut TTSState, ui: &mut egui::Ui) {
-    let heading: String = if let Some(object_index) = state.map.selected_object_index {
-        object_index.to_string()
-    } else {
-        "NodeDetails".into()
-    };
+    if let Some(object_index) = state.map.selected_object_index {
+        let scene_object: &mut SceneObject = &mut state.scene.objects[object_index];
 
-    ui.centered_and_justified(|ui| ui.heading(heading));
+        ui.heading(format!("{:?}", scene_object));
+    } else {
+        ui.centered_and_justified(|ui| ui.heading("No Selection"));
+    }
 }

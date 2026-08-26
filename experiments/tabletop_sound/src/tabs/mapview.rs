@@ -131,9 +131,12 @@ impl MapTool {
                 {
                     let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
                     let world_position: Vec2 = state.map.screen_to_world(screen_position);
+
+                    state.map.selected_object_index = Some(state.scene.objects.len());
                     state.scene.objects.push(SceneObject::Receiver(Box::new(Receiver {
                         shape: Shape::Point(world_position, state.map.style.receiver.clone()),
                     })));
+
                 }
             }),
 
@@ -143,6 +146,8 @@ impl MapTool {
                 {
                     let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
                     let world_position: Vec2 = state.map.screen_to_world(screen_position);
+
+                    state.map.selected_object_index = Some(state.scene.objects.len());
                     state.scene.objects.push(
                         SceneObject::Emitter(Box::new(Emitter {
                             shape: Shape::Point(world_position, state.map.style.transmitter.clone()),
@@ -184,8 +189,9 @@ impl MapTool {
                         MapAction::None,
                     );
 
-                    if let MapAction::AddingPolygon(shape) = completed_action
-                    {
+                    if let MapAction::AddingPolygon(shape) = completed_action {
+
+                        state.map.selected_object_index = Some(state.scene.objects.len());
                         state.scene.objects.push(SceneObject::Wall(Box::new(Wall {
                             shape}
                         )));

@@ -25,7 +25,6 @@ TODO: Scene object refactor, make the map centered at a world origin by default,
 
  -> 1 - Define receiver and be able move the reveiver around to catpure ambient sound via linear distance or beizer
 
-
 2 - Define ray tracer for sound (edit above if necessary)
     - Define emitter and parameters
     - Define ray and parameters
@@ -36,7 +35,7 @@ TODO: Scene object refactor, make the map centered at a world origin by default,
 - WGPU ray calculations
 
 
-* - For walls specifically, implment quadtree for optimized ray collision search
-* - Decouple mapview tools usage
-* - Naive find used, should use quadtrees later
+* - For shape finding, implment quadtree, including later for ray collisions
+* - Decouple mapview tools usage, for cleaner interface
+* - Actual ui for node details
 */
