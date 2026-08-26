@@ -27,8 +27,8 @@ pub const MAP_WALL_VERTEX_COLOR: egui::Color32 =
     egui::Color32::from_rgba_premultiplied(100, 150, 250, 100);
 pub const MAP_WALL_FILL_COLOR: egui::Color32 =
     egui::Color32::from_rgba_premultiplied(100, 150, 200, 30);
-pub const MAP_WALL_BORDER_STROKE_WIDTH: f32 = 1.0;
-pub const MAP_WALL_BORDER_COLOR: egui::Color32 =
+pub const MAP_WALL_LINE_STROKE_WIDTH: f32 = 1.0;
+pub const MAP_WALL_LINE_COLOR: egui::Color32 =
     egui::Color32::from_rgba_premultiplied(100, 150, 200, 100);
 
 pub const MAP_BACKGROUND_COLOR: egui::Color32 = egui::Color32::from_rgb(30, 30, 30);

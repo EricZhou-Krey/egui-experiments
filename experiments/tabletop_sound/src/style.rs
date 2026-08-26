@@ -1,11 +1,10 @@
-use egui::{Color32, Stroke};
+use egui::Color32;
 
 use crate::style_sheet::{
     MAP_ADDRECEIVER_ICON, MAP_ADDWALL_ICON, MAP_BACKGROUND_COLOR, MAP_MOVE_ICON, MAP_PAN_ICON,
     MAP_RECEIVER_COLOR, MAP_RECEIVER_RADIUS, MAP_REMOVE_ICON, MAP_SELECT_ICON,
-    MAP_TRANSMITTER_COLOR, MAP_TRANSMITTER_RADIUS, MAP_WALL_BORDER_COLOR,
-    MAP_WALL_BORDER_STROKE_WIDTH, MAP_WALL_FILL_COLOR, MAP_WALL_VERTEX_COLOR,
-    MAP_WALL_VERTEX_RADIUS, MAP_ZOOM_ICON,
+    MAP_TRANSMITTER_COLOR, MAP_TRANSMITTER_RADIUS, MAP_WALL_FILL_COLOR, MAP_WALL_LINE_COLOR,
+    MAP_WALL_LINE_STROKE_WIDTH, MAP_WALL_VERTEX_COLOR, MAP_WALL_VERTEX_RADIUS, MAP_ZOOM_ICON,
 };
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -16,16 +15,13 @@ pub struct PointStyle {
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LineStyle {
-    pub stroke: Stroke,
-    pub vertex_radius: f32,
-    pub vertex_color: Color32,
+    pub width: f32,
+    pub color: Color32,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct FaceStyle {
     pub fill_color: Color32,
-    pub border_stroke: Stroke,
-    pub vertex: Option<PointStyle>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -48,7 +44,9 @@ pub struct MapIcons {
 pub struct MapStyle {
     pub receiver: PointStyle,
     pub transmitter: PointStyle,
-    pub wall: FaceStyle,
+    pub wall_face: FaceStyle,
+    pub wall_line: Option<LineStyle>,
+    pub wall_vertex: Option<PointStyle>,
     pub background: BackgroundStyle,
     pub icons: MapIcons,
 }
@@ -64,14 +62,17 @@ impl Default for MapStyle {
                 radius: MAP_TRANSMITTER_RADIUS,
                 color: MAP_TRANSMITTER_COLOR,
             },
-            wall: FaceStyle {
+            wall_face: FaceStyle {
                 fill_color: MAP_WALL_FILL_COLOR,
-                border_stroke: Stroke::new(MAP_WALL_BORDER_STROKE_WIDTH, MAP_WALL_BORDER_COLOR),
-                vertex: Some(PointStyle {
-                    radius: MAP_WALL_VERTEX_RADIUS,
-                    color: MAP_WALL_VERTEX_COLOR,
-                }),
             },
+            wall_line: Some(LineStyle {
+                width: MAP_WALL_LINE_STROKE_WIDTH,
+                color: MAP_WALL_LINE_COLOR,
+            }),
+            wall_vertex: Some(PointStyle {
+                radius: MAP_WALL_VERTEX_RADIUS,
+                color: MAP_WALL_VERTEX_COLOR,
+            }),
             background: BackgroundStyle {
                 color: MAP_BACKGROUND_COLOR,
             },

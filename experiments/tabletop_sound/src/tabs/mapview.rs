@@ -3,14 +3,13 @@ use crate::{
         MAP_BASE_ZOOM, MAP_INTERACTION_RADIUS, MAP_ZOOM_LIMIT, MAP_ZOOM_SENSITIVITY,
         generate_sample_transmitter_sound},
         scene_object::{Emitter, Receiver, SceneObject, Shape, Wall},
-        state::TTSState, style::MapStyle,
+        state::TTSState, style::{FaceStyle, LineStyle, MapStyle, PointStyle},
         style_sheet::{
         MAP_ADDEMITTER_ICON, MAP_ADDRECEIVER_ICON, MAP_ADDWALL_ICON, MAP_MOVE_ICON, MAP_PAN_ICON,
         MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_BUTTON_SIZE, MAP_TOOLBAR_CORNER_RADIUS,
         MAP_TOOLBAR_MARGIN, MAP_TOOLBAR_PADDING, MAP_ZOOM_ICON,
     }
 };
-use egui::Painter;
 use glam::Vec2;
 use std::ops::{Deref, DerefMut};
 
@@ -162,11 +161,16 @@ impl MapTool {
                         MapAction::None => {
                             state.map.action_in_progress =
                                 MapAction::AddingPolygon(
-                                    Shape::Polygon(vec![world_position], state.map.style.wall.clone())
+                                    Shape::Polygon(
+                                        vec![world_position],
+                                        state.map.style.wall_face.clone(),
+                                        state.map.style.wall_line.clone(),
+                                        state.map.style.wall_vertex.clone(),
+                                    )
                                 );
                         }
                         MapAction::AddingPolygon(shape) => {
-                            if let Shape::Polygon(vertices, _) = shape {
+                            if let Shape::Polygon(vertices, ..) = shape {
                                 vertices.push(world_position);
                             }
                         }
@@ -288,55 +292,72 @@ pub fn mapview_ui(state: &mut TTSState, ui: &mut egui::Ui) {
 fn main_view(state: &mut TTSState, ui: &mut egui::Ui) {
     MapTool::interact(state, ui);
 
-    let painter: &Painter = ui.painter();
+    let painter: &egui::Painter = ui.painter();
     
     let mut scene_shapes: Vec<&Shape> = state.scene.objects.iter().map(|object| object.shape()).collect();
     if let MapAction::AddingPolygon(shape) = &state.map.action_in_progress {
         scene_shapes.push(shape);
     }
 
+    fn draw_vertex(zoom: f32, painter: &egui::Painter, screen_position: &Vec2, point_style: &PointStyle) {
+        painter.add(egui::Shape::circle_filled(
+            egui::Pos2::new(screen_position.x, screen_position.y),
+            point_style.radius * zoom,
+            point_style.color,
+        ));
+    }
+
+    fn draw_line(zoom: f32, painter: &egui::Painter, screen_a: &Vec2, screen_b: &Vec2, line_style: &LineStyle) {
+        painter.add(egui::Shape::line_segment(
+            [egui::Pos2::new(screen_a.x, screen_a.y),
+            egui::Pos2::new(screen_b.x, screen_b.y)],
+            egui::Stroke::new(line_style.width * zoom, line_style.color),
+        ));
+    }
+
+    fn draw_polygon(painter: &egui::Painter, screen_positions: &[Vec2], face_style: &FaceStyle) {
+        painter.add(egui::Shape::convex_polygon(
+            screen_positions.iter().map(|p| egui::Pos2::new(p.x, p.y)).collect(),
+            face_style.fill_color,
+            egui::Stroke::NONE,
+        ));
+    }
+
     for shape in scene_shapes {
         match shape {
             Shape::Point(position, point_style) => {
-            let screen_position: Vec2 = state.map.world_to_screen(*position);
-                painter.add(egui::Shape::circle_filled(
-                    egui::Pos2::new(screen_position.x, screen_position.y),
-                    point_style.radius * state.map.zoom,
-                    point_style.color,
-                ));
+                let screen_position: Vec2 = state.map.world_to_screen(*position);
+
+                draw_vertex(state.map.zoom, painter, &screen_position, point_style);
             }
-            Shape::Line(a, b, line_style) => {
+            Shape::Line(a, b, line_style, point_style) => {
                 let screen_a: Vec2 = state.map.world_to_screen(*a);
                 let screen_b: Vec2 = state.map.world_to_screen(*b);
-                
-                painter.add(egui::Shape::line_segment(
-                        [egui::Pos2::new(screen_a.x, screen_a.y),
-                        egui::Pos2::new(screen_b.x, screen_b.y)],
-                        line_style.stroke,
-                    ));
+
+                draw_line(state.map.zoom, painter, &screen_a, &screen_b, line_style);
+                if let Some(point_style) = point_style {
+                    draw_vertex(state.map.zoom, painter, &screen_a, point_style);
+                    draw_vertex(state.map.zoom, painter, &screen_b, point_style);
+                }
+
             }
-            Shape::Polygon(vertices, face_style) => {
-                let points: Vec<egui::Pos2> = vertices
-                    .iter()
-                    .map(|point: &Vec2| {
-                        let screen_position: Vec2 = state.map.world_to_screen(*point);
-                        egui::Pos2::new(screen_position.x, screen_position.y)
-                    })
-                    .collect();
+            Shape::Polygon(vertices, face_style, line_style, point_style) => {
+                let screen_positions: Vec<Vec2> = vertices.iter().map(|point: &Vec2| {
+                    state.map.world_to_screen(*point)
+                }).collect();
 
-                painter.add(egui::Shape::convex_polygon(
-                    points.clone(),
-                    face_style.fill_color,
-                    face_style.border_stroke,
-                ));
+                draw_polygon(painter, &screen_positions, face_style);
 
-                if points.len() > 2 {
-                    for line_points in points.windows(2) {
-                        painter.add(egui::Shape::line_segment(
-                                [line_points[0] , line_points[1]], face_style.border_stroke
-                        ));
+                if vertices.len() > 2 && let Some(line_style) = line_style {
+                    for screen_line_vertices in screen_positions.windows(2) {
+                        draw_line(state.map.zoom, painter, &screen_line_vertices[0], &screen_line_vertices[1], line_style);
                     }
+                }
 
+                if let Some(point_style) = point_style {
+                    for screen_position in screen_positions {
+                        draw_vertex(state.map.zoom, painter, &screen_position, point_style);
+                    }
                 }
             }
         }

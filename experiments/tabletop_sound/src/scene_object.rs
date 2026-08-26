@@ -5,8 +5,8 @@ use kira::sound::static_sound::StaticSoundData;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Shape {
     Point(Vec2, PointStyle),
-    Line(Vec2, Vec2, LineStyle),
-    Polygon(Vec<Vec2>, FaceStyle),
+    Line(Vec2, Vec2, LineStyle, Option<PointStyle>),
+    Polygon(Vec<Vec2>, FaceStyle, Option<LineStyle>, Option<PointStyle>),
 }
 
 impl Shape {
