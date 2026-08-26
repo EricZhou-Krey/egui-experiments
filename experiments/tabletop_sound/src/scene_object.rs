@@ -19,8 +19,8 @@ impl Shape {
                 *a += delta;
                 *b += delta;
             }
-            Self::Polygon(verticies, ..) => {
-                for vertex in verticies.iter_mut() {
+            Self::Polygon(vertices, ..) => {
+                for vertex in vertices.iter_mut() {
                     *vertex += delta;
                 }
             }
@@ -40,17 +40,17 @@ impl Shape {
         match self {
             Self::Point(position, ..) => origin.distance(*position) <= radius,
             Self::Line(a, b, ..) => line_distance(origin, a, b) <= radius,
-            Self::Polygon(verticies, ..) => match verticies.len() {
+            Self::Polygon(vertices, ..) => match vertices.len() {
                 0 => false,
-                1 => origin.distance(verticies[0]) <= radius,
-                2 => line_distance(origin, &verticies[0], &verticies[1]) <= radius,
+                1 => origin.distance(vertices[0]) <= radius,
+                2 => line_distance(origin, &vertices[0], &vertices[1]) <= radius,
                 _ => {
                     let mut is_inside: bool = false;
-                    let mut j: usize = verticies.len() - 1;
+                    let mut j: usize = vertices.len() - 1;
 
-                    for i in 0..verticies.len() {
-                        let vi: Vec2 = verticies[i];
-                        let vj: Vec2 = verticies[j];
+                    for i in 0..vertices.len() {
+                        let vi: Vec2 = vertices[i];
+                        let vj: Vec2 = vertices[j];
 
                         if line_distance(origin, &vj, &vi) <= radius {
                             return true;

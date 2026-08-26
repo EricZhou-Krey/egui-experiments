@@ -1,8 +1,13 @@
 use crate::{
     logic_sheet::{
-        MAP_BASE_ZOOM, MAP_INTERACTION_RADIUS, MAP_ZOOM_LIMIT, MAP_ZOOM_SENSITIVITY, generate_sample_transmitter_sound
-    }, scene_object::{Emitter, Receiver, SceneObject, Shape, Wall}, state::TTSState, style::MapStyle, style_sheet::{
-        MAP_ADDEMITTER_ICON, MAP_ADDRECEIVER_ICON, MAP_ADDWALL_ICON, MAP_MOVE_ICON, MAP_PAN_ICON, MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_BUTTON_SIZE, MAP_TOOLBAR_CORNER_RADIUS, MAP_TOOLBAR_MARGIN, MAP_TOOLBAR_PADDING, MAP_ZOOM_ICON
+        MAP_BASE_ZOOM, MAP_INTERACTION_RADIUS, MAP_ZOOM_LIMIT, MAP_ZOOM_SENSITIVITY,
+        generate_sample_transmitter_sound},
+        scene_object::{Emitter, Receiver, SceneObject, Shape, Wall},
+        state::TTSState, style::MapStyle,
+        style_sheet::{
+        MAP_ADDEMITTER_ICON, MAP_ADDRECEIVER_ICON, MAP_ADDWALL_ICON, MAP_MOVE_ICON, MAP_PAN_ICON,
+        MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_BUTTON_SIZE, MAP_TOOLBAR_CORNER_RADIUS,
+        MAP_TOOLBAR_MARGIN, MAP_TOOLBAR_PADDING, MAP_ZOOM_ICON,
     }
 };
 use egui::Painter;
@@ -26,7 +31,7 @@ pub enum MapTool {
 pub enum MapAction {
     #[default]
     None,
-    AddingPolygon(Vec<Vec2>),
+    AddingPolygon(Shape),
     Moving(usize),
 }
 
@@ -144,9 +149,6 @@ impl MapTool {
                             shape: Shape::Point(world_position, state.map.style.transmitter.clone()),
                             sound_data: generate_sample_transmitter_sound(),
                         })));
-
-                    // TODO: TEMP TEST
-                    state.scene.audio_manager.play(generate_sample_transmitter_sound()).unwrap();
                 }
             }),
 
@@ -159,10 +161,14 @@ impl MapTool {
                     match &mut state.map.action_in_progress {
                         MapAction::None => {
                             state.map.action_in_progress =
-                                MapAction::AddingPolygon(vec![world_position]);
+                                MapAction::AddingPolygon(
+                                    Shape::Polygon(vec![world_position], state.map.style.wall.clone())
+                                );
                         }
-                        MapAction::AddingPolygon(vertices) => {
-                            vertices.push(world_position);
+                        MapAction::AddingPolygon(shape) => {
+                            if let Shape::Polygon(vertices, _) = shape {
+                                vertices.push(world_position);
+                            }
                         }
                         MapAction::Moving(_) => {}
                     }
@@ -174,12 +180,11 @@ impl MapTool {
                         MapAction::None,
                     );
 
-                    if let MapAction::AddingPolygon(vertices) = completed_action
-                        && vertices.len() >= 3
+                    if let MapAction::AddingPolygon(shape) = completed_action
                     {
                         state.scene.objects.push(SceneObject::Wall(Box::new(Wall {
-                            shape: Shape::Polygon(vertices, state.map.style.wall.clone()),
-                        })));
+                            shape}
+                        )));
                     }
                 }
 
@@ -284,62 +289,57 @@ fn main_view(state: &mut TTSState, ui: &mut egui::Ui) {
     MapTool::interact(state, ui);
 
     let painter: &Painter = ui.painter();
-
-    for scene_object in &state.scene.objects {
-        match scene_object {
-            SceneObject::Wall(wall) => {
-                if let Shape::Polygon(vertices, face_style) = &wall.shape {
-                    let points: Vec<egui::Pos2> = vertices
-                        .iter()
-                        .map(|point: &Vec2| {
-                            let screen_position: Vec2 = state.map.world_to_screen(*point);
-                            egui::Pos2::new(screen_position.x, screen_position.y)
-                        })
-                        .collect();
-
-                    painter.add(egui::Shape::convex_polygon(
-                        points,
-                        face_style.fill_color,
-                        face_style.border_stroke,
-                    ));
-                }
-            }
-            SceneObject::Receiver(receiver) => {
-                if let Shape::Point(position, point_style) = &receiver.shape {
-                    let screen_position: Vec2 = state.map.world_to_screen(*position);
-                    painter.add(egui::Shape::circle_filled(
-                        egui::Pos2::new(screen_position.x, screen_position.y),
-                        point_style.radius * state.map.zoom,
-                        point_style.color,
-                    ));
-                }
-            }
-            SceneObject::Emitter(emitter) => {
-                if let Shape::Point(position, point_style) = &emitter.shape {
-                    let screen_position: Vec2 = state.map.world_to_screen(*position);
-                    painter.add(egui::Shape::circle_filled(
-                        egui::Pos2::new(screen_position.x, screen_position.y),
-                        point_style.radius * state.map.zoom,
-                        point_style.color,
-                    ));
-                }
-            }
-        }
+    
+    let mut scene_shapes: Vec<&Shape> = state.scene.objects.iter().map(|object| object.shape()).collect();
+    if let MapAction::AddingPolygon(shape) = &state.map.action_in_progress {
+        scene_shapes.push(shape);
     }
 
-    match &state.map.action_in_progress {
-        MapAction::None => {}
-        MapAction::AddingPolygon(vertices) => {
-            for wall_vertex in vertices {
-                let screen_position: Vec2 = state.map.world_to_screen(*wall_vertex);
+    for shape in scene_shapes {
+        match shape {
+            Shape::Point(position, point_style) => {
+            let screen_position: Vec2 = state.map.world_to_screen(*position);
                 painter.add(egui::Shape::circle_filled(
                     egui::Pos2::new(screen_position.x, screen_position.y),
-                    state.map.style.wall.vertex_radius * state.map.zoom,
-                    state.map.style.wall.vertex_color,
+                    point_style.radius * state.map.zoom,
+                    point_style.color,
                 ));
             }
+            Shape::Line(a, b, line_style) => {
+                let screen_a: Vec2 = state.map.world_to_screen(*a);
+                let screen_b: Vec2 = state.map.world_to_screen(*b);
+                
+                painter.add(egui::Shape::line_segment(
+                        [egui::Pos2::new(screen_a.x, screen_a.y),
+                        egui::Pos2::new(screen_b.x, screen_b.y)],
+                        line_style.stroke,
+                    ));
+            }
+            Shape::Polygon(vertices, face_style) => {
+                let points: Vec<egui::Pos2> = vertices
+                    .iter()
+                    .map(|point: &Vec2| {
+                        let screen_position: Vec2 = state.map.world_to_screen(*point);
+                        egui::Pos2::new(screen_position.x, screen_position.y)
+                    })
+                    .collect();
+
+                painter.add(egui::Shape::convex_polygon(
+                    points.clone(),
+                    face_style.fill_color,
+                    face_style.border_stroke,
+                ));
+
+                if points.len() > 2 {
+                    for line_points in points.windows(2) {
+                        painter.add(egui::Shape::line_segment(
+                                [line_points[0] , line_points[1]], face_style.border_stroke
+                        ));
+                    }
+
+                }
+            }
         }
-        MapAction::Moving(_) => {}
     }
 }
 

@@ -25,8 +25,7 @@ pub struct LineStyle {
 pub struct FaceStyle {
     pub fill_color: Color32,
     pub border_stroke: Stroke,
-    pub vertex_radius: f32,
-    pub vertex_color: Color32,
+    pub vertex: Option<PointStyle>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -68,8 +67,10 @@ impl Default for MapStyle {
             wall: FaceStyle {
                 fill_color: MAP_WALL_FILL_COLOR,
                 border_stroke: Stroke::new(MAP_WALL_BORDER_STROKE_WIDTH, MAP_WALL_BORDER_COLOR),
-                vertex_radius: MAP_WALL_VERTEX_RADIUS,
-                vertex_color: MAP_WALL_VERTEX_COLOR,
+                vertex: Some(PointStyle {
+                    radius: MAP_WALL_VERTEX_RADIUS,
+                    color: MAP_WALL_VERTEX_COLOR,
+                }),
             },
             background: BackgroundStyle {
                 color: MAP_BACKGROUND_COLOR,

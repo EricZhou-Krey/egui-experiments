@@ -8,7 +8,7 @@ use egui::{Color32, Painter, Pos2, Rect, Shape, Stroke, Ui};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct InteractableTriangulationMeshSettings {
-    pub n_internal_verticies: usize,
+    pub n_internal_vertices: usize,
     pub vertex_speed: f32,
     pub n_interactable: usize,
     pub interaction_radius: f32,
@@ -17,7 +17,7 @@ pub struct InteractableTriangulationMeshSettings {
 impl Default for InteractableTriangulationMeshSettings {
     fn default() -> Self {
         Self {
-            n_internal_verticies: 200,
+            n_internal_vertices: 200,
             vertex_speed: 0.01,
             n_interactable: 10,
             interaction_radius: 0.05,
@@ -57,12 +57,12 @@ impl InteractableTriangulationMesh {
     fn new(settings: InteractableTriangulationMeshSettings) -> Self {
         InteractableTriangulationMesh {
             animated_mesh: AnimatedTriangulationMesh::new(
-                settings.n_internal_verticies,
+                settings.n_internal_vertices,
                 settings.vertex_speed,
             ),
             interactable_vertices: rand::seq::index::sample(
                 &mut rand::rng(),
-                settings.n_internal_verticies,
+                settings.n_internal_vertices,
                 settings.n_interactable,
             )
             .into_iter()
