@@ -80,7 +80,7 @@ impl MapTool {
                     let delta_vec: Vec2 = Vec2::new(pointer_delta.x, pointer_delta.y);
                     let world_delta: Vec2 = delta_vec / state.map.zoom;
 
-                    state.scene.objects[object_index].mut_shape().translate(world_delta);
+                    state.scene.get_object_mut(object_index).mut_shape().translate(world_delta);
                 }
 
                 if input_state.pointer.primary_released() {
@@ -120,7 +120,7 @@ impl MapTool {
                         .scene
                         .find_object_index_around(world_position, search_radius)
                     {
-                        state.scene.objects.remove(object_index);
+                        state.scene.remove_object(object_index);
                     }
                 }
             }),
@@ -132,10 +132,10 @@ impl MapTool {
                     let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
                     let world_position: Vec2 = state.map.screen_to_world(screen_position);
 
-                    state.map.selected_object_index = Some(state.scene.objects.len());
-                    state.scene.objects.push(SceneObject::Receiver(Box::new(Receiver {
+                    state.map.selected_object_index = Some(state.scene.get_objects().len());
+                    state.scene.add_object(SceneObject::Receiver(Receiver {
                         shape: Shape::Point(world_position, state.map.style.receiver.clone()),
-                    })));
+                    }));
 
                 }
             }),
@@ -147,8 +147,8 @@ impl MapTool {
                     let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
                     let world_position: Vec2 = state.map.screen_to_world(screen_position);
 
-                    state.map.selected_object_index = Some(state.scene.objects.len());
-                    state.scene.objects.push(
+                    state.map.selected_object_index = Some(state.scene.objects().len());
+                    state.scene.add_object(
                         SceneObject::Emitter(Box::new(Emitter {
                             shape: Shape::Point(world_position, state.map.style.transmitter.clone()),
                             sound_data: generate_sample_transmitter_sound(),
@@ -191,10 +191,10 @@ impl MapTool {
 
                     if let MapAction::AddingPolygon(shape) = completed_action {
 
-                        state.map.selected_object_index = Some(state.scene.objects.len());
-                        state.scene.objects.push(SceneObject::Wall(Box::new(Wall {
+                        state.map.selected_object_index = Some(state.scene.objects().len());
+                        state.scene.add_object(SceneObject::Wall(Wall {
                             shape}
-                        )));
+                        ));
                     }
                 }
 
@@ -300,7 +300,7 @@ fn main_view(state: &mut TTSState, ui: &mut egui::Ui) {
 
     let painter: &egui::Painter = ui.painter();
     
-    let mut scene_shapes: Vec<&Shape> = state.scene.objects.iter().map(|object| object.shape()).collect();
+    let mut scene_shapes: Vec<&Shape> = state.scene.objects().iter().map(|object| object.shape()).collect();
     if let MapAction::AddingPolygon(shape) = &state.map.action_in_progress {
         scene_shapes.push(shape);
     }

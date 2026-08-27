@@ -20,7 +20,7 @@ pub struct SceneSettings {
 }
 
 pub struct Scene {
-    pub objects: Vec<SceneObject>,
+    objects: Vec<SceneObject>,
     pub audio_manager: AudioManager,
     pub settings: SceneSettings,
 }
@@ -56,5 +56,24 @@ impl Scene {
             .rposition(|object: &SceneObject| -> bool {
                 object.shape().is_around(position, radius)
             })
+    }
+
+    pub fn add_object(&mut self, object: SceneObject) -> usize {
+        let index = self.objects.len();
+        self.objects.push(object);
+        index
+    }
+
+    pub fn remove_object(&mut self, index: usize) -> SceneObject {
+        let removed_object = self.objects.remove(index);
+        removed_object
+    }
+
+    pub fn get_objects(&self) -> &[SceneObject] {
+        &self.objects
+    }
+
+    pub fn get_object_mut(&mut self, index: usize) -> Option<&mut SceneObject> {
+        self.objects.get_mut(index)
     }
 }

@@ -92,8 +92,8 @@ pub struct Emitter {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SceneObject {
-    Wall(Box<Wall>),
-    Receiver(Box<Receiver>),
+    Wall(Wall),
+    Receiver(Receiver),
     Emitter(Box<Emitter>),
 }
 
