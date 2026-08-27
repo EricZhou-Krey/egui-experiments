@@ -1,27 +1,21 @@
 use egui::{Color32, TextStyle};
 use std::collections::HashMap;
 
-use crate::style_sheet::{
-    BACKGROUND_COLOR, BACKGROUND_CORNER_RADIUS, HOST, ICON, NEOFETCH_SPECS, PROMPT_TEXT_COLOR, SELECTION_COLOR, TEXT_COLOR,
-    TEXT_STYLE, USER
+use crate::{
+    command::{
+        CatCommand, CdCommand, ClearCommand, Command, CommandFn, CommandResult, HelpCommand,
+        LsCommand, NeofetchCommand, PwdCommand,
+    },
+    file_system::{Directory, FileSystemNode, TerminalDirectory, TerminalFile, TextFile},
+    style_sheet::{
+        BACKGROUND_COLOR, BACKGROUND_CORNER_RADIUS, HOST, PROMPT_TEXT_COLOR, SELECTION_COLOR,
+        TEXT_COLOR, TEXT_STYLE, USER,
+    },
 };
+
+pub mod command;
+pub mod file_system;
 pub mod style_sheet;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum FileSystemNode {
-    File {
-        content: String,
-    },
-    Directory {
-        children: HashMap<String, FileSystemNode>,
-    },
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum CommandResult {
-    Handled,
-    Unhandled(String, Vec<String>),
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TerminalStyle {
@@ -50,50 +44,63 @@ impl Default for TerminalStyle {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Terminal {
+#[derive(Clone)]
+pub struct Terminal<F, D> {
     pub history: Vec<String>,
     pub input: String,
     pub current_directory: Vec<String>,
-    pub file_system: FileSystemNode,
+    pub file_system: FileSystemNode<F, D>,
     pub style: TerminalStyle,
+    pub commands: HashMap<String, CommandFn<F, D>>,
 }
 
-impl Default for Terminal {
+impl Default for Terminal<TerminalFile, TerminalDirectory> {
     fn default() -> Self {
-        let mut nest_children: HashMap<String, FileSystemNode> = HashMap::new();
+        let mut nest_children: HashMap<String, FileSystemNode<TerminalFile, TerminalDirectory>> =
+            HashMap::new();
         nest_children.insert(
             "readme.txt".to_string(),
-            FileSystemNode::File {
+            FileSystemNode::File(TerminalFile::Text(TextFile {
                 content: "README lol!, bird larping frfr".to_string(),
-            },
+            })),
         );
 
-        let mut nest_directory: HashMap<String, FileSystemNode> = HashMap::new();
+        let mut nest_directory: HashMap<String, FileSystemNode<TerminalFile, TerminalDirectory>> =
+            HashMap::new();
         nest_directory.insert(
             "bird".to_string(),
-            FileSystemNode::Directory {
+            FileSystemNode::Directory(TerminalDirectory {
                 children: nest_children,
-            },
+            }),
         );
 
-        let mut root_children: HashMap<String, FileSystemNode> = HashMap::new();
+        let mut root_children: HashMap<String, FileSystemNode<TerminalFile, TerminalDirectory>> =
+            HashMap::new();
         root_children.insert(
             "nest".to_string(),
-            FileSystemNode::Directory {
+            FileSystemNode::Directory(TerminalDirectory {
                 children: nest_directory,
-            },
+            }),
         );
 
         let mut terminal: Self = Self {
             history: Vec::new(),
             input: String::new(),
             current_directory: vec!["nest".to_string(), "bird".to_string()],
-            file_system: FileSystemNode::Directory {
+            file_system: FileSystemNode::Directory(TerminalDirectory {
                 children: root_children,
-            },
+            }),
             style: TerminalStyle::default(),
+            commands: HashMap::new(),
         };
+
+        terminal.register_command::<ClearCommand>();
+        terminal.register_command::<PwdCommand>();
+        terminal.register_command::<LsCommand>();
+        terminal.register_command::<CdCommand>();
+        terminal.register_command::<CatCommand>();
+        terminal.register_command::<NeofetchCommand>();
+        terminal.register_command::<HelpCommand>();
 
         terminal.execute_command("neofetch");
 
@@ -101,27 +108,38 @@ impl Default for Terminal {
     }
 }
 
-impl Terminal {
-    fn get_node<'a>(&'a self, path_parts_slice: &[String]) -> Option<&'a FileSystemNode> {
-        let mut current_node: &FileSystemNode = &self.file_system;
+impl<F, D> Terminal<F, D>
+where
+    D: Directory<Node = FileSystemNode<F, D>>,
+{
+    pub fn get_node<'a>(&'a self, path_parts_slice: &[String]) -> Option<&'a FileSystemNode<F, D>> {
+        let mut current_node: &FileSystemNode<F, D> = &self.file_system;
 
         for path_part in path_parts_slice {
             if path_part.is_empty() {
                 continue;
             }
             match current_node {
-                FileSystemNode::Directory { children } => {
-                    if let Some(child_node) = children.get(path_part) {
+                FileSystemNode::Directory(dir) => {
+                    if let Some(child_node) = dir.children().get(path_part) {
                         current_node = child_node;
                     } else {
                         return None;
                     }
                 }
-                FileSystemNode::File { .. } => return None,
+                FileSystemNode::File(_) => return None,
             }
         }
 
         Some(current_node)
+    }
+
+    pub fn register_command<C: Command<F, D>>(&mut self) {
+        self.commands.insert(C::name().to_string(), C::execute);
+    }
+
+    pub fn remove_command(&mut self, name: &str) {
+        self.commands.remove(name);
     }
 
     pub fn execute_command(&mut self, raw_command: &str) -> CommandResult {
@@ -134,8 +152,7 @@ impl Terminal {
         );
         self.history.push(prompt);
 
-        let parts: Vec<&str> =
-            raw_command.split_whitespace().collect::<Vec<&str>>();
+        let parts: Vec<&str> = raw_command.split_whitespace().collect::<Vec<&str>>();
 
         if parts.is_empty() {
             return CommandResult::Handled;
@@ -144,131 +161,18 @@ impl Terminal {
         let command: &str = parts[0];
         let args: &[&str] = &parts[1..];
 
-        match command {
-            "clear" => {
-                self.history.clear();
-            }
-            "pwd" => {
-                let path: String = format!("/{}", self.current_directory.join("/"));
-                self.history.push(path);
-            }
-            "ls" => {
-                if let Some(FileSystemNode::Directory { children }) =
-                    self.get_node(&self.current_directory)
-                {
-                    let mut directory_files: Vec<String> =
-                        children.keys().cloned().collect::<Vec<String>>();
-                    directory_files.sort();
-                    self.history.push(directory_files.join("  "));
-                }
-            }
-            "cd" => {
-                let default_target_directory: &str = "/";
-                let target_directory: &str = args
-                    .first()
-                    .copied()
-                    .unwrap_or(default_target_directory);
+        let command_function_option: Option<CommandFn<F, D>> = self.commands.get(command).copied();
 
-                let mut new_path: Vec<String> = if target_directory.starts_with('/') {
-                    Vec::new()
-                } else {
-                    self.current_directory.clone()
-                };
+        if let Some(command_function) = command_function_option {
+            command_function(self, args)
+        } else {
+            let unhandled_arguments: Vec<String> = args
+                .iter()
+                .map(|string_reference: &&str| -> String { string_reference.to_string() })
+                .collect::<Vec<String>>();
 
-                for path_part in target_directory.split('/') {
-                    match path_part {
-                        "" | "." => {}
-                        ".." => {
-                            new_path.pop();
-                        }
-                        _ => new_path.push(path_part.to_string()),
-                    }
-                }
-
-                if let Some(FileSystemNode::Directory { .. }) = self.get_node(&new_path) {
-                    self.current_directory = new_path;
-                } else {
-                    self.history.push(format!(
-                        "cd: {}: No such file or directory",
-                        target_directory
-                    ));
-                }
-            }
-            "cat" => {
-                if let Some(target_file) = args.first() {
-                    let mut file_path: Vec<String> = self.current_directory.clone();
-                    file_path.push(target_file.to_string());
-
-                    if let Some(FileSystemNode::File { content }) = self.get_node(&file_path) {
-                        self.history.push(content.clone());
-                    } else {
-                        self.history
-                            .push(format!("cat: {}: No such file", target_file));
-                    }
-                } else {
-                    self.history.push("cat: missing file operand".to_string());
-                }
-            }
-            "neofetch" => {
-                let mut os_info: Vec<String> = vec![
-                    format!("\x1b[1;36m{}@{}\x1b[0m", self.style.user, self.style.host),
-                ];
-
-                for spec in NEOFETCH_SPECS {
-                    os_info.push(spec.to_string());
-                }
-
-                let icon_lines: Vec<&str> = ICON
-                    .lines()
-                    .skip_while(|line: &&str| -> bool { line.is_empty() })
-                    .collect();
-
-                let maximum_width: usize = icon_lines
-                    .iter()
-                    .map(|line: &&str| -> usize { line.chars().count() })
-                    .max()
-                    .unwrap_or(0);
-
-                let start_offset_index: usize = (icon_lines
-                    .len()
-                    .saturating_sub(os_info.len()))
-                    / 2;
-
-                let mut info: std::vec::IntoIter<String> =
-                    os_info.into_iter();
-
-                for (line_index, line) in icon_lines.into_iter().enumerate() {
-                    let padded_icon: String =
-                        format!("{:<width$}", line, width = maximum_width + 4);
-
-                    if line_index >= start_offset_index && let Some(info_text) = info.next() {
-                        self.history
-                            .push(format!("{}{}", padded_icon, info_text));
-                        continue;
-                    }
-                    self.history.push(padded_icon);
-                }
-            }
-            "help" => {
-                self.history.push(
-                    "Available built-in commands: clear, pwd, ls, cd, cat, neofetch, help"
-                        .to_string(),
-                );
-            }
-            _ => {
-                let unhandled_arguments: Vec<String> = args
-                    .iter()
-                    .map(|string_reference: &&str| -> String { string_reference.to_string() })
-                    .collect::<Vec<String>>();
-
-                return CommandResult::Unhandled(
-                    command.to_string(),
-                    unhandled_arguments,
-                );
-            }
+            CommandResult::Unhandled(command.to_string(), unhandled_arguments)
         }
-
-        CommandResult::Handled
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui) -> Option<CommandResult> {
@@ -306,8 +210,7 @@ impl Terminal {
                             };
                         let mut remaining: &str = line.as_str();
 
-                        while let Some(escape_sequence_start_index) = remaining.find("\x1b[")
-                        {
+                        while let Some(escape_sequence_start_index) = remaining.find("\x1b[") {
                             if escape_sequence_start_index > 0 {
                                 layout_job.append(
                                     &remaining[..escape_sequence_start_index],
@@ -321,8 +224,7 @@ impl Terminal {
                             if let Some(letter_m_index) = string_after_escape.find('m') {
                                 let codes: &str = &string_after_escape[..letter_m_index];
 
-                                let code_parts: std::str::Split<char> =
-                                    codes.split(';');
+                                let code_parts: std::str::Split<char> = codes.split(';');
 
                                 for code_part in code_parts {
                                     crate::style_sheet::apply_ansi_code(
@@ -384,8 +286,7 @@ impl Terminal {
                         self.input.clear();
 
                         if !command.trim().is_empty() {
-                            let exec_result: CommandResult =
-                                self.execute_command(&command);
+                            let exec_result: CommandResult = self.execute_command(&command);
 
                             if let CommandResult::Unhandled(..) = exec_result {
                                 final_command_result = Some(exec_result);
@@ -401,7 +302,7 @@ impl Terminal {
     }
 }
 
-impl eframe::App for Terminal {
+impl eframe::App for Terminal<TerminalFile, TerminalDirectory> {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.ui(ui);
     }

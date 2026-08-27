@@ -66,6 +66,7 @@ pub const NEOFETCH_SPECS: &[&str] = &[
     "\x1b[100m   \x1b[101m   \x1b[102m   \x1b[103m   \x1b[104m   \x1b[105m   \x1b[106m   \x1b[107m   \x1b[0m",
 ];
 
+pub const ICON_PADDING: usize = 4;
 pub const TEXT_COLOR: egui::Color32 = egui::Color32::from_rgb(200, 200, 200);
 pub const PROMPT_TEXT_COLOR: egui::Color32 = egui::Color32::from_rgb(80, 250, 120);
 pub const SELECTION_COLOR: egui::Color32 =
@@ -99,7 +100,7 @@ pub fn apply_ansi_code(
     text_format: &mut egui::text::TextFormat,
     default_text_color: egui::Color32,
     default_background_color: egui::Color32,
-) -> () {
+) {
     match code_string {
         "0" => {
             text_format.color = default_text_color;

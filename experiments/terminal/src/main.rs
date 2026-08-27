@@ -1,4 +1,7 @@
-use terminal::Terminal;
+use terminal::{
+    file_system::{TerminalDirectory, TerminalFile},
+    Terminal,
+};
 
 fn main() -> eframe::Result {
     let native_options = eframe::NativeOptions {
@@ -9,6 +12,6 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "egui-experiments",
         native_options,
-        Box::new(|_cc| Ok(Box::<Terminal>::default())),
+        Box::new(|_cc| Ok(Box::<Terminal<TerminalFile, TerminalDirectory>>::default())),
     )
 }
