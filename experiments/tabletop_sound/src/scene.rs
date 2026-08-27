@@ -69,11 +69,11 @@ impl Scene {
         removed_object
     }
 
-    pub fn get_objects(&self) -> &[SceneObject] {
+    pub fn objects(&self) -> &[SceneObject] {
         &self.objects
     }
 
-    pub fn get_object_mut(&mut self, index: usize) -> Option<&mut SceneObject> {
+    pub fn object_mut(&mut self, index: usize) -> Option<&mut SceneObject> {
         self.objects.get_mut(index)
     }
 }

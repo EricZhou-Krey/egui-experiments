@@ -1,16 +1,19 @@
 use std::ops::{Deref, DerefMut};
 
-use terminal::Terminal;
+use terminal::{
+    file_system::{TerminalDirectory, TerminalFile},
+    Terminal,
+};
 
 use crate::state::TTSState;
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct TTSTerminal {
-    internal_terminal: Terminal,
+    internal_terminal: Terminal<TerminalFile, TerminalDirectory>,
 }
 
 impl Deref for TTSTerminal {
-    type Target = Terminal;
+    type Target = Terminal<TerminalFile, TerminalDirectory>;
     fn deref(&self) -> &Self::Target {
         &self.internal_terminal
     }

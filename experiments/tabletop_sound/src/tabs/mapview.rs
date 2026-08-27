@@ -80,7 +80,9 @@ impl MapTool {
                     let delta_vec: Vec2 = Vec2::new(pointer_delta.x, pointer_delta.y);
                     let world_delta: Vec2 = delta_vec / state.map.zoom;
 
-                    state.scene.get_object_mut(object_index).mut_shape().translate(world_delta);
+                    if let Some(scene_object) = state.scene.object_mut(object_index) {
+                        scene_object.mut_shape().translate(world_delta);
+                    }
                 }
 
                 if input_state.pointer.primary_released() {
@@ -132,7 +134,7 @@ impl MapTool {
                     let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
                     let world_position: Vec2 = state.map.screen_to_world(screen_position);
 
-                    state.map.selected_object_index = Some(state.scene.get_objects().len());
+                    state.map.selected_object_index = Some(state.scene.objects().len());
                     state.scene.add_object(SceneObject::Receiver(Receiver {
                         shape: Shape::Point(world_position, state.map.style.receiver.clone()),
                     }));

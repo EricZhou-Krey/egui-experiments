@@ -44,7 +44,7 @@ impl Default for TerminalStyle {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Terminal<F, D> {
     pub history: Vec<String>,
     pub input: String,
