@@ -65,8 +65,7 @@ impl Scene {
     }
 
     pub fn remove_object(&mut self, index: usize) -> SceneObject {
-        let removed_object = self.objects.remove(index);
-        removed_object
+        self.objects.remove(index)
     }
 
     pub fn objects(&self) -> &[SceneObject] {

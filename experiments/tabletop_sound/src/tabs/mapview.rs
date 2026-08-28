@@ -47,20 +47,22 @@ impl MapTool {
     ];
 
     pub fn interact(state: &mut TTSState, ui: &mut egui::Ui) {
+        let response: egui::Response = ui.allocate_response(ui.available_size(), egui::Sense::click_and_drag());
+
         match state.map.map_selected_tool {
-            MapTool::Zoom => ui.input(|input_state: &egui::InputState| {
-                if input_state.pointer.primary_down() {
-                    let pointer_delta: egui::Vec2 = input_state.pointer.delta();
+            MapTool::Zoom => {
+                if response.dragged() {
+                    let pointer_delta: egui::Vec2 = response.drag_delta();
                     state.map.zoom *= 1.0 + (pointer_delta.y * -MAP_ZOOM_SENSITIVITY);
                     if state.map.zoom < MAP_ZOOM_LIMIT {
                         state.map.zoom = MAP_ZOOM_LIMIT;
                     }
                 }
-            }),
+            }
 
-            MapTool::Move => ui.input(|input_state: &egui::InputState| {
-                if input_state.pointer.primary_pressed()
-                    && let Some(pointer_position) = input_state.pointer.interact_pos()
+            MapTool::Move => {
+                if response.drag_started()
+                    && let Some(pointer_position) = response.interact_pointer_pos()
                 {
                     let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
                     let world_position: Vec2 = state.map.screen_to_world(screen_position);
@@ -73,10 +75,10 @@ impl MapTool {
                     }
                 }
 
-                if input_state.pointer.primary_down()
+                if response.dragged()
                     && let MapAction::Moving(object_index) = state.map.action_in_progress
                 {
-                    let pointer_delta: egui::Vec2 = input_state.pointer.delta();
+                    let pointer_delta: egui::Vec2 = response.drag_delta();
                     let delta_vec: Vec2 = Vec2::new(pointer_delta.x, pointer_delta.y);
                     let world_delta: Vec2 = delta_vec / state.map.zoom;
 
@@ -85,22 +87,22 @@ impl MapTool {
                     }
                 }
 
-                if input_state.pointer.primary_released() {
+                if response.drag_stopped() {
                     state.map.action_in_progress = MapAction::None;
                 }
-            }),
+            }
 
-            MapTool::Pan => ui.input(|input_state: &egui::InputState| {
-                if input_state.pointer.primary_down() {
-                    let pointer_delta: egui::Vec2 = input_state.pointer.delta();
+            MapTool::Pan => {
+                if response.dragged() {
+                    let pointer_delta: egui::Vec2 = response.drag_delta();
                     let delta_vec: Vec2 = Vec2::new(pointer_delta.x, pointer_delta.y);
                     state.map.pan += delta_vec;
                 }
-            }),
+            }
 
-            MapTool::Select => ui.input(|input_state: &egui::InputState| {
-                if input_state.pointer.primary_clicked()
-                    && let Some(pointer_position) = input_state.pointer.interact_pos()
+            MapTool::Select => {
+                if response.clicked()
+                    && let Some(pointer_position) = response.interact_pointer_pos()
                 {
                     let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
                     let world_position: Vec2 = state.map.screen_to_world(screen_position);
@@ -109,11 +111,11 @@ impl MapTool {
                         .scene
                         .find_object_index_around(world_position, search_radius);
                 }
-            }),
+            }
 
-            MapTool::Remove => ui.input(|input_state: &egui::InputState| {
-                if input_state.pointer.primary_clicked()
-                    && let Some(pointer_position) = input_state.pointer.interact_pos()
+            MapTool::Remove => {
+                if response.clicked()
+                    && let Some(pointer_position) = response.interact_pointer_pos()
                 {
                     let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
                     let world_position: Vec2 = state.map.screen_to_world(screen_position);
@@ -125,11 +127,11 @@ impl MapTool {
                         state.scene.remove_object(object_index);
                     }
                 }
-            }),
+            }
 
-            MapTool::AddReceiver => ui.input(|input_state: &egui::InputState| {
-                if input_state.pointer.primary_clicked()
-                    && let Some(pointer_position) = input_state.pointer.interact_pos()
+            MapTool::AddReceiver => {
+                if response.clicked()
+                    && let Some(pointer_position) = response.interact_pointer_pos()
                 {
                     let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
                     let world_position: Vec2 = state.map.screen_to_world(screen_position);
@@ -138,43 +140,38 @@ impl MapTool {
                     state.scene.add_object(SceneObject::Receiver(Receiver {
                         shape: Shape::Point(world_position, state.map.style.receiver.clone()),
                     }));
-
                 }
-            }),
+            }
 
-            MapTool::AddEmitter => ui.input(|input_state: &egui::InputState| {
-                if input_state.pointer.primary_clicked()
-                    && let Some(pointer_position) = input_state.pointer.interact_pos()
+            MapTool::AddEmitter => {
+                if response.clicked()
+                    && let Some(pointer_position) = response.interact_pointer_pos()
                 {
                     let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
                     let world_position: Vec2 = state.map.screen_to_world(screen_position);
 
                     state.map.selected_object_index = Some(state.scene.objects().len());
-                    state.scene.add_object(
-                        SceneObject::Emitter(Box::new(Emitter {
-                            shape: Shape::Point(world_position, state.map.style.transmitter.clone()),
-                            sound_data: generate_sample_transmitter_sound(),
-                        })));
+                    state.scene.add_object(SceneObject::Emitter(Box::new(Emitter {
+                        shape: Shape::Point(world_position, state.map.style.transmitter.clone()),
+                        sound_data: generate_sample_transmitter_sound(),
+                    })));
                 }
-            }),
+            }
 
-            MapTool::AddWall => ui.input(|input_state: &egui::InputState| {
-                if input_state.pointer.primary_clicked()
-                    && let Some(pointer_position) = input_state.pointer.interact_pos()
+            MapTool::AddWall => {
+                if response.clicked()
+                    && let Some(pointer_position) = response.interact_pointer_pos()
                 {
                     let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
                     let world_position: Vec2 = state.map.screen_to_world(screen_position);
                     match &mut state.map.action_in_progress {
                         MapAction::None => {
-                            state.map.action_in_progress =
-                                MapAction::AddingPolygon(
-                                    Shape::Polygon(
-                                        vec![world_position],
-                                        state.map.style.wall_face.clone(),
-                                        state.map.style.wall_line.clone(),
-                                        state.map.style.wall_vertex.clone(),
-                                    )
-                                );
+                            state.map.action_in_progress = MapAction::AddingPolygon(Shape::Polygon(
+                                vec![world_position],
+                                state.map.style.wall_face.clone(),
+                                state.map.style.wall_line.clone(),
+                                state.map.style.wall_vertex.clone(),
+                            ));
                         }
                         MapAction::AddingPolygon(shape) => {
                             if let Shape::Polygon(vertices, ..) = shape {
@@ -185,25 +182,26 @@ impl MapTool {
                     }
                 }
 
-                if input_state.focused && input_state.key_pressed(egui::Key::Enter) {
-                    let completed_action: MapAction = std::mem::replace(
-                        &mut state.map.action_in_progress,
-                        MapAction::None,
-                    );
+                ui.input(|input_state: &egui::InputState| {
+                    if !ui.egui_wants_keyboard_input() {
+                        if input_state.focused && input_state.key_pressed(egui::Key::Enter) {
+                            let completed_action: MapAction = std::mem::replace(
+                                &mut state.map.action_in_progress,
+                                MapAction::None,
+                            );
 
-                    if let MapAction::AddingPolygon(shape) = completed_action {
+                            if let MapAction::AddingPolygon(shape) = completed_action {
+                                state.map.selected_object_index = Some(state.scene.objects().len());
+                                state.scene.add_object(SceneObject::Wall(Wall { shape }));
+                            }
+                        }
 
-                        state.map.selected_object_index = Some(state.scene.objects().len());
-                        state.scene.add_object(SceneObject::Wall(Wall {
-                            shape}
-                        ));
+                        if input_state.focused && input_state.key_pressed(egui::Key::Escape) {
+                            state.map.action_in_progress = MapAction::None;
+                        }
                     }
-                }
-
-                if input_state.focused && input_state.key_pressed(egui::Key::Escape) {
-                    state.map.action_in_progress = MapAction::None;
-                }
-            }),
+                });
+            }
         }
     }
 }

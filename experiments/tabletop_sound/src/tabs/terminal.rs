@@ -1,11 +1,11 @@
 use std::ops::{Deref, DerefMut};
 
 use terminal::{
-    file_system::{TerminalDirectory, TerminalFile},
+    file_system::{Directory, File, FileSystemNode, TerminalDirectory, TerminalFile},
     Terminal,
 };
 
-use crate::state::TTSState;
+use crate::{scene::Scene, scene_object::SceneObject, state::TTSState};
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct TTSTerminal {
@@ -16,6 +16,14 @@ impl Deref for TTSTerminal {
     type Target = Terminal<TerminalFile, TerminalDirectory>;
     fn deref(&self) -> &Self::Target {
         &self.internal_terminal
+    }
+}
+
+impl File for SceneObject {}
+impl Directory for Scene {
+    type Node = FileSystemNode<SceneObject, Scene>;
+    fn children(&self) -> &std::collections::HashMap<String, Self::Node> {
+        todo!()
     }
 }
 

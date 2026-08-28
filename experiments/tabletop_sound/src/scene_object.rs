@@ -38,38 +38,57 @@ impl Shape {
         }
 
         match self {
-            Self::Point(position, ..) => origin.distance(*position) <= radius,
-            Self::Line(a, b, ..) => line_distance(origin, a, b) <= radius,
-            Self::Polygon(vertices, ..) => match vertices.len() {
-                0 => false,
-                1 => origin.distance(vertices[0]) <= radius,
-                2 => line_distance(origin, &vertices[0], &vertices[1]) <= radius,
-                _ => {
-                    let mut is_inside: bool = false;
-                    let mut j: usize = vertices.len() - 1;
+            Self::Point(position, point_style) => {
+                origin.distance(*position) <= radius + point_style.radius
+            }
+            Self::Line(a, b, line_style, point_style) => {
+                let point_radius: f32 = point_style.as_ref().map_or(0.0, |style| style.radius);
 
-                    for i in 0..vertices.len() {
-                        let vi: Vec2 = vertices[i];
-                        let vj: Vec2 = vertices[j];
+                line_distance(origin, a, b) <= radius + line_style.width
+                    || origin.distance(*a) <= radius + point_radius
+                    || origin.distance(*b) <= radius + point_radius
+            }
+            Self::Polygon(vertices, _, line_style, point_style) => {
+                let edge_radius = radius + line_style.as_ref().map_or(0.0, |ls| ls.width);
+                let vertex_radius = radius + point_style.as_ref().map_or(0.0, |ps| ps.radius);
 
-                        if line_distance(origin, &vj, &vi) <= radius {
-                            return true;
-                        }
-
-                        if (vi.y > origin.y) != (vj.y > origin.y) {
-                            let intersect_x =
-                                (vj.x - vi.x) * (origin.y - vi.y) / (vj.y - vi.y) + vi.x;
-                            if origin.x < intersect_x {
-                                is_inside = !is_inside;
-                            }
-                        }
-
-                        j = i;
+                match vertices.len() {
+                    0 => false,
+                    1 => origin.distance(vertices[0]) <= vertex_radius,
+                    2 => {
+                        line_distance(origin, &vertices[0], &vertices[1]) <= edge_radius
+                            || origin.distance(vertices[0]) <= vertex_radius
+                            || origin.distance(vertices[1]) <= vertex_radius
                     }
+                    _ => {
+                        let mut is_inside: bool = false;
+                        let mut j: usize = vertices.len() - 1;
 
-                    is_inside
+                        for i in 0..vertices.len() {
+                            let vi: Vec2 = vertices[i];
+                            let vj: Vec2 = vertices[j];
+
+                            if line_distance(origin, &vj, &vi) <= edge_radius
+                                || origin.distance(vi) <= vertex_radius
+                            {
+                                return true;
+                            }
+
+                            if (vi.y > origin.y) != (vj.y > origin.y) {
+                                let intersect_x =
+                                    (vj.x - vi.x) * (origin.y - vi.y) / (vj.y - vi.y) + vi.x;
+                                if origin.x < intersect_x {
+                                    is_inside = !is_inside;
+                                }
+                            }
+
+                            j = i;
+                        }
+
+                        is_inside
+                    }
                 }
-            },
+            }
         }
     }
 }

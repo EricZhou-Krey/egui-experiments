@@ -1,10 +1,10 @@
 use egui::Color32;
 
 use crate::style_sheet::{
-    MAP_ADDRECEIVER_ICON, MAP_ADDWALL_ICON, MAP_BACKGROUND_COLOR, MAP_MOVE_ICON, MAP_PAN_ICON,
+    MAP_ADDRECEIVER_ICON, MAP_ADDWALL_ICON, MAP_BACKGROUND_COLOR, MAP_MOVE_ICON,
     MAP_RECEIVER_COLOR, MAP_RECEIVER_RADIUS, MAP_REMOVE_ICON, MAP_SELECT_ICON,
     MAP_TRANSMITTER_COLOR, MAP_TRANSMITTER_RADIUS, MAP_WALL_FILL_COLOR, MAP_WALL_LINE_COLOR,
-    MAP_WALL_LINE_STROKE_WIDTH, MAP_WALL_VERTEX_COLOR, MAP_WALL_VERTEX_RADIUS, MAP_ZOOM_ICON,
+    MAP_WALL_LINE_STROKE_WIDTH, MAP_WALL_VERTEX_COLOR, MAP_WALL_VERTEX_RADIUS,
 };
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -32,12 +32,10 @@ pub struct BackgroundStyle {
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct MapIcons {
     pub select_tool: &'static str,
-    pub pan_tool: &'static str,
     pub remove_tool: &'static str,
     pub add_wall_tool: &'static str,
     pub add_receiver_tool: &'static str,
     pub move_tool: &'static str,
-    pub zoom_tool: &'static str,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -78,12 +76,10 @@ impl Default for MapStyle {
             },
             icons: MapIcons {
                 select_tool: MAP_SELECT_ICON,
-                pan_tool: MAP_PAN_ICON,
                 remove_tool: MAP_REMOVE_ICON,
                 add_wall_tool: MAP_ADDWALL_ICON,
                 add_receiver_tool: MAP_ADDRECEIVER_ICON,
                 move_tool: MAP_MOVE_ICON,
-                zoom_tool: MAP_ZOOM_ICON,
             },
         }
     }
