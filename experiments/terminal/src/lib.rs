@@ -86,7 +86,7 @@ impl Default for Terminal<TerminalFile, TerminalDirectory> {
         let mut terminal: Self = Self {
             history: Vec::new(),
             input: String::new(),
-            current_directory: vec!["nest".to_string(), "bird".to_string()],
+            current_directory: Vec::new(),
             file_system: FileSystemNode::Directory(TerminalDirectory {
                 children: root_children,
             }),
@@ -121,7 +121,7 @@ where
             }
             match current_node {
                 FileSystemNode::Directory(dir) => {
-                    if let Some(child_node) = dir.get_child(path_part) {
+                    if let Some(child_node) = dir.child(path_part) {
                         current_node = child_node;
                     } else {
                         return None;
@@ -183,8 +183,10 @@ where
         style.visuals.selection.bg_fill = self.style.selection_color;
         ui.set_style(style);
 
+        let terminal_rect: egui::Rect = ui.available_rect_before_wrap();
+
         ui.painter().rect_filled(
-            ui.available_rect_before_wrap(),
+            terminal_rect,
             self.style.background_corner_radius,
             self.style.background_color,
         );
@@ -253,6 +255,13 @@ where
                     }
                 }
 
+                let mut terminal_clicked: bool = false;
+                ui.input(|input: &egui::InputState| {
+                    if input.pointer.primary_clicked() && let Some(pos) = input.pointer.interact_pos() {
+                        terminal_clicked = terminal_rect.contains(pos);
+                    }
+                });
+
                 ui.horizontal(|horizontal_ui: &mut egui::Ui| -> () {
                     let prompt: String = format!(
                         "[{}@{} /{}]$",
@@ -269,19 +278,22 @@ where
 
                     let response: egui::Response = horizontal_ui.add(
                         egui::TextEdit::singleline(&mut self.input)
+                            .id_source("terminal_input_id")
                             .font(TEXT_STYLE)
                             .frame(egui::Frame::NONE)
-                            .desired_width(f32::INFINITY),
+                            .desired_width(f32::INFINITY)
+                            .lock_focus(true),
                     );
 
-                    response.request_focus();
+                    if terminal_clicked {
+                        response.request_focus();
 
-                    let enter_key_pressed: bool =
-                        horizontal_ui.input(|input_state: &egui::InputState| -> bool {
-                            input_state.key_pressed(egui::Key::Enter)
-                        });
+                    }
 
-                    if response.has_focus() && enter_key_pressed {
+                    if response.lost_focus() && horizontal_ui.input(|input: &egui::InputState| -> bool {
+                            input.key_pressed(egui::Key::Enter)
+                        })
+                    {
                         let command: String = self.input.clone();
                         self.input.clear();
 

@@ -117,6 +117,14 @@ pub enum SceneObject {
 }
 
 impl SceneObject {
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            Self::Wall(_) => "wall",
+            Self::Receiver(_) => "receiver",
+            Self::Emitter(_) => "emitter",
+        }
+    }
+
     pub fn shape(&self) -> &Shape {
         match self {
             Self::Wall(w) => &w.shape,

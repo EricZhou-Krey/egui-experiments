@@ -1,7 +1,8 @@
 use crate::scene_object::SceneObject;
-use glam::Vec2;
 use kira::{AudioManager, AudioManagerSettings, DefaultBackend};
+use std::cell::RefCell;
 use std::ops::{Deref, DerefMut};
+use std::rc::Rc;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SceneAudioSettings {
@@ -20,7 +21,7 @@ pub struct SceneSettings {
 }
 
 pub struct Scene {
-    objects: Vec<SceneObject>,
+    pub objects: Vec<Rc<RefCell<SceneObject>>>,
     pub audio_manager: AudioManager,
     pub settings: SceneSettings,
 }
@@ -46,33 +47,5 @@ impl Deref for Scene {
 impl DerefMut for Scene {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.settings
-    }
-}
-
-impl Scene {
-    pub fn find_object_index_around(&self, position: Vec2, radius: f32) -> Option<usize> {
-        self.objects
-            .iter()
-            .rposition(|object: &SceneObject| -> bool {
-                object.shape().is_around(position, radius)
-            })
-    }
-
-    pub fn add_object(&mut self, object: SceneObject) -> usize {
-        let index = self.objects.len();
-        self.objects.push(object);
-        index
-    }
-
-    pub fn remove_object(&mut self, index: usize) -> SceneObject {
-        self.objects.remove(index)
-    }
-
-    pub fn objects(&self) -> &[SceneObject] {
-        &self.objects
-    }
-
-    pub fn object_mut(&mut self, index: usize) -> Option<&mut SceneObject> {
-        self.objects.get_mut(index)
     }
 }

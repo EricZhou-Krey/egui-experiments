@@ -42,7 +42,7 @@ where
     fn name() -> &'static str { "ls" }
     fn execute(terminal: &mut Terminal<F, D>, _args: &[&str]) -> CommandResult {
         if let Some(FileSystemNode::Directory(directory)) = terminal.get_node(&terminal.current_directory) {
-            let mut directory_files: Vec<String> = directory.list_children();
+            let mut directory_files: Vec<String> = directory.children();
             directory_files.sort();
             terminal.history.push(directory_files.join("  "));
         }
@@ -107,7 +107,7 @@ where
                     TerminalFile::Text(text_file) => {
                         terminal.history.push(text_file.content.clone());
                     }
-                    TerminalFile::BinaryFile(_) => {
+                    TerminalFile::Binary(_) => {
                         terminal.history.push(format!("cat: {}: cannot display binary file", target_file));
                     }
                 }

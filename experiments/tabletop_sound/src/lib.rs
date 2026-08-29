@@ -21,7 +21,6 @@ need to create:
 * - Add macros to make rects, sqaures, and approximate circles, triangles, etc
 * - Make it look a bit nice
 
-TODO: Scene object refactor, make the map centered at a world origin by default, implement a translation to work coordiantes by default be a uv scale
 
 -> 1 - Define receiver and be able move the reveiver around to catpure ambient sound via linear distance or beizer
 

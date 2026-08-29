@@ -4,9 +4,9 @@ pub trait File {}
 
 pub trait Directory {
     type Node;
-    fn get_child(&self, name: &str) -> Option<&Self::Node>;
-    fn get_child_mut(&mut self, name: &str) -> Option<&mut Self::Node>;
-    fn list_children(&self) -> Vec<String>;
+    fn child(&self, name: &str) -> Option<&Self::Node>;
+    fn child_mut(&mut self, name: &str) -> Option<&mut Self::Node>;
+    fn children(&self) -> Vec<String>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -30,7 +30,13 @@ impl File for BinaryFile {}
 #[derive(Debug, Clone, PartialEq)]
 pub enum TerminalFile {
     Text(TextFile),
-    BinaryFile(BinaryFile),
+    Binary(BinaryFile),
+}
+
+impl Default for TerminalFile {
+    fn default() -> Self {
+        Self::Text(TextFile::default())
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq)]
@@ -40,13 +46,13 @@ pub struct TerminalDirectory {
 
 impl Directory for TerminalDirectory {
     type Node = FileSystemNode<TerminalFile, TerminalDirectory>;
-    fn get_child(&self, name: &str) -> Option<&Self::Node> {
+    fn child(&self, name: &str) -> Option<&Self::Node> {
         self.children.get(name)
     }
-    fn get_child_mut(&mut self, name: &str) -> Option<&mut Self::Node> {
+    fn child_mut(&mut self, name: &str) -> Option<&mut Self::Node> {
         self.children.get_mut(name)
     }
-    fn list_children(&self) -> Vec<String> {
+    fn children(&self) -> Vec<String> {
         self.children.keys().cloned().collect()
     }
 }

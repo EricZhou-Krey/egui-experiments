@@ -5,7 +5,8 @@ pub fn nodedetails_title(_state: &mut TTSState) -> egui::WidgetText {
 }
 
 pub fn nodedetails_ui(state: &mut TTSState, ui: &mut egui::Ui) {
-    if let Some(object_index) = state.map.selected_object_index && let Some(scene_object) = state.scene.object_mut(object_index) {
+    if let Some(object_index) = state.map.selected_object_index && let Some(scene_object) = state.scene_object(object_index) {
+
         ui.heading(format!("{:?}", scene_object));
     } else {
         ui.centered_and_justified(|ui| ui.heading("No Selection"));
