@@ -121,7 +121,7 @@ where
             }
             match current_node {
                 FileSystemNode::Directory(dir) => {
-                    if let Some(child_node) = dir.children().get(path_part) {
+                    if let Some(child_node) = dir.get_child(path_part) {
                         current_node = child_node;
                     } else {
                         return None;

@@ -4,7 +4,9 @@ pub trait File {}
 
 pub trait Directory {
     type Node;
-    fn children(&self) -> &HashMap<String, Self::Node>;
+    fn get_child(&self, name: &str) -> Option<&Self::Node>;
+    fn get_child_mut(&mut self, name: &str) -> Option<&mut Self::Node>;
+    fn list_children(&self) -> Vec<String>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -38,7 +40,13 @@ pub struct TerminalDirectory {
 
 impl Directory for TerminalDirectory {
     type Node = FileSystemNode<TerminalFile, TerminalDirectory>;
-    fn children(&self) -> &HashMap<String, Self::Node> {
-        &self.children
+    fn get_child(&self, name: &str) -> Option<&Self::Node> {
+        self.children.get(name)
+    }
+    fn get_child_mut(&mut self, name: &str) -> Option<&mut Self::Node> {
+        self.children.get_mut(name)
+    }
+    fn list_children(&self) -> Vec<String> {
+        self.children.keys().cloned().collect()
     }
 }

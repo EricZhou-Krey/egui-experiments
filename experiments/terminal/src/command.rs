@@ -42,7 +42,7 @@ where
     fn name() -> &'static str { "ls" }
     fn execute(terminal: &mut Terminal<F, D>, _args: &[&str]) -> CommandResult {
         if let Some(FileSystemNode::Directory(directory)) = terminal.get_node(&terminal.current_directory) {
-            let mut directory_files: Vec<String> = directory.children().keys().cloned().collect::<Vec<String>>();
+            let mut directory_files: Vec<String> = directory.list_children();
             directory_files.sort();
             terminal.history.push(directory_files.join("  "));
         }

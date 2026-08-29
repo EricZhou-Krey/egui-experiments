@@ -23,7 +23,7 @@ need to create:
 
 TODO: Scene object refactor, make the map centered at a world origin by default, implement a translation to work coordiantes by default be a uv scale
 
- -> 1 - Define receiver and be able move the reveiver around to catpure ambient sound via linear distance or beizer
+-> 1 - Define receiver and be able move the reveiver around to catpure ambient sound via linear distance or beizer
 
 2 - Define ray tracer for sound (edit above if necessary)
     - Define emitter and parameters

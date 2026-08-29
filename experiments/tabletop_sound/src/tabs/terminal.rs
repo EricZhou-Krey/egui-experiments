@@ -1,11 +1,28 @@
-use std::ops::{Deref, DerefMut};
+use std::{
+    cell::RefCell,
+    ops::{Deref, DerefMut},
+    rc::Rc,
+};
 
+use egui::Scene;
 use terminal::{
     file_system::{Directory, File, FileSystemNode, TerminalDirectory, TerminalFile},
     Terminal,
 };
 
-use crate::{scene::Scene, scene_object::SceneObject, state::TTSState};
+use crate::{scene_object::SceneObject, state::TTSState};
+
+pub enum TTSFile {
+    Terminal(TerminalFile),
+    SceneObject(Rc<RefCell<SceneObject>>),
+}
+
+impl File for TTSFile {}
+
+pub enum TTSDirectory {
+    Terminal(TerminalDirectory),
+    Scene(Rc<RefCell<Scene>>),
+}
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct TTSTerminal {
@@ -16,14 +33,6 @@ impl Deref for TTSTerminal {
     type Target = Terminal<TerminalFile, TerminalDirectory>;
     fn deref(&self) -> &Self::Target {
         &self.internal_terminal
-    }
-}
-
-impl File for SceneObject {}
-impl Directory for Scene {
-    type Node = FileSystemNode<SceneObject, Scene>;
-    fn children(&self) -> &std::collections::HashMap<String, Self::Node> {
-        todo!()
     }
 }
 
