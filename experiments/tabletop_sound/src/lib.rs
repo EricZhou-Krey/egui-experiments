@@ -24,6 +24,13 @@ need to create:
 
 -> 1 - Define receiver and be able move the reveiver around to catpure ambient sound via linear distance or beizer
 
+For each receiver call collect sound, and play when play controls play is selected,
+    - first collect ambient background and shapes with constant sounds and play from all directions
+    - second ray cast and calculate the n most influential rays (shortest ray to each emitter)
+        - maybe ray cast with lower fidelity for each emitter to find specifically what each emitter is located or sounds like its from
+        - for each ray, on collision, n_bounces, transmited ray (with rarefactive index), maybe even curvature calculation/simulation, reflected rays
+        - rewatch video to figure out all possibilities, also brainstorm them yourself first
+
 2 - Define ray tracer for sound (edit above if necessary)
     - Define emitter and parameters
     - Define ray and parameters
