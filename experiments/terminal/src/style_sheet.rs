@@ -72,7 +72,7 @@ pub const PROMPT_TEXT_COLOR: egui::Color32 = egui::Color32::from_rgb(80, 250, 12
 pub const SELECTION_COLOR: egui::Color32 =
     egui::Color32::from_rgba_premultiplied(100, 100, 100, 100);
 pub const BACKGROUND_CORNER_RADIUS: f32 = 0.0;
-pub const BACKGROUND_COLOR: egui::Color32 = egui::Color32::from_rgb(15, 15, 15);
+pub const BACKGROUND_COLOR: egui::Color32 = egui::Color32::from_rgb(27, 27, 27);
 pub const TEXT_STYLE: egui::TextStyle = egui::TextStyle::Monospace;
 pub const USER: &str = "bird";
 pub const HOST: &str = "rook-os";

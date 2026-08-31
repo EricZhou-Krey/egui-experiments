@@ -3,6 +3,7 @@ use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 
 use crate::scene_object::SceneObject;
+use crate::tabs::soundview::SoundState;
 use crate::{
     scene::Scene,
     style_sheet::{LEFT_PANEL_WIDTH, TOP_LEFT_PANEL_HEIGHT, TOP_RIGHT_PANEL_HEIGHT},
@@ -19,6 +20,7 @@ pub struct TTSState {
     scene: Rc<RefCell<Scene>>,
     pub map: MapState,
     pub terminal: TTSTerminal,
+    pub sound: SoundState,
     pub settings: TTSSettings,
 }
 
@@ -30,6 +32,7 @@ impl Default for TTSState {
             scene: scene.clone(),
             map: MapState::default(),
             terminal: TTSTerminal::new(scene),
+            sound: SoundState::default(),
             settings: TTSSettings::default(),
         }
     }
