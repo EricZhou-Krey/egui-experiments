@@ -9,7 +9,7 @@ use terminal::{
     Terminal, command::{Command, CommandResult}, file_system::{Directory, File, FileSystemNode, TerminalDirectory, TerminalFile}
 };
 
-use crate::{scene::Scene, scene_object::SceneObject, state::TTSState};
+use crate::{scene::Scene, scene_object::SceneObject, state::TTSState, style_sheet::TERMINAL_BACKGROUND_COLOR};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TTSFile {
@@ -163,7 +163,7 @@ pub struct TTSTerminal {
 
 impl TTSTerminal {
     pub fn new(scene: Rc<RefCell<Scene>>) -> Self {
-        let base_terminal: Terminal<TerminalFile, TerminalDirectory> =
+        let mut base_terminal: Terminal<TerminalFile, TerminalDirectory> =
             terminal::Terminal::<TerminalFile, TerminalDirectory>::default();
 
         let mut tts_file_system: FileSystemNode<TTSFile, TTSDirectory> =
@@ -183,6 +183,8 @@ impl TTSTerminal {
                 }),
             );
         }
+
+        base_terminal.style.background_color = TERMINAL_BACKGROUND_COLOR;
 
         let mut terminal: Terminal<TTSFile, TTSDirectory> = Terminal::<TTSFile, TTSDirectory> {
             history: base_terminal.history,

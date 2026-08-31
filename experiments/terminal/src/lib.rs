@@ -19,14 +19,14 @@ pub mod style_sheet;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TerminalStyle {
-    background_color: Color32,
-    background_corner_radius: f32,
-    prompt_text_color: Color32,
-    selection_color: Color32,
-    text_color: Color32,
-    text_style: TextStyle,
-    user: &'static str,
-    host: &'static str,
+    pub background_color: Color32,
+    pub background_corner_radius: f32,
+    pub prompt_text_color: Color32,
+    pub selection_color: Color32,
+    pub text_color: Color32,
+    pub text_style: TextStyle,
+    pub user: &'static str,
+    pub host: &'static str,
 }
 
 impl Default for TerminalStyle {
