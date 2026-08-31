@@ -11,6 +11,18 @@ pub const MAP_ADDRECEIVER_ICON: &str = "+R";
 pub const MAP_REMOVE_ICON: &str = "-";
 pub const MAP_PAN_ICON: &str = "P";
 
+pub const MAP_GRID_WIDTH: f32 = 100.0;
+pub const MAP_GRID_HEIGHT: f32 = 100.0;
+pub const MAP_GRID_MIN_SCREEN_SPACING: f32 = 40.0;
+pub const MAP_GRID_SCALE_FACTOR: f32 = 2.0;
+pub const MAP_GRID_LINE_COLOR_MULTIPLIER: f32 = 0.4;
+pub const MAP_GRID_LINE_WIDTH: f32 = 1.0;
+pub const MAP_GRID_TEXT_COLOR_MULTIPLIER: f32 = 0.7;
+pub const MAP_GRID_TEXT_SIZE: f32 = 12.0;
+pub const MAP_GRID_TEXT_OFFSET_X: f32 = 4.0;
+pub const MAP_GRID_TEXT_OFFSET_Y_X_AXIS: f32 = 4.0;
+pub const MAP_GRID_TEXT_OFFSET_Y_Y_AXIS: f32 = 18.0;
+
 pub const MAP_TOOLBAR_PADDING: egui::Vec2 = egui::vec2(8.0, 8.0);
 pub const MAP_TOOLBAR_MARGIN: f32 = 4.0;
 pub const MAP_TOOLBAR_CORNER_RADIUS: f32 = 6.0;

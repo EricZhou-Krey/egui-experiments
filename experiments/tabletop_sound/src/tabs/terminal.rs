@@ -6,8 +6,7 @@ use std::{
 };
 
 use terminal::{
-    file_system::{Directory, File, FileSystemNode, TerminalDirectory, TerminalFile},
-    Terminal,
+    Terminal, command::{Command, CommandResult}, file_system::{Directory, File, FileSystemNode, TerminalDirectory, TerminalFile}
 };
 
 use crate::{scene::Scene, scene_object::SceneObject, state::TTSState};
@@ -120,6 +119,43 @@ impl Directory for TTSDirectory {
     }
 }
 
+struct TTSCatCommand;
+impl<D> Command<TTSFile, D> for TTSCatCommand
+where
+    D: Directory<Node = FileSystemNode<TTSFile, D>>
+{
+    fn name() -> &'static str { "cat" }
+    fn execute(terminal: &mut Terminal<TTSFile, D>, args: &[&str]) -> CommandResult {
+        if let Some(target_file) = args.first() {
+            let mut file_path: Vec<String> = terminal.current_directory.clone();
+            file_path.push(target_file.to_string());
+
+            if let Some(FileSystemNode::File(file)) = terminal.get_node(&file_path) {
+                match file {
+                    TTSFile::Terminal(terminal_file) => {
+                        match terminal_file {
+                            TerminalFile::Text(text_file) => {
+                                terminal.history.push(text_file.content.clone());
+                            }
+                            TerminalFile::Binary(_) => {
+                                terminal.history.push(format!("cat: {}: cannot display binary file", target_file));
+                            }
+                        }
+                    },
+                    TTSFile::SceneObject(object_file) => {
+                        terminal.history.push(format!("{:?}", object_file.borrow()));
+                    }
+                }
+            } else {
+                terminal.history.push(format!("cat: {}: No such file", target_file));
+            }
+        } else {
+            terminal.history.push("cat: missing file operand".to_string());
+        }
+        CommandResult::Handled
+    }
+}
+
 #[derive(Clone)]
 pub struct TTSTerminal {
     terminal: Terminal<TTSFile, TTSDirectory>,
@@ -161,7 +197,7 @@ impl TTSTerminal {
         terminal.register_command::<terminal::command::PwdCommand>();
         terminal.register_command::<terminal::command::LsCommand>();
         terminal.register_command::<terminal::command::CdCommand>();
-        // terminal::register_command::<terminal::command::CatCommand>();
+        terminal.register_command::<TTSCatCommand>();
         terminal.register_command::<terminal::command::NeofetchCommand>();
         terminal.register_command::<terminal::command::HelpCommand>();
 

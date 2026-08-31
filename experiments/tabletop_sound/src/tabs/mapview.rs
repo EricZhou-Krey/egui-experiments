@@ -2,10 +2,10 @@ use crate::{
     logic_sheet::{
         MAP_BASE_ZOOM, MAP_INTERACTION_RADIUS, MAP_ZOOM_LIMIT, MAP_ZOOM_SENSITIVITY,
         generate_sample_transmitter_sound},
-        scene_object::{Emitter, Receiver, SceneObject, Shape, Wall}, state::TTSState, style::{FaceStyle, LineStyle, MapStyle, PointStyle}, style_sheet::{
-        MAP_ADDEMITTER_ICON, MAP_ADDRECEIVER_ICON, MAP_ADDWALL_ICON, MAP_MOVE_ICON, MAP_PAN_ICON,
-        MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_BUTTON_SIZE, MAP_TOOLBAR_CORNER_RADIUS,
-        MAP_TOOLBAR_MARGIN, MAP_TOOLBAR_PADDING, MAP_ZOOM_ICON,
+        scene_object::{Emitter, Receiver, SceneObject, Shape, Wall},
+        state::TTSState, style::{FaceStyle, LineStyle, MapStyle, PointStyle},
+        style_sheet::{
+        MAP_ADDEMITTER_ICON, MAP_ADDRECEIVER_ICON, MAP_ADDWALL_ICON, MAP_GRID_HEIGHT, MAP_GRID_LINE_COLOR_MULTIPLIER, MAP_GRID_LINE_WIDTH, MAP_GRID_MIN_SCREEN_SPACING, MAP_GRID_SCALE_FACTOR, MAP_GRID_TEXT_COLOR_MULTIPLIER, MAP_GRID_TEXT_OFFSET_X, MAP_GRID_TEXT_OFFSET_Y_X_AXIS, MAP_GRID_TEXT_OFFSET_Y_Y_AXIS, MAP_GRID_TEXT_SIZE, MAP_GRID_WIDTH, MAP_MOVE_ICON, MAP_PAN_ICON, MAP_REMOVE_ICON, MAP_SELECT_ICON, MAP_TOOLBAR_BUTTON_SIZE, MAP_TOOLBAR_CORNER_RADIUS, MAP_TOOLBAR_MARGIN, MAP_TOOLBAR_PADDING, MAP_ZOOM_ICON
     }
 };
 use glam::Vec2;
@@ -209,6 +209,8 @@ impl MapTool {
 #[derive(Debug, Clone, PartialEq)]
 pub struct MapSettings {
     pub interaction_radius: f32,
+    pub grid_cell_width: f32,
+    pub grid_cell_height: f32,
     pub style: MapStyle,
 }
 
@@ -216,6 +218,8 @@ impl Default for MapSettings {
     fn default() -> Self {
         Self {
             interaction_radius: MAP_INTERACTION_RADIUS,
+            grid_cell_width: MAP_GRID_WIDTH,
+            grid_cell_height: MAP_GRID_HEIGHT,
             style: MapStyle::default(),
         }
     }
@@ -291,11 +295,88 @@ pub fn mapview_ui(state: &mut TTSState, ui: &mut egui::Ui) {
     let toolbar_pos: egui::Pos2 = dock_rectangle.min + MAP_TOOLBAR_PADDING;
     let toolbar_position: Vec2 = Vec2::new(toolbar_pos.x, toolbar_pos.y);
 
-    main_view(state, ui);
+
+    grid(state, ui);
+    scene_view(state, ui);
     toolbar(state, ui, toolbar_position);
 }
 
-fn main_view(state: &mut TTSState, ui: &mut egui::Ui) {
+fn grid(state: &mut TTSState, ui: &mut egui::Ui) {
+    let painter: &egui::Painter = ui.painter();
+    
+    let rect: egui::Rect = ui.available_rect_before_wrap();
+
+    let min_screen: Vec2 = Vec2::new(rect.min.x, rect.min.y);
+    let max_screen: Vec2 = Vec2::new(rect.max.x, rect.max.y);
+
+    let min_world: Vec2 = state.map.screen_to_world(min_screen);
+    let max_world: Vec2 = state.map.screen_to_world(max_screen);
+
+    let mut grid_w: f32 = state.map.grid_cell_width;
+    let mut grid_h: f32 = state.map.grid_cell_height;
+
+    while grid_w * state.map.zoom < MAP_GRID_MIN_SCREEN_SPACING {
+        grid_w *= MAP_GRID_SCALE_FACTOR;
+    }
+    while grid_h * state.map.zoom < MAP_GRID_MIN_SCREEN_SPACING {
+        grid_h *= MAP_GRID_SCALE_FACTOR;
+    }
+
+    let start_x: isize = (min_world.x / grid_w).floor() as isize;
+    let end_x: isize = (max_world.x / grid_w).ceil() as isize;
+
+    let start_y: isize = (min_world.y / grid_h).floor() as isize;
+    let end_y: isize = (max_world.y / grid_h).ceil() as isize;
+
+    let line_color = ui.visuals().widgets.noninteractive.bg_stroke.color.linear_multiply(MAP_GRID_LINE_COLOR_MULTIPLIER);
+    let stroke = egui::Stroke::new(MAP_GRID_LINE_WIDTH, line_color);
+    let text_color = ui.visuals().text_color().linear_multiply(MAP_GRID_TEXT_COLOR_MULTIPLIER);
+    let font_id = egui::FontId::proportional(MAP_GRID_TEXT_SIZE);
+
+    for i in start_x..=end_x {
+        let world_x: f32 = (i as f32) * grid_w;
+        let screen_x: f32 = state.map.world_to_screen(Vec2::new(world_x, 0.0)).x;
+
+        painter.line_segment(
+            [
+                egui::Pos2::new(screen_x, rect.min.y),
+                egui::Pos2::new(screen_x, rect.max.y),
+            ],
+            stroke,
+        );
+
+        painter.text(
+            egui::Pos2::new(screen_x + MAP_GRID_TEXT_OFFSET_X, rect.min.y + MAP_GRID_TEXT_OFFSET_Y_X_AXIS),
+            egui::Align2::LEFT_TOP,
+            format!("{:.1}", world_x),
+            font_id.clone(),
+            text_color,
+        );
+    }
+
+    for i in start_y..=end_y {
+        let world_y: f32 = (i as f32) * grid_h;
+        let screen_y: f32 = state.map.world_to_screen(Vec2::new(0.0, world_y)).y;
+
+        painter.line_segment(
+            [
+                egui::Pos2::new(rect.min.x, screen_y),
+                egui::Pos2::new(rect.max.x, screen_y),
+            ],
+            stroke,
+        );
+
+        painter.text(
+            egui::Pos2::new(rect.min.x + MAP_GRID_TEXT_OFFSET_X, screen_y + MAP_GRID_TEXT_OFFSET_Y_Y_AXIS),
+            egui::Align2::LEFT_TOP,
+            format!("{:.1}", world_y),
+            font_id.clone(),
+            text_color,
+        );
+    }
+}
+
+fn scene_view(state: &mut TTSState, ui: &mut egui::Ui) {
     MapTool::interact(state, ui);
 
     let painter: &egui::Painter = ui.painter();
