@@ -1,4 +1,5 @@
 pub mod logic_sheet;
+pub mod raytrace;
 pub mod scene;
 pub mod scene_object;
 pub mod state;
@@ -9,6 +10,9 @@ pub mod tabletop_sound;
 pub mod tabs;
 
 /*
+
+Decouple stuff from mapview ui too much is logic based
+
 Consider each of the states of each tab and create them approriately,
 need to create:
     Tab::MapView,
@@ -25,6 +29,7 @@ need to create:
 -> 1 - Define receiver and be able move the reveiver around to catpure ambient sound via linear distance or beizer
 
 For each receiver call collect sound, and play when play controls play is selected,
+    - use lifespan ~ distance travelled for each ray to collect information rather than n_bonuces
     - first collect ambient background and shapes with constant sounds and play from all directions
     - second ray cast and calculate the n most influential rays (shortest ray to each emitter)
         - maybe ray cast with lower fidelity for each emitter to find specifically what each emitter is located or sounds like its from
