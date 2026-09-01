@@ -11,7 +11,8 @@ pub mod tabs;
 
 /*
 
-Decouple stuff from mapview ui too much is logic based
+- Decouple stuff from mapview ui too much is logic based
+- Polygon convex hull needs better defintion for ui drawing, there are overlaps that cause visual artefacts
 
 Consider each of the states of each tab and create them approriately,
 need to create:

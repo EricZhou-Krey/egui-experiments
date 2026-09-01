@@ -27,7 +27,7 @@ pub fn playcontrols_ui(state: &mut TTSState, ui: &mut egui::Ui) {
         };
 
         let mut local_index: Option<usize> =
-            state.sound.selected_receiver.and_then(|global_index| {
+            state.map.selected_object_index.and_then(|global_index| {
                 receiver_indices
                     .iter()
                     .position(|&index| index == global_index)
@@ -65,9 +65,9 @@ pub fn playcontrols_ui(state: &mut TTSState, ui: &mut egui::Ui) {
 
         if local_index != prev_local_index {
             if let Some(index) = local_index {
-                state.sound.selected_receiver = Some(receiver_indices[index]);
+                state.map.selected_object_index = Some(receiver_indices[index]);
             } else {
-                state.sound.selected_receiver = None;
+                state.map.selected_object_index = None;
             }
         }
     });
@@ -81,7 +81,7 @@ pub fn playcontrols_ui(state: &mut TTSState, ui: &mut egui::Ui) {
 
         if ui.button("⏵ Play").clicked() {
             //TODO
-            state.sound.play_sound();
+            state.sound.play_sound(state.map.selected_object_index);
         }
 
         if ui.button("⏹ Stop").clicked() {
