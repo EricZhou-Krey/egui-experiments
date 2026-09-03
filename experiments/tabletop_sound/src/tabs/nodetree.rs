@@ -1,4 +1,7 @@
-use crate::state::TTSState;
+use crate::{
+    scene::{scene_object::SceneObject, SceneObjectKey},
+    state::TTSState,
+};
 
 pub fn nodetree_title(_state: &mut TTSState) -> egui::WidgetText {
     "NodeTree".into()
@@ -9,16 +12,14 @@ pub fn nodetree_ui(state: &mut TTSState, ui: &mut egui::Ui) {
     ui.separator();
 
     let object_info: Vec<(usize, String)> = {
-        let scene_objects = state.scene_objects();
+        let scene_objects: Values<'_, SceneObjectKey, SceneObject> = state.view_scene().objects();
         scene_objects
-            .iter()
             .enumerate()
             .map(|(i, obj)| {
-                let borrowed_obj = obj.borrow();
-                let display_name = match borrowed_obj.type_name() {
-                    "wall" => "🧱 Wall",
-                    "receiver" => "🎧 Receiver",
-                    "emitter" => "🔊 Emitter",
+                let display_name = match obj {
+                    SceneObject::Wall(..) => "🧱 Wall",
+                    SceneObject::Receiver(..) => "🎧 Receiver",
+                    SceneObject::Emitter(..) => "🔊 Emitter",
                     _ => "❓ Unknown",
                 };
 

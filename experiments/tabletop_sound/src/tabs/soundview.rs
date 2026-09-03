@@ -1,57 +1,9 @@
-use std::ops::{Deref, DerefMut};
+use slotmap::basic::Values;
 
-use kira::{AudioManager, AudioManagerSettings, DefaultBackend};
-
-use crate::{logic_sheet::generate_sample_transmitter_sound, state::TTSState};
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct SoundSettings {
-    volume: f32,
-}
-
-impl Default for SoundSettings {
-    fn default() -> Self {
-        Self { volume: 1.0 }
-    }
-}
-
-pub struct SoundState {
-    audio_manager: AudioManager,
-    pub settings: SoundSettings,
-}
-
-impl Deref for SoundState {
-    type Target = SoundSettings;
-    fn deref(&self) -> &Self::Target {
-        &self.settings
-    }
-}
-
-impl DerefMut for SoundState {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.settings
-    }
-}
-
-impl Default for SoundState {
-    fn default() -> Self {
-        Self {
-            audio_manager: AudioManager::<DefaultBackend>::new(AudioManagerSettings::default())
-                .unwrap(),
-            settings: SoundSettings::default(),
-        }
-    }
-}
-
-impl SoundState {
-    pub fn play_sound(&mut self, receiver_index: Option<usize>) {
-        if let Some(_receiver) = receiver_index {
-            todo!();
-        } else {
-            let _ = self.audio_manager.play(generate_sample_transmitter_sound());
-        }
-    }
-}
+use crate::{
+    scene::{scene_object::SceneObject, SceneObjectKey},
+    state::TTSState,
+};
 
 pub fn soundview_title(_state: &mut TTSState) -> egui::WidgetText {
     "SoundView".into()
@@ -103,13 +55,11 @@ pub fn soundview_ui(state: &mut TTSState, ui: &mut egui::Ui) {
         ui.separator();
 
         let emitter_info: Vec<(usize, String)> = {
-            let scene_objects = state.scene_objects();
+            let scene_objects: Values<'_, SceneObjectKey, SceneObject> =
+                state.view_scene().objects();
             scene_objects
-                .iter()
                 .enumerate()
-                .filter(|(_, obj)| {
-                    matches!(*obj.borrow(), crate::scene_object::SceneObject::Emitter(_))
-                })
+                .filter(|(_, obj)| matches!(*obj, SceneObject::Emitter(_)))
                 .map(|(i, _)| (i, format!("Emitter (ID: {})", i)))
                 .collect()
         };

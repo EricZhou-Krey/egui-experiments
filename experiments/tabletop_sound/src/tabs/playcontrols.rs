@@ -1,9 +1,6 @@
-use std::{
-    cell::{Ref, RefCell},
-    rc::Rc,
-};
-
-use crate::{scene_object::SceneObject, state::TTSState};
+use crate::scene::{scene_object::SceneObject, SceneObjectKey};
+use crate::state::TTSState;
+use slotmap::basic::Values;
 
 pub fn playcontrols_title(_state: &mut TTSState) -> egui::WidgetText {
     "PlayControls".into()
@@ -17,11 +14,11 @@ pub fn playcontrols_ui(state: &mut TTSState, ui: &mut egui::Ui) {
         ui.label("Receiver:");
 
         let receiver_indices: Vec<usize> = {
-            let scene_objects: Ref<'_, Vec<Rc<RefCell<SceneObject>>>> = state.scene_objects();
+            let scene_objects: Values<'_, SceneObjectKey, SceneObject> =
+                state.view_scene().objects();
             scene_objects
-                .iter()
                 .enumerate()
-                .filter(|(_, obj)| matches!(*obj.borrow(), SceneObject::Receiver(_)))
+                .filter(|(_, obj)| matches!(*obj, SceneObject::Receiver(_)))
                 .map(|(i, _)| i)
                 .collect()
         };

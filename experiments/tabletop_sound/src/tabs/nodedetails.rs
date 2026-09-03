@@ -1,6 +1,6 @@
-use crate::scene_object::{SceneObject, Shape};
+use crate::scene::scene_object::{SceneObject, Shape};
+use crate::settings::style::{FaceStyle, LineStyle, PointStyle};
 use crate::state::TTSState;
-use crate::style::{FaceStyle, LineStyle, PointStyle};
 use std::cell::RefMut;
 
 pub fn nodedetails_title(_state: &mut TTSState) -> egui::WidgetText {
@@ -9,7 +9,7 @@ pub fn nodedetails_title(_state: &mut TTSState) -> egui::WidgetText {
 
 pub fn nodedetails_ui(state: &mut TTSState, ui: &mut egui::Ui) {
     if let Some(object_index) = state.map.selected_object_index {
-        if let Some(scene_object_rc) = state.scene_object(object_index) {
+        if let Some(scene_object) = state.edit_scene() {
             let mut scene_object: RefMut<SceneObject> = scene_object_rc.borrow_mut();
 
             ui.heading(std::format!(

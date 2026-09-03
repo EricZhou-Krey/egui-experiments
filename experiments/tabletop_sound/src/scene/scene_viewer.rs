@@ -1,13 +1,13 @@
 use crate::{
     scene::{scene_object::SceneObject, Scene, SceneObjectKey},
-    tabs::terminal::TTSTerminal,
+    state::terminal::TTSTerminalState,
 };
 use glam::Vec2;
-use slotmap::SlotMap;
+use slotmap::basic::Values;
 
 pub struct SceneViewer<'a> {
     pub scene: &'a Scene,
-    pub terminal: &'a TTSTerminal,
+    pub terminal: &'a TTSTerminalState,
 }
 
 impl<'a> SceneViewer<'a> {
@@ -23,7 +23,7 @@ impl<'a> SceneViewer<'a> {
             .map(|(key, _)| key)
     }
 
-    pub fn objects(&self) -> &SlotMap<SceneObjectKey, SceneObject> {
-        &self.scene.objects
+    pub fn objects(&self) -> Values<'_, SceneObjectKey, SceneObject> {
+        self.scene.objects.values()
     }
 }
