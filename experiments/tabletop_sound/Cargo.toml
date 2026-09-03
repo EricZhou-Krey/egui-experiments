@@ -9,6 +9,8 @@ eframe.workspace = true
 egui_dock.workspace = true
 kira.workspace = true
 glam.workspace = true
+slotmap.workspace = true
+rstar.workspace = true
 
 terminal = { path = "../terminal" } 
 

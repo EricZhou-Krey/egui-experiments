@@ -91,6 +91,28 @@ impl Shape {
             }
         }
     }
+
+    pub fn logical_bounds(&self) -> (Vec2, Vec2) {
+        match self {
+            Self::Point(position, _) => (*position, *position),
+            Self::Line(a, b, ..) => (a.min(*b), a.max(*b)),
+            Self::Polygon(vertices, ..) => {
+                if vertices.is_empty() {
+                    return (Vec2::ZERO, Vec2::ZERO);
+                }
+
+                let mut min: Vec2 = vertices[0];
+                let mut max: Vec2 = vertices[0];
+
+                for v in vertices.iter().skip(1) {
+                    min = min.min(*v);
+                    max = max.max(*v);
+                }
+
+                (min, max)
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -1,26 +1,42 @@
+pub mod scene_editor;
 pub mod scene_object;
-
+pub mod scene_viewer;
 use crate::scene::scene_object::SceneObject;
 use crate::settings::SceneSettings;
-use std::cell::RefCell;
-use std::ops::{Deref, DerefMut};
-use std::rc::Rc;
+use glam::Vec2;
+use rstar::{RTree, RTreeObject, AABB};
+use slotmap::{new_key_type, SlotMap};
 
-#[derive(Default, Debug, Clone, PartialEq)]
-pub struct Scene {
-    pub objects: Vec<Rc<RefCell<SceneObject>>>,
-    pub settings: SceneSettings,
+new_key_type! { pub struct SceneObjectKey; }
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SpatialNode {
+    pub key: SceneObjectKey,
+    pub min: Vec2,
+    pub max: Vec2,
 }
 
-impl Deref for Scene {
-    type Target = SceneSettings;
-    fn deref(&self) -> &Self::Target {
-        &self.settings
+impl RTreeObject for SpatialNode {
+    type Envelope = AABB<[f32; 2]>;
+
+    fn envelope(&self) -> Self::Envelope {
+        AABB::from_corners(self.min.into(), self.max.into())
     }
 }
 
-impl DerefMut for Scene {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.settings
+#[derive(Debug)]
+pub struct Scene {
+    pub objects: SlotMap<SceneObjectKey, SceneObject>,
+    pub quadtree: RTree<SpatialNode>,
+    pub settings: SceneSettings,
+}
+
+impl Scene {
+    pub fn new() -> Self {
+        Self {
+            objects: SlotMap::with_key(),
+            quadtree: RTree::new(),
+            settings: SceneSettings::default(),
+        }
     }
 }

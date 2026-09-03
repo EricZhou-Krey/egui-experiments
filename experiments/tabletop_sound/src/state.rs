@@ -1,8 +1,5 @@
-use std::cell::{Ref, RefCell, RefMut};
-use std::ops::{Deref, DerefMut};
-use std::rc::Rc;
-
-use crate::scene::scene_object::SceneObject;
+use crate::scene::scene_editor::SceneEditor;
+use crate::scene::scene_viewer::SceneViewer;
 use crate::tabs::soundview::SoundState;
 use crate::{
     scene::Scene,
@@ -11,13 +8,13 @@ use crate::{
     tabs::{mapview::MapState, terminal::TTSTerminal},
 };
 use egui_dock::{DockState, NodeIndex, TabViewer, Tree};
-use glam::Vec2;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct TTSSettings {}
 
 pub struct TTSState {
-    pub scene: Scene,
+    scene: Scene,
     pub map: MapState,
     pub terminal: TTSTerminal,
     pub sound: SoundState,
@@ -27,7 +24,7 @@ pub struct TTSState {
 impl Default for TTSState {
     fn default() -> Self {
         Self {
-            scene: Scene::default(),
+            scene: Scene::new(),
             map: MapState::default(),
             terminal: TTSTerminal::default(),
             sound: SoundState::default(),
@@ -65,59 +62,18 @@ impl TabViewer for TTSState {
 }
 
 impl TTSState {
-    pub fn find_scene_object_index_around(&self, position: Vec2, radius: f32) -> Option<usize> {
-        self.scene
-            .borrow()
-            .objects
-            .iter()
-            .rposition(|object: &Rc<RefCell<SceneObject>>| -> bool {
-                object.borrow().shape().is_around(position, radius)
-            })
-    }
-
-    pub fn add_scene_object(&mut self, object: SceneObject) -> usize {
-        let rc_object: Rc<RefCell<SceneObject>> = Rc::new(RefCell::new(object));
-
-        let index: usize = {
-            let mut scene: std::cell::RefMut<Scene> = self.scene.borrow_mut();
-            let idx: usize = scene.objects.len();
-            scene.objects.push(rc_object.clone());
-            idx
-        };
-
-        self.terminal.add_scene_object(index, rc_object);
-
-        index
-    }
-
-    pub fn remove_scene_object(&mut self, index: usize) -> Option<Rc<RefCell<SceneObject>>> {
-        let removed_object: Option<Rc<RefCell<SceneObject>>> = {
-            let mut scene: std::cell::RefMut<Scene> = self.scene.borrow_mut();
-            if index < scene.objects.len() {
-                Some(scene.objects.remove(index))
-            } else {
-                None
-            }
-        };
-
-        if removed_object.is_some() {
-            let new_total: usize = self.scene.borrow().objects.len();
-            self.terminal.remove_scene_object(index, new_total);
+    pub fn edit_scene(&mut self) -> SceneEditor {
+        SceneEditor {
+            scene: &mut self.scene,
+            terminal: &mut self.terminal,
         }
-
-        removed_object
     }
 
-    pub fn scene_objects(&self) -> Ref<'_, Vec<Rc<RefCell<SceneObject>>>> {
-        Ref::map(self.scene.borrow(), |scene| &scene.objects)
-    }
-
-    pub fn scene_objects_mut(&self) -> RefMut<'_, Vec<Rc<RefCell<SceneObject>>>> {
-        RefMut::map(self.scene.borrow_mut(), |scene| &mut scene.objects)
-    }
-
-    pub fn scene_object(&self, index: usize) -> Option<Rc<RefCell<SceneObject>>> {
-        self.scene.borrow().objects.get(index).cloned()
+    pub fn view_scene(&self) -> SceneViewer {
+        SceneViewer {
+            scene: &self.scene,
+            terminal: &self.terminal,
+        }
     }
 
     pub fn default_dock() -> DockState<Tab> {

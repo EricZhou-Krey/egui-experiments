@@ -1,3 +1,4 @@
+pub mod collections;
 pub mod raytrace;
 pub mod scene;
 pub mod settings;
