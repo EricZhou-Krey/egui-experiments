@@ -1,25 +1,30 @@
 use crate::scene::scene_object::{SceneObject, Shape};
+use crate::scene::SpatialNode;
 use crate::settings::style::{FaceStyle, LineStyle, PointStyle};
 use crate::state::TTSState;
-use std::cell::RefMut;
+use glam::Vec2;
 
 pub fn nodedetails_title(_state: &mut TTSState) -> egui::WidgetText {
     "Node Details".into()
 }
 
 pub fn nodedetails_ui(state: &mut TTSState, ui: &mut egui::Ui) {
-    if let Some(object_index) = state.map.selected_object_index {
-        if let Some(scene_object) = state.edit_scene() {
-            let mut scene_object: RefMut<SceneObject> = scene_object_rc.borrow_mut();
+    if let Some(object_key) = state.map.selected_object_key {
+        let mut editor = state.edit_scene();
 
-            ui.heading(std::format!(
-                "Selected: {}_{}.obj",
-                scene_object.type_name(),
-                object_index
-            ));
+        if let Some(object) = editor.scene.objects.get_mut(object_key) {
+            let (old_min, old_max) = object.shape().logical_bounds();
+
+            let type_name = match object {
+                SceneObject::Wall(_) => "Wall",
+                SceneObject::Receiver(_) => "Receiver",
+                SceneObject::Emitter(_) => "Emitter",
+            };
+
+            ui.heading(format!("Selected: {}_{:?}", type_name, object_key));
             ui.separator();
 
-            match &mut *scene_object {
+            match object {
                 SceneObject::Wall(_) => {
                     ui.label("Description: An acoustic barrier.");
                 }
@@ -31,7 +36,7 @@ pub fn nodedetails_ui(state: &mut TTSState, ui: &mut egui::Ui) {
                     ui.horizontal(|ui: &mut egui::Ui| {
                         ui.label("Sound Data:");
                         let duration: f32 = emitter.sound_data.duration().as_secs_f32();
-                        ui.label(std::format!("{:.2} seconds", duration));
+                        ui.label(format!("{:.2} seconds", duration));
                     });
                 }
             }
@@ -39,8 +44,24 @@ pub fn nodedetails_ui(state: &mut TTSState, ui: &mut egui::Ui) {
             ui.separator();
             ui.heading("Shape & Position");
 
-            let shape: &mut Shape = scene_object.mut_shape();
-            shape_ui(ui, shape);
+            let shape = object.mut_shape();
+            let position_changed = shape_ui(ui, shape);
+
+            if position_changed {
+                let (new_min, new_max) = shape.logical_bounds();
+
+                editor.scene.quadtree.remove(&SpatialNode {
+                    key: object_key,
+                    min: old_min,
+                    max: old_max,
+                });
+
+                editor.scene.quadtree.insert(SpatialNode {
+                    key: object_key,
+                    min: new_min,
+                    max: new_max,
+                });
+            }
         } else {
             ui.centered_and_justified(|ui: &mut egui::Ui| {
                 ui.heading("Object Not Found");
@@ -53,14 +74,20 @@ pub fn nodedetails_ui(state: &mut TTSState, ui: &mut egui::Ui) {
     }
 }
 
-fn shape_ui(ui: &mut egui::Ui, shape: &mut Shape) {
+fn shape_ui(ui: &mut egui::Ui, shape: &mut Shape) -> bool {
+    let mut changed = false;
+
     match shape {
         Shape::Point(position, point_style) => {
             ui.label("Type: Point");
             ui.horizontal(|ui: &mut egui::Ui| {
                 ui.label("Position:");
-                ui.add(egui::DragValue::new(&mut position.x).prefix("X: "));
-                ui.add(egui::DragValue::new(&mut position.y).prefix("Y: "));
+                changed |= ui
+                    .add(egui::DragValue::new(&mut position.x).prefix("X: "))
+                    .changed();
+                changed |= ui
+                    .add(egui::DragValue::new(&mut position.y).prefix("Y: "))
+                    .changed();
             });
 
             ui.separator();
@@ -74,14 +101,22 @@ fn shape_ui(ui: &mut egui::Ui, shape: &mut Shape) {
 
             ui.horizontal(|ui: &mut egui::Ui| {
                 ui.label("Point A:");
-                ui.add(egui::DragValue::new(&mut a.x).prefix("X: "));
-                ui.add(egui::DragValue::new(&mut a.y).prefix("Y: "));
+                changed |= ui
+                    .add(egui::DragValue::new(&mut a.x).prefix("X: "))
+                    .changed();
+                changed |= ui
+                    .add(egui::DragValue::new(&mut a.y).prefix("Y: "))
+                    .changed();
             });
 
             ui.horizontal(|ui: &mut egui::Ui| {
                 ui.label("Point B:");
-                ui.add(egui::DragValue::new(&mut b.x).prefix("X: "));
-                ui.add(egui::DragValue::new(&mut b.y).prefix("Y: "));
+                changed |= ui
+                    .add(egui::DragValue::new(&mut b.x).prefix("X: "))
+                    .changed();
+                changed |= ui
+                    .add(egui::DragValue::new(&mut b.y).prefix("Y: "))
+                    .changed();
             });
 
             ui.separator();
@@ -109,7 +144,7 @@ fn shape_ui(ui: &mut egui::Ui, shape: &mut Shape) {
         }
 
         Shape::Polygon(vertices, face_style, opt_line_style, opt_point_style) => {
-            ui.label(std::format!("Type: Polygon ({} vertices)", vertices.len()));
+            ui.label(format!("Type: Polygon ({} vertices)", vertices.len()));
 
             ui.collapsing("Vertices", |ui: &mut egui::Ui| {
                 egui::ScrollArea::vertical()
@@ -120,12 +155,17 @@ fn shape_ui(ui: &mut egui::Ui, shape: &mut Shape) {
 
                         for (i, vertex) in vertices.iter_mut().enumerate() {
                             ui.horizontal(|ui: &mut egui::Ui| {
-                                ui.label(std::format!("#{}", i));
-                                ui.add(egui::DragValue::new(&mut vertex.x).prefix("X: "));
-                                ui.add(egui::DragValue::new(&mut vertex.y).prefix("Y: "));
+                                ui.label(format!("#{}", i));
+                                changed |= ui
+                                    .add(egui::DragValue::new(&mut vertex.x).prefix("X: "))
+                                    .changed();
+                                changed |= ui
+                                    .add(egui::DragValue::new(&mut vertex.y).prefix("Y: "))
+                                    .changed();
 
                                 if ui.button("X").clicked() {
                                     index_to_remove = Some(i);
+                                    changed = true;
                                 }
                             });
                         }
@@ -135,9 +175,9 @@ fn shape_ui(ui: &mut egui::Ui, shape: &mut Shape) {
                         }
 
                         if ui.button("+ Add Vertex").clicked() {
-                            let new_vertex: glam::Vec2 =
-                                vertices.last().copied().unwrap_or(glam::Vec2::ZERO);
+                            let new_vertex = vertices.last().copied().unwrap_or(Vec2::ZERO);
                             vertices.push(new_vertex);
+                            changed = true;
                         }
                     });
             });
@@ -181,6 +221,8 @@ fn shape_ui(ui: &mut egui::Ui, shape: &mut Shape) {
             }
         }
     }
+
+    changed
 }
 
 fn point_style_ui(ui: &mut egui::Ui, style: &mut PointStyle) {
@@ -192,7 +234,6 @@ fn point_style_ui(ui: &mut egui::Ui, style: &mut PointStyle) {
                 .range(0.0_f32..=1000.0_f32),
         );
     });
-
     ui.horizontal(|ui: &mut egui::Ui| {
         ui.label("Color:");
         ui.color_edit_button_srgba(&mut style.color);
@@ -208,7 +249,6 @@ fn line_style_ui(ui: &mut egui::Ui, style: &mut LineStyle) {
                 .range(0.0_f32..=1000.0_f32),
         );
     });
-
     ui.horizontal(|ui: &mut egui::Ui| {
         ui.label("Color:");
         ui.color_edit_button_srgba(&mut style.color);

@@ -45,7 +45,7 @@ impl<'a> SceneEditor<'a> {
         if let Some(object) = self.scene.objects.remove(key) {
             let (min, max): (Vec2, Vec2) = object.shape().logical_bounds();
             let node: SpatialNode = SpatialNode { key, min, max };
-            self.scene.quadtree.insert(node);
+            self.scene.quadtree.remove(&node);
             self.terminal.deregister_object(key);
             Some(object)
         } else {
