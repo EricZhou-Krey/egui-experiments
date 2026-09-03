@@ -12,7 +12,9 @@ pub mod tabs;
 /*
 
 - Decouple stuff from mapview ui too much is logic based
+- Decouple stuff from Soundview in preparation for later
 - Polygon convex hull needs better defintion for ui drawing, there are overlaps that cause visual artefacts
+* - For shape finding, implment quadtree, including later for ray collisions
 
 Consider each of the states of each tab and create them approriately,
 need to create:
@@ -24,8 +26,6 @@ need to create:
     Tab::PlayControls,
 
 * - Add macros to make rects, sqaures, and approximate circles, triangles, etc
-* - Make it look a bit nice
-
 
 -> 1 - Define receiver and be able move the reveiver around to catpure ambient sound via linear distance or beizer
 
@@ -45,9 +45,4 @@ For each receiver call collect sound, and play when play controls play is select
 3 - Workout directional sounds,
 
 - WGPU ray calculations
-
-
-* - For shape finding, implment quadtree, including later for ray collisions
-* - Decouple mapview tools usage, for cleaner interface
-* - Actual ui for node details
 */
