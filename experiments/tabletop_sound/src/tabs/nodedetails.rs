@@ -1,5 +1,4 @@
 use crate::scene::scene_object::{SceneObject, Shape};
-use crate::scene::SpatialNode;
 use crate::settings::style::{FaceStyle, LineStyle, PointStyle};
 use crate::state::TTSState;
 use glam::Vec2;
@@ -10,63 +9,42 @@ pub fn nodedetails_title(_state: &mut TTSState) -> egui::WidgetText {
 
 pub fn nodedetails_ui(state: &mut TTSState, ui: &mut egui::Ui) {
     if let Some(object_key) = state.map.selected_object_key {
-        let mut editor = state.edit_scene();
-
-        if let Some(object) = editor.scene.objects.get_mut(object_key) {
-            let (old_min, old_max) = object.shape().logical_bounds();
-
-            let type_name = match object {
-                SceneObject::Wall(_) => "Wall",
-                SceneObject::Receiver(_) => "Receiver",
-                SceneObject::Emitter(_) => "Emitter",
-            };
-
-            ui.heading(format!("Selected: {}_{:?}", type_name, object_key));
-            ui.separator();
-
-            match object {
-                SceneObject::Wall(_) => {
-                    ui.label("Description: An acoustic barrier.");
+        let (type_name, description, duration) = {
+            let viewer = state.view_scene();
+            if let Some(object) = viewer.object(object_key) {
+                match object {
+                    SceneObject::Wall(_) => ("Wall", "An acoustic barrier.", None),
+                    SceneObject::Receiver(_) => ("Receiver", "An acoustic listener.", None),
+                    SceneObject::Emitter(e) => (
+                        "Emitter",
+                        "A sound source.",
+                        Some(e.sound_data.duration().as_secs_f32()),
+                    ),
                 }
-                SceneObject::Receiver(_) => {
-                    ui.label("Description: An acoustic listener.");
-                }
-                SceneObject::Emitter(emitter) => {
-                    ui.label("Description: A sound source.");
-                    ui.horizontal(|ui: &mut egui::Ui| {
-                        ui.label("Sound Data:");
-                        let duration: f32 = emitter.sound_data.duration().as_secs_f32();
-                        ui.label(format!("{:.2} seconds", duration));
-                    });
-                }
-            }
-
-            ui.separator();
-            ui.heading("Shape & Position");
-
-            let shape = object.mut_shape();
-            let position_changed = shape_ui(ui, shape);
-
-            if position_changed {
-                let (new_min, new_max) = shape.logical_bounds();
-
-                editor.scene.quadtree.remove(&SpatialNode {
-                    key: object_key,
-                    min: old_min,
-                    max: old_max,
+            } else {
+                ui.centered_and_justified(|ui: &mut egui::Ui| {
+                    ui.heading("Object Not Found");
                 });
-
-                editor.scene.quadtree.insert(SpatialNode {
-                    key: object_key,
-                    min: new_min,
-                    max: new_max,
-                });
+                return;
             }
-        } else {
-            ui.centered_and_justified(|ui: &mut egui::Ui| {
-                ui.heading("Object Not Found");
+        };
+
+        ui.heading(format!("Selected: {}_{:?}", type_name, object_key));
+        ui.separator();
+
+        ui.label(format!("Description: {}", description));
+        if let Some(dur) = duration {
+            ui.horizontal(|ui: &mut egui::Ui| {
+                ui.label("Sound Data:");
+                ui.label(format!("{:.2} seconds", dur));
             });
         }
+
+        ui.separator();
+        ui.heading("Shape & Position");
+
+        let mut editor = state.edit_scene();
+        editor.modify_shape(object_key, |shape| shape_ui(ui, shape));
     } else {
         ui.centered_and_justified(|ui: &mut egui::Ui| {
             ui.heading("No Selection");

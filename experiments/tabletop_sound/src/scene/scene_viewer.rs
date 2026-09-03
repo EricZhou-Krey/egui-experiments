@@ -11,16 +11,19 @@ pub struct SceneViewer<'a> {
 }
 
 impl<'a> SceneViewer<'a> {
-    pub fn find_scene_object_index_around(
+    pub fn key_object_around(
         &self,
         position: Vec2,
         radius: f32,
-    ) -> Option<SceneObjectKey> {
+    ) -> Option<(SceneObjectKey, &SceneObject)> {
         self.scene
             .objects
             .iter()
             .find(|(_, object)| object.shape().is_around(position, radius))
-            .map(|(key, _)| key)
+    }
+
+    pub fn object(&self, key: SceneObjectKey) -> Option<&SceneObject> {
+        self.scene.objects.get(key)
     }
 
     pub fn objects(&self) -> Values<'_, SceneObjectKey, SceneObject> {
