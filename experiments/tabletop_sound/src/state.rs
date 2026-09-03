@@ -2,12 +2,12 @@ use std::cell::{Ref, RefCell, RefMut};
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 
-use crate::scene_object::SceneObject;
+use crate::scene::scene_object::SceneObject;
 use crate::tabs::soundview::SoundState;
 use crate::{
     scene::Scene,
-    style_sheet::{LEFT_PANEL_WIDTH, TOP_LEFT_PANEL_HEIGHT, TOP_RIGHT_PANEL_HEIGHT},
-    tab::Tab,
+    settings::style_sheet::{LEFT_PANEL_WIDTH, TOP_LEFT_PANEL_HEIGHT, TOP_RIGHT_PANEL_HEIGHT},
+    tabs::tab::Tab,
     tabs::{mapview::MapState, terminal::TTSTerminal},
 };
 use egui_dock::{DockState, NodeIndex, TabViewer, Tree};
@@ -17,7 +17,7 @@ use glam::Vec2;
 pub struct TTSSettings {}
 
 pub struct TTSState {
-    scene: Rc<RefCell<Scene>>,
+    pub scene: Scene,
     pub map: MapState,
     pub terminal: TTSTerminal,
     pub sound: SoundState,
@@ -26,12 +26,10 @@ pub struct TTSState {
 
 impl Default for TTSState {
     fn default() -> Self {
-        let scene: Rc<RefCell<Scene>> = Rc::new(RefCell::new(Scene::default()));
-
         Self {
-            scene: scene.clone(),
+            scene: Scene::default(),
             map: MapState::default(),
-            terminal: TTSTerminal::new(scene),
+            terminal: TTSTerminal::default(),
             sound: SoundState::default(),
             settings: TTSSettings::default(),
         }

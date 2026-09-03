@@ -1,11 +1,7 @@
-pub mod logic_sheet;
 pub mod raytrace;
 pub mod scene;
-pub mod scene_object;
+pub mod settings;
 pub mod state;
-pub mod style;
-pub mod style_sheet;
-pub mod tab;
 pub mod tabletop_sound;
 pub mod tabs;
 

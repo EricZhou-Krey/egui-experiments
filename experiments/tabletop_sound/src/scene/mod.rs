@@ -1,10 +1,10 @@
-use crate::scene_object::SceneObject;
+pub mod scene_object;
+
+use crate::scene::scene_object::SceneObject;
+use crate::settings::SceneSettings;
 use std::cell::RefCell;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
-
-#[derive(Default, Debug, Clone, PartialEq)]
-pub struct SceneSettings {}
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct Scene {
