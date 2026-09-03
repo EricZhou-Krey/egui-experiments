@@ -11,22 +11,19 @@ pub fn nodetree_ui(state: &mut TTSState, ui: &mut egui::Ui) {
     ui.heading("Scene Tree");
     ui.separator();
 
-    let object_info: Vec<(usize, String)> = {
-        let scene_objects: Values<'_, SceneObjectKey, SceneObject> = state.view_scene().objects();
-        scene_objects
-            .enumerate()
-            .map(|(i, obj)| {
-                let display_name = match obj {
-                    SceneObject::Wall(..) => "🧱 Wall",
-                    SceneObject::Receiver(..) => "🎧 Receiver",
-                    SceneObject::Emitter(..) => "🔊 Emitter",
-                    _ => "❓ Unknown",
-                };
+    let object_info: Vec<(SceneObjectKey, String)> = state
+        .view_scene()
+        .key_objects()
+        .map(|(key, obj)| {
+            let display_name = match obj {
+                SceneObject::Wall(..) => "🧱 Wall",
+                SceneObject::Receiver(..) => "🎧 Receiver",
+                SceneObject::Emitter(..) => "🔊 Emitter",
+            };
 
-                (i, format!("{}: {}", i, display_name))
-            })
-            .collect()
-    };
+            (key, format!("(ID: {:?}): {}", key, display_name))
+        })
+        .collect();
 
     egui::ScrollArea::vertical()
         .auto_shrink([false, false])
@@ -34,16 +31,16 @@ pub fn nodetree_ui(state: &mut TTSState, ui: &mut egui::Ui) {
             if object_info.is_empty() {
                 ui.label(egui::RichText::new("Empty Scene").italics());
             } else {
-                for (index, label_text) in object_info {
-                    let is_selected = state.map.selected_object_index == Some(index);
+                for (key, label_text) in object_info {
+                    let is_selected = state.map.selected_object_key == Some(key);
 
                     let response = ui.selectable_label(is_selected, label_text);
 
                     if response.clicked() {
                         if is_selected {
-                            state.map.selected_object_index = None;
+                            state.map.selected_object_key = None;
                         } else {
-                            state.map.selected_object_index = Some(index);
+                            state.map.selected_object_key = Some(key);
                         }
                     }
                 }

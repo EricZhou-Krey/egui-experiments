@@ -1,20 +1,15 @@
-use std::{
-    cell::RefCell,
-    collections::HashMap,
-    ops::{Deref, DerefMut},
-    rc::Rc,
-};
-
+use crate::scene::{scene_object::SceneObject, Scene, SceneObjectKey};
+use std::collections::HashMap;
 use terminal::{
-    Terminal, command::{Command, CommandResult}, file_system::{Directory, File, FileSystemNode, TerminalDirectory, TerminalFile}
+    command::{Command, CommandResult},
+    file_system::{Directory, File, FileSystemNode, TerminalDirectory, TerminalFile},
+    Terminal,
 };
-
-use crate::{scene::Scene, scene_object::SceneObject, state::TTSState};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TTSFile {
     Terminal(TerminalFile),
-    SceneObject(Rc<RefCell<SceneObject>>),
+    SceneObject(SceneObjectKey),
 }
 
 impl Default for TTSFile {
@@ -45,7 +40,6 @@ impl File for TTSFile {}
 pub enum TTSDirectory {
     Terminal(HashMap<String, FileSystemNode<TTSFile, TTSDirectory>>),
     Scene {
-        scene: Rc<RefCell<Scene>>,
         nodes: HashMap<String, FileSystemNode<TTSFile, TTSDirectory>>,
     },
 }
@@ -122,9 +116,11 @@ impl Directory for TTSDirectory {
 struct TTSCatCommand;
 impl<D> Command<TTSFile, D> for TTSCatCommand
 where
-    D: Directory<Node = FileSystemNode<TTSFile, D>>
+    D: Directory<Node = FileSystemNode<TTSFile, D>>,
 {
-    fn name() -> &'static str { "cat" }
+    fn name() -> &'static str {
+        "cat"
+    }
     fn execute(terminal: &mut Terminal<TTSFile, D>, args: &[&str]) -> CommandResult {
         if let Some(target_file) = args.first() {
             let mut file_path: Vec<String> = terminal.current_directory.clone();
@@ -132,25 +128,29 @@ where
 
             if let Some(FileSystemNode::File(file)) = terminal.get_node(&file_path) {
                 match file {
-                    TTSFile::Terminal(terminal_file) => {
-                        match terminal_file {
-                            TerminalFile::Text(text_file) => {
-                                terminal.history.push(text_file.content.clone());
-                            }
-                            TerminalFile::Binary(_) => {
-                                terminal.history.push(format!("cat: {}: cannot display binary file", target_file));
-                            }
+                    TTSFile::Terminal(terminal_file) => match terminal_file {
+                        TerminalFile::Text(text_file) => {
+                            terminal.history.push(text_file.content.clone());
+                        }
+                        TerminalFile::Binary(_) => {
+                            terminal
+                                .history
+                                .push(format!("cat: {}: cannot display binary file", target_file));
                         }
                     },
                     TTSFile::SceneObject(object_file) => {
-                        terminal.history.push(format!("{:?}", object_file.borrow()));
+                        terminal.history.push(format!("{:?}", object_file));
                     }
                 }
             } else {
-                terminal.history.push(format!("cat: {}: No such file", target_file));
+                terminal
+                    .history
+                    .push(format!("cat: {}: No such file", target_file));
             }
         } else {
-            terminal.history.push("cat: missing file operand".to_string());
+            terminal
+                .history
+                .push("cat: missing file operand".to_string());
         }
         CommandResult::Handled
     }
@@ -161,8 +161,8 @@ pub struct TTSTerminalState {
     terminal: Terminal<TTSFile, TTSDirectory>,
 }
 
-impl TTSTerminalState {
-    pub fn new(scene: Rc<RefCell<Scene>>) -> Self {
+impl Default for TTSTerminalState {
+    fn default() -> Self {
         let base_terminal: Terminal<TerminalFile, TerminalDirectory> =
             terminal::Terminal::<TerminalFile, TerminalDirectory>::default();
 
@@ -178,7 +178,6 @@ impl TTSTerminalState {
             root_children.insert(
                 "scene".to_string(),
                 FileSystemNode::Directory(TTSDirectory::Scene {
-                    scene,
                     nodes: HashMap::new(),
                 }),
             );
@@ -203,39 +202,44 @@ impl TTSTerminalState {
 
         Self { terminal }
     }
+}
 
-    pub fn add_scene_object(&mut self, index: usize, object: Rc<RefCell<SceneObject>>) {
+impl TTSTerminalState {
+    pub fn register_object(&mut self, scene: &mut Scene, object_key: SceneObjectKey) {
         if let FileSystemNode::Directory(TTSDirectory::Terminal(children)) = &mut self.terminal.file_system &&
-            let Some(FileSystemNode::Directory(TTSDirectory::Scene { nodes, .. })) = children.get_mut("scene") {
-            
-            let object_type = object.borrow().type_name(); 
-            
-            let filename: String = format!("{}_{}.obj", object_type, index);
-            nodes.insert(filename, FileSystemNode::File(TTSFile::SceneObject(object)));
+        let Some(FileSystemNode::Directory(TTSDirectory::Scene { nodes, .. })) = children.get_mut("scene") {
+            let object_type: &'static str = match scene.objects.get(object_key) {
+                Some(SceneObject::Wall(..)) => "wall",
+                Some(SceneObject::Emitter(..)) => "emitter",
+                Some(SceneObject::Receiver(..)) => "receiver",
+                None => "?",
+            };
+
+            let filename: String = format!("{}_(ID: {:?}).obj", object_type, object_key);
+            nodes.insert(
+                filename,
+                FileSystemNode::File(TTSFile::SceneObject(object_key)),
+            );
         }
     }
 
-    pub fn remove_scene_object(&mut self, index: usize, new_total: usize) {
+    pub fn deregister_object(&mut self, _scene: &mut Scene, object_key: SceneObjectKey) {
         if let FileSystemNode::Directory(TTSDirectory::Terminal(children)) = &mut self.terminal.file_system && 
-             let Some(FileSystemNode::Directory(TTSDirectory::Scene { nodes, .. })) = children.get_mut("scene") {
-             
-             let target_suffix = format!("_{}.obj", index);
-             let target_key = nodes.keys().find(|k| k.ends_with(&target_suffix)).cloned();
-             
-             if let Some(key) = target_key {
-                 nodes.remove(&key);
-             }
+        let Some(FileSystemNode::Directory(TTSDirectory::Scene { nodes, .. })) = children.get_mut("scene") {
+            let target_filename = nodes.iter().find_map(|(name, node)| {
+                if let FileSystemNode::File(TTSFile::SceneObject(k)) = node && *k == object_key {
+                    return Some(name.clone());
+                }
+                None
+            });
 
-             for i in (index + 1)..=new_total {
-                 let old_suffix = format!("_{}.obj", i);
-                 let old_key = nodes.keys().find(|k| k.ends_with(&old_suffix)).cloned();
-                 
-                 if let Some(key) = old_key && let Some(node) = nodes.remove(&key) {
-                     let new_suffix = format!("_{}.obj", i - 1);
-                     let new_filename = key.replace(&old_suffix, &new_suffix);
-                     nodes.insert(new_filename, node);
-                 }
-             }
+            if let Some(filename) = target_filename {
+                nodes.remove(&filename);
+            }
         }
+    }
+
+    pub fn ui(&mut self, ui: &mut egui::Ui) {
+        self.terminal.ui(ui);
     }
 }

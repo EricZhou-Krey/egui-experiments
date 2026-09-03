@@ -1,15 +1,13 @@
 pub mod map;
 pub mod sound;
 pub mod terminal;
-use crate::scene::scene_editor::SceneEditor;
-use crate::scene::scene_viewer::SceneViewer;
+use crate::scene::{scene_editor::SceneEditor, scene_viewer::SceneViewer};
 use crate::settings::TTSSettings;
-use crate::tabs::soundview::SoundState;
+use crate::state::{map::MapState, sound::SoundState, terminal::TTSTerminalState};
+use crate::tabs::Tab;
 use crate::{
     scene::Scene,
     settings::style_sheet::{LEFT_PANEL_WIDTH, TOP_LEFT_PANEL_HEIGHT, TOP_RIGHT_PANEL_HEIGHT},
-    tabs::tab::Tab,
-    tabs::{mapview::MapState, terminal::TTSTerminal},
 };
 use egui_dock::{DockState, NodeIndex, TabViewer, Tree};
 use std::ops::{Deref, DerefMut};
@@ -63,14 +61,14 @@ impl TabViewer for TTSState {
 }
 
 impl TTSState {
-    pub fn edit_scene(&mut self) -> SceneEditor {
+    pub fn edit_scene(&mut self) -> SceneEditor<'_> {
         SceneEditor {
             scene: &mut self.scene,
             terminal: &mut self.terminal,
         }
     }
 
-    pub fn view_scene(&self) -> SceneViewer {
+    pub fn view_scene(&self) -> SceneViewer<'_> {
         SceneViewer {
             scene: &self.scene,
             terminal: &self.terminal,

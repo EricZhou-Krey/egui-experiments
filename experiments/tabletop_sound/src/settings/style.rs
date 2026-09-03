@@ -1,10 +1,10 @@
 use egui::Color32;
 
 use crate::settings::style_sheet::{
-    MAP_ADDRECEIVER_ICON, MAP_ADDWALL_ICON, MAP_BACKGROUND_COLOR, MAP_MOVE_ICON,
-    MAP_RECEIVER_COLOR, MAP_RECEIVER_RADIUS, MAP_REMOVE_ICON, MAP_SELECT_ICON,
-    MAP_TRANSMITTER_COLOR, MAP_TRANSMITTER_RADIUS, MAP_WALL_FILL_COLOR, MAP_WALL_LINE_COLOR,
-    MAP_WALL_LINE_STROKE_WIDTH, MAP_WALL_VERTEX_COLOR, MAP_WALL_VERTEX_RADIUS,
+    MAP_ADDRECEIVER_ICON, MAP_ADDWALL_ICON, MAP_BACKGROUND_COLOR, MAP_EMITTER_COLOR,
+    MAP_EMITTER_RADIUS, MAP_MOVE_ICON, MAP_RECEIVER_COLOR, MAP_RECEIVER_RADIUS, MAP_REMOVE_ICON,
+    MAP_SELECT_ICON, MAP_WALL_FILL_COLOR, MAP_WALL_LINE_COLOR, MAP_WALL_LINE_STROKE_WIDTH,
+    MAP_WALL_VERTEX_COLOR, MAP_WALL_VERTEX_RADIUS,
 };
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -41,7 +41,7 @@ pub struct MapIcons {
 #[derive(Debug, Clone, PartialEq)]
 pub struct MapStyle {
     pub receiver: PointStyle,
-    pub transmitter: PointStyle,
+    pub emitter: PointStyle,
     pub wall_face: FaceStyle,
     pub wall_line: Option<LineStyle>,
     pub wall_vertex: Option<PointStyle>,
@@ -56,9 +56,9 @@ impl Default for MapStyle {
                 radius: MAP_RECEIVER_RADIUS,
                 color: MAP_RECEIVER_COLOR,
             },
-            transmitter: PointStyle {
-                radius: MAP_TRANSMITTER_RADIUS,
-                color: MAP_TRANSMITTER_COLOR,
+            emitter: PointStyle {
+                radius: MAP_EMITTER_RADIUS,
+                color: MAP_EMITTER_COLOR,
             },
             wall_face: FaceStyle {
                 fill_color: MAP_WALL_FILL_COLOR,

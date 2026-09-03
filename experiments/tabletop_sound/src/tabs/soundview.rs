@@ -1,9 +1,4 @@
-use slotmap::basic::Values;
-
-use crate::{
-    scene::{scene_object::SceneObject, SceneObjectKey},
-    state::TTSState,
-};
+use crate::{scene::scene_object::SceneObject, state::TTSState};
 
 pub fn soundview_title(_state: &mut TTSState) -> egui::WidgetText {
     "SoundView".into()
@@ -13,8 +8,8 @@ pub fn soundview_ui(state: &mut TTSState, ui: &mut egui::Ui) {
     ui.heading("Sound Data");
     ui.separator();
 
-    if let Some(receiver_index) = state.map.selected_object_index {
-        ui.label(format!("Listening at Receiver {}", receiver_index));
+    if let Some(receiver_key) = state.map.selected_object_key {
+        ui.label(format!("Listening at Receiver (ID: {:?})", receiver_key));
         ui.add_space(10.0);
 
         ui.label("Incoming Waveform:");
@@ -55,9 +50,9 @@ pub fn soundview_ui(state: &mut TTSState, ui: &mut egui::Ui) {
         ui.separator();
 
         let emitter_info: Vec<(usize, String)> = {
-            let scene_objects: Values<'_, SceneObjectKey, SceneObject> =
-                state.view_scene().objects();
-            scene_objects
+            state
+                .view_scene()
+                .objects()
                 .enumerate()
                 .filter(|(_, obj)| matches!(*obj, SceneObject::Emitter(_)))
                 .map(|(i, _)| (i, format!("Emitter (ID: {})", i)))

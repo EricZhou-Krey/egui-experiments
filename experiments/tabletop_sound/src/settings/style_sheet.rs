@@ -31,8 +31,8 @@ pub const MAP_TOOLBAR_BUTTON_SIZE: egui::Vec2 = egui::vec2(32.0, 32.0);
 pub const MAP_RECEIVER_RADIUS: f32 = 5.0;
 pub const MAP_RECEIVER_COLOR: egui::Color32 = egui::Color32::from_rgb(50, 150, 255);
 
-pub const MAP_TRANSMITTER_RADIUS: f32 = 6.0;
-pub const MAP_TRANSMITTER_COLOR: egui::Color32 = egui::Color32::from_rgb(255, 80, 80);
+pub const MAP_EMITTER_RADIUS: f32 = 6.0;
+pub const MAP_EMITTER_COLOR: egui::Color32 = egui::Color32::from_rgb(255, 80, 80);
 
 pub const MAP_WALL_VERTEX_RADIUS: f32 = 4.0;
 pub const MAP_WALL_VERTEX_COLOR: egui::Color32 =

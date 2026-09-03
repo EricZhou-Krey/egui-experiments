@@ -1,8 +1,5 @@
 use crate::{
-    scene::{
-        scene_object::{SceneObject, Shape},
-        Scene, SceneObjectKey, SpatialNode,
-    },
+    scene::{scene_object::SceneObject, Scene, SceneObjectKey, SpatialNode},
     state::terminal::TTSTerminalState,
 };
 use glam::Vec2;
@@ -13,16 +10,16 @@ pub struct SceneEditor<'a> {
 }
 
 impl<'a> SceneEditor<'a> {
-    pub fn modify_shape<F>(&mut self, key: SceneObjectKey, mut modifier: F)
+    pub fn modify_object<F>(&mut self, key: SceneObjectKey, mut modifier: F)
     where
-        F: FnMut(&mut Shape) -> bool,
+        F: FnMut(&mut SceneObject) -> (),
     {
         if let Some(object) = self.scene.objects.get_mut(key) {
             let (old_min, old_max): (Vec2, Vec2) = object.shape().logical_bounds();
+            modifier(object);
+            let (new_min, new_max): (Vec2, Vec2) = object.shape().logical_bounds();
 
-            let bounds_changed: bool = modifier(object.mut_shape());
-
-            if bounds_changed {
+            if old_min != new_min || old_max != new_max {
                 let old_node = SpatialNode {
                     key,
                     min: old_min,
@@ -46,7 +43,7 @@ impl<'a> SceneEditor<'a> {
         let key: SceneObjectKey = self.scene.objects.insert(object);
         let node: SpatialNode = SpatialNode { key, min, max };
         self.scene.quadtree.insert(node);
-        self.terminal.register_object(key);
+        self.terminal.register_object(self.scene, key);
         key
     }
 
@@ -55,7 +52,7 @@ impl<'a> SceneEditor<'a> {
             let (min, max): (Vec2, Vec2) = object.shape().logical_bounds();
             let node: SpatialNode = SpatialNode { key, min, max };
             self.scene.quadtree.remove(&node);
-            self.terminal.deregister_object(key);
+            self.terminal.deregister_object(self.scene, key);
             Some(object)
         } else {
             None

@@ -29,7 +29,7 @@ pub fn nodedetails_ui(state: &mut TTSState, ui: &mut egui::Ui) {
             }
         };
 
-        ui.heading(format!("Selected: {}_{:?}", type_name, object_key));
+        ui.heading(format!("Selected: {}_(ID: {:?})", type_name, object_key));
         ui.separator();
 
         ui.label(format!("Description: {}", description));
@@ -43,8 +43,9 @@ pub fn nodedetails_ui(state: &mut TTSState, ui: &mut egui::Ui) {
         ui.separator();
         ui.heading("Shape & Position");
 
-        let mut editor = state.edit_scene();
-        editor.modify_shape(object_key, |shape| shape_ui(ui, shape));
+        state.edit_scene().modify_object(object_key, |object| {
+            shape_ui(ui, object.mut_shape());
+        });
     } else {
         ui.centered_and_justified(|ui: &mut egui::Ui| {
             ui.heading("No Selection");
@@ -52,20 +53,14 @@ pub fn nodedetails_ui(state: &mut TTSState, ui: &mut egui::Ui) {
     }
 }
 
-fn shape_ui(ui: &mut egui::Ui, shape: &mut Shape) -> bool {
-    let mut changed = false;
-
+fn shape_ui(ui: &mut egui::Ui, shape: &mut Shape) {
     match shape {
         Shape::Point(position, point_style) => {
             ui.label("Type: Point");
             ui.horizontal(|ui: &mut egui::Ui| {
                 ui.label("Position:");
-                changed |= ui
-                    .add(egui::DragValue::new(&mut position.x).prefix("X: "))
-                    .changed();
-                changed |= ui
-                    .add(egui::DragValue::new(&mut position.y).prefix("Y: "))
-                    .changed();
+                ui.add(egui::DragValue::new(&mut position.x).prefix("X: "));
+                ui.add(egui::DragValue::new(&mut position.y).prefix("Y: "));
             });
 
             ui.separator();
@@ -79,22 +74,14 @@ fn shape_ui(ui: &mut egui::Ui, shape: &mut Shape) -> bool {
 
             ui.horizontal(|ui: &mut egui::Ui| {
                 ui.label("Point A:");
-                changed |= ui
-                    .add(egui::DragValue::new(&mut a.x).prefix("X: "))
-                    .changed();
-                changed |= ui
-                    .add(egui::DragValue::new(&mut a.y).prefix("Y: "))
-                    .changed();
+                ui.add(egui::DragValue::new(&mut a.x).prefix("X: "));
+                ui.add(egui::DragValue::new(&mut a.y).prefix("Y: "));
             });
 
             ui.horizontal(|ui: &mut egui::Ui| {
                 ui.label("Point B:");
-                changed |= ui
-                    .add(egui::DragValue::new(&mut b.x).prefix("X: "))
-                    .changed();
-                changed |= ui
-                    .add(egui::DragValue::new(&mut b.y).prefix("Y: "))
-                    .changed();
+                ui.add(egui::DragValue::new(&mut b.x).prefix("X: "));
+                ui.add(egui::DragValue::new(&mut b.y).prefix("Y: "));
             });
 
             ui.separator();
@@ -134,16 +121,11 @@ fn shape_ui(ui: &mut egui::Ui, shape: &mut Shape) -> bool {
                         for (i, vertex) in vertices.iter_mut().enumerate() {
                             ui.horizontal(|ui: &mut egui::Ui| {
                                 ui.label(format!("#{}", i));
-                                changed |= ui
-                                    .add(egui::DragValue::new(&mut vertex.x).prefix("X: "))
-                                    .changed();
-                                changed |= ui
-                                    .add(egui::DragValue::new(&mut vertex.y).prefix("Y: "))
-                                    .changed();
+                                ui.add(egui::DragValue::new(&mut vertex.x).prefix("X: "));
+                                ui.add(egui::DragValue::new(&mut vertex.y).prefix("Y: "));
 
                                 if ui.button("X").clicked() {
                                     index_to_remove = Some(i);
-                                    changed = true;
                                 }
                             });
                         }
@@ -155,7 +137,6 @@ fn shape_ui(ui: &mut egui::Ui, shape: &mut Shape) -> bool {
                         if ui.button("+ Add Vertex").clicked() {
                             let new_vertex = vertices.last().copied().unwrap_or(Vec2::ZERO);
                             vertices.push(new_vertex);
-                            changed = true;
                         }
                     });
             });
@@ -199,8 +180,6 @@ fn shape_ui(ui: &mut egui::Ui, shape: &mut Shape) -> bool {
             }
         }
     }
-
-    changed
 }
 
 fn point_style_ui(ui: &mut egui::Ui, style: &mut PointStyle) {

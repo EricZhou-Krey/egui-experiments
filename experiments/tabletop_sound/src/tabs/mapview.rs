@@ -1,8 +1,7 @@
 use glam::Vec2;
-use slotmap::basic::Values;
 
 use crate::{
-    scene::{SceneObjectKey, scene_object::{SceneObject, Shape}},
+    scene::scene_object::Shape,
     settings::{
         style::{FaceStyle, LineStyle, PointStyle},
         style_sheet::{
@@ -39,8 +38,8 @@ fn grid(state: &mut TTSState, ui: &mut egui::Ui) {
     let min_world: Vec2 = state.map.screen_to_world(min_screen);
     let max_world: Vec2 = state.map.screen_to_world(max_screen);
 
-    let mut grid_w: f32 = state.map.grid_cell_width;
-    let mut grid_h: f32 = state.map.grid_cell_height;
+    let mut grid_w: f32 = state.map.settings.grid_cell_width;
+    let mut grid_h: f32 = state.map.settings.grid_cell_height;
 
     while grid_w * state.map.zoom < MAP_GRID_MIN_SCREEN_SPACING {
         grid_w *= MAP_GRID_SCALE_FACTOR;
@@ -171,8 +170,7 @@ fn scene_view(state: &mut TTSState, ui: &mut egui::Ui) {
     };
 
 
-    let scene_objects: Values<'_, SceneObjectKey, SceneObject> = state.view_scene().objects();
-    for object in scene_objects {
+    for object in state.view_scene().objects() {
         draw_shape(object.shape());
     }
 

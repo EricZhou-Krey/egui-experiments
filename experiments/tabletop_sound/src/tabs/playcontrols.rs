@@ -1,6 +1,5 @@
 use crate::scene::{scene_object::SceneObject, SceneObjectKey};
 use crate::state::TTSState;
-use slotmap::basic::Values;
 
 pub fn playcontrols_title(_state: &mut TTSState) -> egui::WidgetText {
     "PlayControls".into()
@@ -13,58 +12,57 @@ pub fn playcontrols_ui(state: &mut TTSState, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
         ui.label("Receiver:");
 
-        let receiver_indices: Vec<usize> = {
-            let scene_objects: Values<'_, SceneObjectKey, SceneObject> =
-                state.view_scene().objects();
-            scene_objects
-                .enumerate()
-                .filter(|(_, obj)| matches!(*obj, SceneObject::Receiver(_)))
-                .map(|(i, _)| i)
+        let receiver_keys: Vec<SceneObjectKey> = {
+            let viewer = state.view_scene();
+            viewer
+                .scene
+                .objects
+                .iter()
+                .filter(|(_, obj)| matches!(**obj, SceneObject::Receiver(_)))
+                .map(|(key, _)| key)
                 .collect()
         };
 
-        let mut local_index: Option<usize> =
-            state.map.selected_object_index.and_then(|global_index| {
-                receiver_indices
-                    .iter()
-                    .position(|&index| index == global_index)
-            });
+        let mut local_index: Option<usize> = state
+            .map
+            .selected_object_key
+            .and_then(|global_key| receiver_keys.iter().position(|&key| key == global_key));
 
         let prev_local_index: Option<usize> = local_index;
 
-        if ui.button("◀").clicked() && !receiver_indices.is_empty() {
+        if ui.button("◀").clicked() && !receiver_keys.is_empty() {
             local_index = Some(
                 local_index
                     .unwrap_or(0)
                     .checked_sub(1)
-                    .unwrap_or(receiver_indices.len() - 1),
+                    .unwrap_or(receiver_keys.len() - 1),
             );
         }
 
         egui::ComboBox::from_id_salt("receiver_select")
             .selected_text(match local_index {
-                Some(index) => format!("Receiver {} (ID: {})", index + 1, receiver_indices[index]),
+                Some(index) => format!("Receiver {} (ID: {:?})", index + 1, receiver_keys[index]),
                 None => "None".to_string(),
             })
             .show_ui(ui, |ui| {
-                for (i, &global_index) in receiver_indices.iter().enumerate() {
+                for (i, &key) in receiver_keys.iter().enumerate() {
                     ui.selectable_value(
                         &mut local_index,
                         Some(i),
-                        format!("Receiver {} (ID: {})", i + 1, global_index),
+                        format!("Receiver {} (ID: {:?})", i + 1, key),
                     );
                 }
             });
 
-        if ui.button("▶").clicked() && !receiver_indices.is_empty() {
-            local_index = Some((local_index.unwrap_or(0) + 1) % receiver_indices.len());
+        if ui.button("▶").clicked() && !receiver_keys.is_empty() {
+            local_index = Some((local_index.unwrap_or(0) + 1) % receiver_keys.len());
         }
 
         if local_index != prev_local_index {
             if let Some(index) = local_index {
-                state.map.selected_object_index = Some(receiver_indices[index]);
+                state.map.selected_object_key = Some(receiver_keys[index]);
             } else {
-                state.map.selected_object_index = None;
+                state.map.selected_object_key = None;
             }
         }
     });
@@ -78,7 +76,7 @@ pub fn playcontrols_ui(state: &mut TTSState, ui: &mut egui::Ui) {
 
         if ui.button("⏵ Play").clicked() {
             //TODO
-            state.sound.play_sound(state.map.selected_object_index);
+            state.sound.play_sound(state.map.selected_object_key);
         }
 
         if ui.button("⏹ Stop").clicked() {

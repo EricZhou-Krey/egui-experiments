@@ -3,7 +3,7 @@ pub const MAP_ZOOM_SENSITIVITY: f32 = 0.01;
 pub const MAP_ZOOM_LIMIT: f32 = 0.1;
 pub const MAP_BASE_ZOOM: f32 = 1.0;
 
-pub fn generate_sample_transmitter_sound() -> kira::sound::static_sound::StaticSoundData {
+pub fn generate_sample_emitter_sound() -> kira::sound::static_sound::StaticSoundData {
     let sample_rate: u32 = 44100;
     let duration_seconds: f32 = 1.0;
     let num_samples: usize = (sample_rate as f32 * duration_seconds) as usize;

@@ -3,7 +3,7 @@ use crate::{
     state::terminal::TTSTerminalState,
 };
 use glam::Vec2;
-use slotmap::basic::Values;
+use slotmap::basic::{Iter, Values};
 
 pub struct SceneViewer<'a> {
     pub scene: &'a Scene,
@@ -28,5 +28,9 @@ impl<'a> SceneViewer<'a> {
 
     pub fn objects(&self) -> Values<'_, SceneObjectKey, SceneObject> {
         self.scene.objects.values()
+    }
+
+    pub fn key_objects(&self) -> Iter<'_, SceneObjectKey, SceneObject> {
+        self.scene.objects.iter()
     }
 }

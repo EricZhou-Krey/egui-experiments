@@ -1,8 +1,8 @@
-use std::ops::{Deref, DerefMut};
-
+use crate::{
+    scene::SceneObjectKey,
+    settings::{logic_sheet::generate_sample_emitter_sound, SoundSettings},
+};
 use kira::{AudioManager, AudioManagerSettings, DefaultBackend};
-
-use crate::{logic_sheet::generate_sample_transmitter_sound, state::TTSState};
 
 pub struct SoundState {
     audio_manager: AudioManager,
@@ -20,11 +20,11 @@ impl Default for SoundState {
 }
 
 impl SoundState {
-    pub fn play_sound(&mut self, receiver_index: Option<usize>) {
-        if let Some(_receiver) = receiver_index {
+    pub fn play_sound(&mut self, receiver_key: Option<SceneObjectKey>) {
+        if let Some(_receiver) = receiver_key {
             todo!();
         } else {
-            let _ = self.audio_manager.play(generate_sample_transmitter_sound());
+            let _ = self.audio_manager.play(generate_sample_emitter_sound());
         }
     }
 }

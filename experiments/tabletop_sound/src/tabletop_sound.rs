@@ -1,4 +1,4 @@
-use crate::{state::TTSState, tab::Tab};
+use crate::{state::TTSState, tabs::Tab};
 use egui_dock::{DockArea, DockState};
 
 pub struct TabletopSound {
