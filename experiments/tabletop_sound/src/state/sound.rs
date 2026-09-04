@@ -1,6 +1,13 @@
+use std::{collections::HashMap, f32::consts::PI};
+
 use crate::{
-    scene::{scene_object::Receiver, scene_viewer::SceneViewer},
-    settings::SoundSettings,
+    raytrace::ray::SoundRay,
+    scene::{
+        scene_object::{Emitter, Receiver, SceneObject},
+        scene_viewer::SceneViewer,
+        SceneObjectKey,
+    },
+    settings::{logic_sheet::N_RAYS, SoundSettings},
 };
 use glam::Vec2;
 use kira::{
@@ -12,7 +19,7 @@ pub struct SoundState {
     pub settings: SoundSettings,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct SoundFilter {
     pub volume: f64,
     pub delay_seconds: f64,
@@ -48,6 +55,50 @@ impl SoundState {
         receiver_position: Vec2,
         scene_viewer: SceneViewer,
     ) -> SoundDescriptor {
+        let sound_rays: Vec<SoundRay> = (0..N_RAYS)
+            .map(|i| SoundRay {
+                direction: Vec2::from_angle(2.0 * PI * (i as f32 / N_RAYS as f32)),
+                distance_travelled: 0.0,
+            })
+            .collect();
+
+        struct EmitterPointSound {
+            pub direct: PointSound,
+            pub reflected: PointSound,
+        }
+        // Making too many copies of the sound file, should only store the sound data once and
+        // reference it from the file system probably, need to implement that as cloning is
+        // impratcical before moving on
+        let emitter_point_sounds: HashMap<SceneObjectKey, EmitterPointSound> = scene_viewer
+            .emitter_keys()
+            .iter()
+            .filter_map(|key| {
+                if let Some(SceneObject::Emitter(emitter)) = scene_viewer.object(*key) {
+                    Some((
+                        *key,
+                        EmitterPointSound {
+                            direct: PointSound {
+                                apparent_position: emitter.shape.center(),
+                                sound_data: emitter.sound_data.clone(),
+                                filter: SoundFilter::default(),
+                            },
+                            reflected: PointSound {
+                                apparent_position: todo!(),
+                                sound_data: emitter.sound_data.clone(),
+                                filter: SoundFilter::default(),
+                            },
+                        },
+                    ))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        for ray in sound_rays {
+            todo!()
+        }
+
         // Pseudo-code for raytracing:
         // 3. For each successful ray path (direct, penetration, bounce):
         //    - Calculate total distance -> map to `delay_seconds` & base `volume`

@@ -116,6 +116,42 @@ impl Shape {
             }
         }
     }
+
+    pub fn center(&self) -> Vec2 {
+        match self {
+            Self::Point(position, ..) => *position,
+            Self::Line(a, b, ..) => a.midpoint(*b),
+            Self::Polygon(vertices, ..) => {
+                if vertices.is_empty() {
+                    return Vec2::ZERO;
+                }
+
+                let mut centroid: Vec2 = Vec2::ZERO;
+                let mut signed_area: f32 = 0.0;
+                let mut j: usize = vertices.len() - 1;
+
+                for i in 0..vertices.len() {
+                    let p0 = vertices[j];
+                    let p1 = vertices[i];
+
+                    let cross = (p0.x * p1.y) - (p1.x * p0.y);
+                    signed_area += cross;
+                    centroid += (p0 + p1) * cross;
+
+                    j = i;
+                }
+
+                signed_area *= 0.5;
+
+                if signed_area.abs() < f32::EPSILON {
+                    let sum = vertices.iter().fold(Vec2::ZERO, |acc, v| acc + *v);
+                    return sum / (vertices.len() as f32);
+                }
+
+                centroid / (6.0 * signed_area)
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
