@@ -12,24 +12,13 @@ use crate::{
 use egui_dock::{DockState, NodeIndex, TabViewer, Tree};
 use std::ops::{Deref, DerefMut};
 
+#[derive(Default)]
 pub struct TTSState {
     scene: Scene,
     pub map: MapState,
     pub terminal: TTSTerminalState,
     pub sound: SoundState,
     pub settings: TTSSettings,
-}
-
-impl Default for TTSState {
-    fn default() -> Self {
-        Self {
-            scene: Scene::new(),
-            map: MapState::default(),
-            terminal: TTSTerminalState::default(),
-            sound: SoundState::default(),
-            settings: TTSSettings::default(),
-        }
-    }
 }
 
 impl Deref for TTSState {
@@ -65,6 +54,7 @@ impl TTSState {
         SceneEditor {
             scene: &mut self.scene,
             terminal: &mut self.terminal,
+            sound: &mut self.sound,
         }
     }
 
@@ -72,6 +62,7 @@ impl TTSState {
         SceneViewer {
             scene: &self.scene,
             terminal: &self.terminal,
+            sound: &self.sound,
         }
     }
 

@@ -75,8 +75,7 @@ pub fn playcontrols_ui(state: &mut TTSState, ui: &mut egui::Ui) {
         }
 
         if ui.button("⏵ Play").clicked() {
-            //TODO
-            state.sound.play_sound(state.map.selected_object_key);
+            todo!();
         }
 
         if ui.button("⏹ Stop").clicked() {

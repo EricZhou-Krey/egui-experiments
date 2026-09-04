@@ -6,7 +6,7 @@ use crate::{
             MAP_ADDEMITTER_ICON, MAP_ADDRECEIVER_ICON, MAP_ADDWALL_ICON, MAP_MOVE_ICON, MAP_PAN_ICON, MAP_REMOVE_ICON,
             MAP_SELECT_ICON, MAP_ZOOM_ICON
         }
-    }, state::TTSState
+    }, state::TTSState,
 };
 use glam::Vec2;
 
@@ -128,10 +128,10 @@ impl MapTool {
                     let screen_position: Vec2 = Vec2::new(pointer_position.x, pointer_position.y);
                     let world_position: Vec2 = state.map.screen_to_world(screen_position);
 
-
                     let receiver_point_style: PointStyle = state.map.settings.style.receiver.clone();
                     state.map.selected_object_key = Some(state.edit_scene().add_object(SceneObject::Receiver(Receiver {
                         shape: Shape::Point(world_position, receiver_point_style),
+                        sound_descriptor: None,
                     })));
                 }
             }

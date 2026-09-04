@@ -1,3 +1,5 @@
+pub const N_RAYS: usize = 100;
+
 pub const MAP_INTERACTION_RADIUS: f32 = 20.0;
 pub const MAP_ZOOM_SENSITIVITY: f32 = 0.01;
 pub const MAP_ZOOM_LIMIT: f32 = 0.1;

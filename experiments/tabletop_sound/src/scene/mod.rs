@@ -1,6 +1,8 @@
 pub mod scene_editor;
 pub mod scene_object;
 pub mod scene_viewer;
+use std::collections::HashSet;
+
 use crate::scene::scene_object::SceneObject;
 use crate::settings::SceneSettings;
 use glam::Vec2;
@@ -27,16 +29,24 @@ impl RTreeObject for SpatialNode {
 #[derive(Debug)]
 pub struct Scene {
     pub objects: SlotMap<SceneObjectKey, SceneObject>,
-    pub quadtree: RTree<SpatialNode>,
+    pub receiver_keys: HashSet<SceneObjectKey>,
+    pub emitter_keys: HashSet<SceneObjectKey>,
+    pub wall_quadtree: RTree<SpatialNode>,
     pub settings: SceneSettings,
+}
+
+impl Default for Scene {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Scene {
     pub fn new() -> Self {
         Self {
             objects: SlotMap::with_key(),
-            quadtree: RTree::new(),
-            settings: SceneSettings::default(),
+            wall_quadtree: RTree::new(),
+            ..Default::default()
         }
     }
 }
