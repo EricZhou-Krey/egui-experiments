@@ -198,8 +198,6 @@ impl MapTool {
     }
 }
 
-
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct MapState {
     pub map_selected_tool: MapTool,
