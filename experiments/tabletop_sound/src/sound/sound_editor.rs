@@ -11,8 +11,4 @@ impl<'a> SoundEditor<'a> {
     pub fn new(sound: &'a mut SoundState, terminal: &'a mut TTSTerminalState) -> Self {
         Self { sound, terminal }
     }
-
-    pub fn sound(&mut self) -> StaticSoundData {
-        todo!()
-    }
 }

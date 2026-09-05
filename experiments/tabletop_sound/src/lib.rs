@@ -38,4 +38,10 @@ For each receiver call collect sound, and play when play controls play is select
 3 - Workout directional sounds,
 
 - WGPU ray calculations
+
+
+TODO current:
+- SoundEditor, SoundViewer, TerminalUpdate
+    -> How to import/load files into a simulated file system and create asset list, also do this for img files for editor
+    -> Project on HOLD FOR NOW -> experimenting with multipole expansions first
 */
