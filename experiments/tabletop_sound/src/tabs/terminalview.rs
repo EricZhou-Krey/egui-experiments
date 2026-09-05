@@ -5,5 +5,5 @@ pub fn terminal_title(_state: &mut TTSState) -> egui::WidgetText {
 }
 
 pub fn terminal_ui(state: &mut TTSState, ui: &mut egui::Ui) {
-    state.terminal.ui(ui);
+    state.edit_scene().terminal_ui(ui);
 }

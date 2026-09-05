@@ -1,11 +1,14 @@
-pub mod raytrace;
 pub mod scene;
 pub mod settings;
+pub mod sound;
 pub mod state;
 pub mod tabletop_sound;
 pub mod tabs;
 
 /*
+
+Debating about storing a directory directly instead of a Key to the scene objects, and move the keys around, but probably not becuase voliate to filesystem
+
 Consider each of the states of each tab and create them approriately,
 need to create:
     Tab::MapView,

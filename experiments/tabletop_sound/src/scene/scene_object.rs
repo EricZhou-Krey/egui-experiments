@@ -1,9 +1,8 @@
 use crate::{
     settings::style::{FaceStyle, LineStyle, PointStyle},
-    state::sound::SoundDescriptor,
+    sound::{SoundDescriptor, SoundKey},
 };
 use glam::Vec2;
-use kira::sound::static_sound::StaticSoundData;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Shape {
@@ -168,7 +167,7 @@ pub struct Receiver {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Emitter {
     pub shape: Shape,
-    pub sound_data: StaticSoundData,
+    pub sound_key: Option<SoundKey>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

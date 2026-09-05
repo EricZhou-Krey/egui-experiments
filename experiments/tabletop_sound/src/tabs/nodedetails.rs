@@ -15,11 +15,7 @@ pub fn nodedetails_ui(state: &mut TTSState, ui: &mut egui::Ui) {
                 match object {
                     SceneObject::Wall(_) => ("Wall", "An acoustic barrier.", None),
                     SceneObject::Receiver(_) => ("Receiver", "An acoustic listener.", None),
-                    SceneObject::Emitter(e) => (
-                        "Emitter",
-                        "A sound source.",
-                        Some(e.sound_data.duration().as_secs_f32()),
-                    ),
+                    SceneObject::Emitter(_) => ("Emitter", "A sound source.", Some(10.0)),
                 }
             } else {
                 ui.centered_and_justified(|ui: &mut egui::Ui| {

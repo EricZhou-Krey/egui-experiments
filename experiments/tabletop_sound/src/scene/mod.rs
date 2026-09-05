@@ -45,8 +45,10 @@ impl Scene {
     pub fn new() -> Self {
         Self {
             objects: SlotMap::with_key(),
+            receiver_keys: HashSet::default(),
+            emitter_keys: HashSet::default(),
             wall_quadtree: RTree::new(),
-            ..Default::default()
+            settings: SceneSettings::default(),
         }
     }
 }

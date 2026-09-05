@@ -1,9 +1,11 @@
 pub mod map;
-pub mod sound;
 pub mod terminal;
 use crate::scene::{scene_editor::SceneEditor, scene_viewer::SceneViewer};
 use crate::settings::TTSSettings;
-use crate::state::{map::MapState, sound::SoundState, terminal::TTSTerminalState};
+use crate::sound::sound_editor::SoundEditor;
+use crate::sound::sound_viewer::SoundViewer;
+use crate::sound::SoundState;
+use crate::state::{map::MapState, terminal::TTSTerminalState};
 use crate::tabs::Tab;
 use crate::{
     scene::Scene,
@@ -16,8 +18,8 @@ use std::ops::{Deref, DerefMut};
 pub struct TTSState {
     scene: Scene,
     pub map: MapState,
-    pub terminal: TTSTerminalState,
-    pub sound: SoundState,
+    terminal: TTSTerminalState,
+    sound: SoundState,
     pub settings: TTSSettings,
 }
 
@@ -51,19 +53,19 @@ impl TabViewer for TTSState {
 
 impl TTSState {
     pub fn edit_scene(&mut self) -> SceneEditor<'_> {
-        SceneEditor {
-            scene: &mut self.scene,
-            terminal: &mut self.terminal,
-            sound: &mut self.sound,
-        }
+        SceneEditor::new(&mut self.scene, &mut self.terminal)
     }
 
     pub fn view_scene(&self) -> SceneViewer<'_> {
-        SceneViewer {
-            scene: &self.scene,
-            terminal: &self.terminal,
-            sound: &self.sound,
-        }
+        SceneViewer::new(&self.scene, &self.terminal)
+    }
+
+    pub fn edit_sound(&mut self) -> SoundEditor<'_> {
+        SoundEditor::new(&mut self.sound, &mut self.terminal)
+    }
+
+    pub fn view_sound(&self) -> SoundViewer<'_> {
+        SoundViewer::new(&self.sound, &self.terminal)
     }
 
     pub fn default_dock() -> DockState<Tab> {

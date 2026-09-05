@@ -1,16 +1,19 @@
 use crate::{
     scene::{scene_object::SceneObject, Scene, SceneObjectKey, SpatialNode},
-    state::{sound::SoundState, terminal::TTSTerminalState},
+    state::terminal::TTSTerminalState,
 };
 use glam::Vec2;
 
 pub struct SceneEditor<'a> {
-    pub scene: &'a mut Scene,
-    pub terminal: &'a mut TTSTerminalState,
-    pub sound: &'a mut SoundState,
+    scene: &'a mut Scene,
+    terminal: &'a mut TTSTerminalState,
 }
 
 impl<'a> SceneEditor<'a> {
+    pub fn new(scene: &'a mut Scene, terminal: &'a mut TTSTerminalState) -> Self {
+        Self { scene, terminal }
+    }
+
     pub fn modify_object<F>(&mut self, key: SceneObjectKey, mut modifier: F)
     where
         F: FnMut(&mut SceneObject),
@@ -88,5 +91,9 @@ impl<'a> SceneEditor<'a> {
         } else {
             None
         }
+    }
+
+    pub fn terminal_ui(&mut self, ui: &mut egui::Ui) {
+        self.terminal.ui(ui);
     }
 }

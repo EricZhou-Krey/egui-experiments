@@ -1,18 +1,21 @@
 use crate::{
     scene::{scene_object::SceneObject, Scene, SceneObjectKey, SpatialNode},
-    state::{sound::SoundState, terminal::TTSTerminalState},
+    state::terminal::TTSTerminalState,
 };
 use glam::Vec2;
 use slotmap::basic::{Iter, Values};
 use std::collections::HashSet;
 
 pub struct SceneViewer<'a> {
-    pub scene: &'a Scene,
-    pub terminal: &'a TTSTerminalState,
-    pub sound: &'a SoundState,
+    scene: &'a Scene,
+    terminal: &'a TTSTerminalState,
 }
 
 impl<'a> SceneViewer<'a> {
+    pub fn new(scene: &'a Scene, terminal: &'a TTSTerminalState) -> Self {
+        Self { scene, terminal }
+    }
+
     pub fn key_object_around(
         &self,
         position: Vec2,

@@ -1,8 +1,7 @@
 use crate::{
     scene::{SceneObjectKey, scene_object::{Emitter, Receiver, SceneObject, Shape, Wall}}, settings::{
         MapSettings, logic_sheet::{
-            MAP_BASE_ZOOM, MAP_ZOOM_LIMIT, MAP_ZOOM_SENSITIVITY, generate_sample_emitter_sound
-        }, style::PointStyle, style_sheet::{
+            MAP_BASE_ZOOM, MAP_ZOOM_LIMIT, MAP_ZOOM_SENSITIVITY }, style::PointStyle, style_sheet::{
             MAP_ADDEMITTER_ICON, MAP_ADDRECEIVER_ICON, MAP_ADDWALL_ICON, MAP_MOVE_ICON, MAP_PAN_ICON, MAP_REMOVE_ICON,
             MAP_SELECT_ICON, MAP_ZOOM_ICON
         }
@@ -146,7 +145,7 @@ impl MapTool {
                     let emitter_point_style: PointStyle = state.map.settings.style.emitter.clone();
                     state.map.selected_object_key = Some(state.edit_scene().add_object(SceneObject::Emitter(Box::new(Emitter {
                         shape: Shape::Point(world_position, emitter_point_style),
-                        sound_data: generate_sample_emitter_sound(),
+                        sound_key: None,
                     }))));
                 }
             }

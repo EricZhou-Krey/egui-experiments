@@ -15,9 +15,7 @@ pub fn playcontrols_ui(state: &mut TTSState, ui: &mut egui::Ui) {
         let receiver_keys: Vec<SceneObjectKey> = {
             let viewer = state.view_scene();
             viewer
-                .scene
-                .objects
-                .iter()
+                .key_objects()
                 .filter(|(_, obj)| matches!(**obj, SceneObject::Receiver(_)))
                 .map(|(key, _)| key)
                 .collect()

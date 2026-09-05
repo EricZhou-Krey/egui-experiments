@@ -1,22 +1,62 @@
+pub mod ray;
+pub mod sound_editor;
+pub mod sound_viewer;
+
+/*
+
+Raytrace Planning
+INPUTS
+    - Scene Viewer - quick access to collsion points, and normals -should calculate normals dynamically from scene viewer
+        - Receiver position to emit rays from, emitters to consume rays or capture sounds
+
+INTERNALS
+    - Ray defintion, using lifetimes (~ distance travelled) to determine the contribution level
+
+OUTPUTS
+    - Virtual position for each emitter sound, with corresponding filters applied depending
+        - Each emitter has a direct, reflected and ambient contribution
+            - Direct is located onto of emitters original position and low-pass filter applied if blocked with transmittence contribution
+            - Reflected is virtually located at the point of greatest ray contribution from the emitter (loudest)
+            - Ambient is collection of residual rays that have little contribution
+    - Construct the sound by graphing and moving the 3 virtual emitter corresponding to each emitter where short rays have
+    high contribution and far rays come in later to contribute adding a delay for which the sound is simulated
+
+    - Generate a sound environment, and update when apprioate, when things are added or removed and etc
+*/
 use std::{collections::HashMap, f32::consts::PI};
 
 use crate::{
-    raytrace::ray::SoundRay,
     scene::{
-        scene_object::{Emitter, Receiver, SceneObject},
+        scene_object::{Receiver, SceneObject},
         scene_viewer::SceneViewer,
         SceneObjectKey,
     },
     settings::{logic_sheet::N_RAYS, SoundSettings},
+    sound::ray::SoundRay,
 };
 use glam::Vec2;
 use kira::{
     sound::static_sound::StaticSoundData, AudioManager, AudioManagerSettings, DefaultBackend,
 };
+use slotmap::{new_key_type, SlotMap};
+
+new_key_type! { pub struct SoundKey; }
 
 pub struct SoundState {
     audio_manager: AudioManager,
+    pub sounds: SlotMap<SoundKey, StaticSoundData>,
     pub settings: SoundSettings,
+}
+
+impl Default for SoundState {
+    fn default() -> Self {
+        Self {
+            audio_manager: AudioManager::<DefaultBackend>::new(AudioManagerSettings::default())
+                .unwrap(),
+            sounds: SlotMap::with_key(),
+            settings: SoundSettings::default(),
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
@@ -30,23 +70,13 @@ pub struct SoundFilter {
 #[derive(Debug, Clone, PartialEq)]
 pub struct PointSound {
     pub apparent_position: Vec2,
-    pub sound_data: StaticSoundData,
+    pub sound_key: SoundKey,
     pub filter: SoundFilter,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct SoundDescriptor {
     pub paths: Vec<PointSound>,
-}
-
-impl Default for SoundState {
-    fn default() -> Self {
-        Self {
-            audio_manager: AudioManager::<DefaultBackend>::new(AudioManagerSettings::default())
-                .unwrap(),
-            settings: SoundSettings::default(),
-        }
-    }
 }
 
 impl SoundState {
@@ -73,18 +103,18 @@ impl SoundState {
             .emitter_keys()
             .iter()
             .filter_map(|key| {
-                if let Some(SceneObject::Emitter(emitter)) = scene_viewer.object(*key) {
+                if let Some(SceneObject::Emitter(emitter)) = scene_viewer.object(*key) && let Some(sound_key) = emitter.sound_key {
                     Some((
                         *key,
                         EmitterPointSound {
                             direct: PointSound {
                                 apparent_position: emitter.shape.center(),
-                                sound_data: emitter.sound_data.clone(),
+                                sound_key,
                                 filter: SoundFilter::default(),
                             },
                             reflected: PointSound {
-                                apparent_position: todo!(),
-                                sound_data: emitter.sound_data.clone(),
+                                apparent_position: Vec2::ZERO, // TODO
+                                sound_key,
                                 filter: SoundFilter::default(),
                             },
                         },
