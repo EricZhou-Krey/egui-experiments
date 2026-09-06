@@ -1,30 +1,12 @@
 use std::ops::{Deref, DerefMut};
 
 use crate::{
+    settings::{InteractableTriangulationMeshSettings, TriangulationGraphSettings},
     style::{FaceStyle, GraphStyle, LineStyle, PointStyle},
     triangulation::mesh::{AnimatedTriangulationMesh, HalfEdge},
 };
 use egui::{Color32, Painter, Pos2, Rect, Shape, Stroke, Ui};
 use glam::{vec2, Vec2};
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct InteractableTriangulationMeshSettings {
-    pub n_internal_vertices: usize,
-    pub vertex_speed: f32,
-    pub n_interactable: usize,
-    pub interaction_radius: f32,
-}
-
-impl Default for InteractableTriangulationMeshSettings {
-    fn default() -> Self {
-        Self {
-            n_internal_vertices: 200,
-            vertex_speed: 0.01,
-            n_interactable: 10,
-            interaction_radius: 0.05,
-        }
-    }
-}
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct InteractableTriangulationMesh {
@@ -139,17 +121,6 @@ impl GraphViewTransform {
             (position.x - self.rect.min.x - self.render_offset_x) / self.render_scale,
             (position.y - self.rect.min.y - self.render_offset_y) / self.render_scale,
         )
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct TriangulationGraphSettings {
-    pub mesh_zoom: f32,
-}
-
-impl Default for TriangulationGraphSettings {
-    fn default() -> Self {
-        Self { mesh_zoom: 1.15 }
     }
 }
 

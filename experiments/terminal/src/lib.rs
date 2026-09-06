@@ -56,6 +56,31 @@ pub struct Terminal<F, D> {
 
 impl Default for Terminal<TerminalFile, TerminalDirectory> {
     fn default() -> Self {
+        let mut terminal: Self = Self {
+            history: Vec::new(),
+            input: String::new(),
+            current_directory: Vec::new(),
+            file_system: FileSystemNode::Directory(TerminalDirectory {
+                children: HashMap::new(),
+            }),
+            style: TerminalStyle::default(),
+            commands: HashMap::new(),
+        };
+
+        terminal.register_command::<ClearCommand>();
+        terminal.register_command::<PwdCommand>();
+        terminal.register_command::<LsCommand>();
+        terminal.register_command::<CdCommand>();
+        terminal.register_command::<CatCommand>();
+        terminal.register_command::<NeofetchCommand>();
+        terminal.register_command::<HelpCommand>();
+
+        terminal       
+    }
+}
+
+impl Terminal<TerminalFile, TerminalDirectory> {
+    pub fn example() -> Self {
         let mut nest_children: HashMap<String, FileSystemNode<TerminalFile, TerminalDirectory>> =
             HashMap::new();
         nest_children.insert(
@@ -112,6 +137,27 @@ impl<F, D> Terminal<F, D>
 where
     D: Directory<Node = FileSystemNode<F, D>>,
 {
+    pub fn new(root: FileSystemNode<F, D>) -> Self {
+        let mut terminal: Self = Self {
+            history: Vec::new(),
+            input: String::new(),
+            current_directory: Vec::new(),
+            file_system: root,
+            style: TerminalStyle::default(),
+            commands: HashMap::new(),
+        };
+
+        terminal.register_command::<ClearCommand>();
+        terminal.register_command::<PwdCommand>();
+        terminal.register_command::<LsCommand>();
+        terminal.register_command::<CdCommand>();
+        terminal.register_command::<NeofetchCommand>();
+        terminal.register_command::<HelpCommand>();
+
+        terminal       
+
+    }
+        
     pub fn get_node<'a>(&'a self, path_parts_slice: &[String]) -> Option<&'a FileSystemNode<F, D>> {
         let mut current_node: &FileSystemNode<F, D> = &self.file_system;
 

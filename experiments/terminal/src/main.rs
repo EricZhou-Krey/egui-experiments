@@ -12,6 +12,10 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "egui-experiments",
         native_options,
-        Box::new(|_cc| Ok(Box::<Terminal<TerminalFile, TerminalDirectory>>::default())),
+        Box::new(|_cc| {
+            Ok(Box::new(
+                Terminal::<TerminalFile, TerminalDirectory>::example(),
+            ))
+        }),
     )
 }

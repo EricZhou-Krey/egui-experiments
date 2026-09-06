@@ -2331,9 +2331,9 @@ version = "0.1.0"
 dependencies = [
  "eframe",
  "egui 0.36.1",
- "egui_dock",
  "glam",
  "rand",
+ "terminal",
 ]
 
 [[package]]

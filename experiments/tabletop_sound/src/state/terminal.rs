@@ -163,14 +163,7 @@ pub struct TTSTerminalState {
 
 impl Default for TTSTerminalState {
     fn default() -> Self {
-        let base_terminal: Terminal<TerminalFile, TerminalDirectory> =
-            terminal::Terminal::<TerminalFile, TerminalDirectory>::default();
-
-        let mut tts_file_system: FileSystemNode<TTSFile, TTSDirectory> =
-            match base_terminal.file_system {
-                FileSystemNode::Directory(d) => FileSystemNode::Directory(TTSDirectory::from(d)),
-                FileSystemNode::File(f) => FileSystemNode::File(TTSFile::from(f)),
-            };
+        let mut tts_file_system: FileSystemNode<TTSFile, TTSDirectory> = FileSystemNode::Directory(TTSDirectory::default());
 
         if let FileSystemNode::Directory(TTSDirectory::Terminal(ref mut root_children)) =
             tts_file_system
@@ -183,22 +176,9 @@ impl Default for TTSTerminalState {
             );
         }
 
-        let mut terminal: Terminal<TTSFile, TTSDirectory> = Terminal::<TTSFile, TTSDirectory> {
-            history: base_terminal.history,
-            input: base_terminal.input,
-            current_directory: base_terminal.current_directory,
-            file_system: tts_file_system,
-            style: base_terminal.style,
-            commands: std::collections::HashMap::new(),
-        };
+        let mut terminal: Terminal<TTSFile, TTSDirectory> = Terminal::<TTSFile, TTSDirectory>::new(tts_file_system);
 
-        terminal.register_command::<terminal::command::ClearCommand>();
-        terminal.register_command::<terminal::command::PwdCommand>();
-        terminal.register_command::<terminal::command::LsCommand>();
-        terminal.register_command::<terminal::command::CdCommand>();
         terminal.register_command::<TTSCatCommand>();
-        terminal.register_command::<terminal::command::NeofetchCommand>();
-        terminal.register_command::<terminal::command::HelpCommand>();
 
         Self { terminal }
     }
