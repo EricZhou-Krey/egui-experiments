@@ -1,6 +1,6 @@
 use crate::tab::{AppTabHandler, AppTabViewer};
 use egui_dock::DockArea;
-use triangulation_navigator::navigator::Navigator;
+use navigator::navigator::Navigator;
 
 pub struct App {
     tab_handler: AppTabHandler,

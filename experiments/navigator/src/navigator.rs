@@ -1,4 +1,4 @@
-use crate::triangulation_graph::TriangulationGraph;
+use crate::triangulation::graph::TriangulationGraph;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Navigator {
@@ -15,7 +15,9 @@ impl Navigator {
 
 impl eframe::App for Navigator {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
-        self.triangulation_background.ui(ui, frame);
+        egui::CentralPanel::default().show(ui, move |ui: &mut egui::Ui| {
+            self.triangulation_background.ui(ui, frame);
+        });
     }
 
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {

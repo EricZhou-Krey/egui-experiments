@@ -1,5 +1,5 @@
 [package]
-name = "app"
+name = "triangulation_navigator"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,10 +7,5 @@ edition = "2024"
 egui.workspace = true
 eframe.workspace = true
 egui_dock.workspace = true
-egui-video.workspace = true
 glam.workspace = true
 rand.workspace = true
-glow.workspace = true
-
-tabletop_sound = { path = "../experiments/tabletop_sound" }
-navigator = { path = "../experiments/navigator" }
