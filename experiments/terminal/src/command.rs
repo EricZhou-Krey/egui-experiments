@@ -40,9 +40,21 @@ where
     D: Directory<Node = FileSystemNode<F, D>>,
 {
     fn name() -> &'static str { "ls" }
-    fn execute(terminal: &mut Terminal<F, D>, _args: &[&str]) -> CommandResult {
+    fn execute(terminal: &mut Terminal<F, D>, args: &[&str]) -> CommandResult {
+        let show_all = args.contains(&"-a");
+
         if let Some(FileSystemNode::Directory(directory)) = terminal.get_node(&terminal.current_directory) {
-            let mut directory_files: Vec<String> = directory.children();
+            let mut directory_files: Vec<String> = directory
+                .children()
+                .into_iter()
+                .filter(|file_name| show_all || !file_name.starts_with('.'))
+                .collect();
+
+            if show_all {
+                directory_files.push(".".to_string());
+                directory_files.push("..".to_string());
+            }
+
             directory_files.sort();
             terminal.history.push(directory_files.join("  "));
         }

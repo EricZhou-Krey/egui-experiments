@@ -1,19 +1,35 @@
+use std::collections::HashMap;
+
 use terminal::{
     command::{Command, CommandResult},
-    file_system::{File, TerminalDirectory, TerminalFile},
-    Terminal,
+    file_system::{Directory, File, FileSystemNode, TerminalFile},
 };
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum NavigatorFile {
     Terminal(TerminalFile),
 }
 
 impl File for NavigatorFile {}
 
-pub fn new_terminal() -> Terminal<NavigatorFile, TerminalDirectory> {
-    let terminal = Terminal::default();
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct NavigatorDirectory {
+    children: HashMap<String, FileSystemNode<NavigatorFile, NavigatorDirectory>>,
+}
 
-    terminal
+impl Directory for NavigatorDirectory {
+    type Node = FileSystemNode<NavigatorFile, NavigatorDirectory>;
+    fn child(&self, name: &str) -> Option<&Self::Node> {
+        self.children.get(name)
+    }
+
+    fn child_mut(&mut self, name: &str) -> Option<&mut Self::Node> {
+        self.children.get_mut(name)
+    }
+
+    fn children(&self) -> Vec<String> {
+        self.children.keys().cloned().collect()
+    }
 }
 
 pub struct TestCommand;

@@ -5,7 +5,9 @@ use terminal::{
 };
 
 use crate::{
-    boids::graph::BoidGraph, life::graph::LifeGraph, settings::NavigatorSettings,
+    boids::graph::BoidGraph,
+    life::graph::LifeGraph,
+    settings::{style_sheet::MIN_TERMINAL_SIZE, NavigatorSettings},
     triangulation::graph::TriangulationGraph,
 };
 
@@ -58,6 +60,7 @@ impl eframe::App for Navigator {
             ui.horizontal(|ui: &mut egui::Ui| {
                 let mut new_mode: GraphMode = self.graph_mode.clone();
 
+                // Can you change the styling for these selectable values
                 ui.selectable_value(&mut new_mode, GraphMode::Triangulation, "Triangulation");
                 ui.selectable_value(&mut new_mode, GraphMode::Boids, "Boids");
                 ui.selectable_value(&mut new_mode, GraphMode::Life, "Game of Life");
@@ -73,6 +76,11 @@ impl eframe::App for Navigator {
             });
         });
 
+        // TODO: I want to add a floating overlay on the background depending on the selected node
+        // of the background determined by internal calls -> display title and etc -> do not
+        // comment on this rn
+
+        // What different styling options are there here?
         egui::CentralPanel::default()
             .frame(self.settings.graph_frame)
             .show(ui, |ui: &mut egui::Ui| match &mut self.graph {
@@ -81,7 +89,10 @@ impl eframe::App for Navigator {
                 Graph::Life(bg) => bg.ui(ui, frame),
             });
 
-        egui::Panel::bottom("terminal_panel").show(ui, |ui: &mut egui::Ui| self.terminal.ui(ui));
+        // How many styling options
+        egui::Panel::bottom("terminal_panel")
+            .min_size(MIN_TERMINAL_SIZE)
+            .show(ui, |ui: &mut egui::Ui| self.terminal.ui(ui));
     }
 
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
