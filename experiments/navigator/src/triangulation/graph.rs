@@ -1,11 +1,14 @@
 use std::ops::{Deref, DerefMut};
 
 use crate::{
-    settings::{InteractableTriangulationMeshSettings, TriangulationGraphSettings},
-    style::{FaceStyle, GraphStyle, LineStyle, PointStyle},
+    settings::{
+        style_sheet::TRIANGULATION_GRAPH_STYLE, InteractableTriangulationMeshSettings,
+        TriangulationGraphSettings,
+    },
+    style::GraphStyle,
     triangulation::mesh::{AnimatedTriangulationMesh, HalfEdge},
 };
-use egui::{Color32, Painter, Pos2, Rect, Shape, Stroke, Ui};
+use egui::{Painter, Pos2, Rect, Shape, Ui};
 use glam::{vec2, Vec2};
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -149,24 +152,7 @@ impl TriangulationGraph {
         Self {
             mesh: InteractableTriangulationMesh::new(mesh_settings),
             graph_view_transform: GraphViewTransform::new(Rect::ZERO, graph_settings.mesh_zoom),
-            style: GraphStyle {
-                point: PointStyle {
-                    radius: 5.0,
-                    color: Color32::LIGHT_GREEN,
-                },
-                point_heavy: PointStyle {
-                    radius: 7.0,
-                    color: Color32::GREEN,
-                },
-                line: LineStyle {
-                    stroke: Stroke::new(1.5, Color32::LIGHT_GRAY),
-                },
-                face: FaceStyle {
-                    fill_color: Color32::from_rgb(40, 44, 52),
-                    border_stroke: Stroke::NONE,
-                },
-                ..Default::default()
-            },
+            style: TRIANGULATION_GRAPH_STYLE,
             settings: graph_settings,
         }
     }

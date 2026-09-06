@@ -177,8 +177,9 @@ pub struct HelpCommand;
 impl<F, D> Command<F, D> for HelpCommand {
     fn name() -> &'static str { "help" }
     fn execute(terminal: &mut Terminal<F, D>, _args: &[&str]) -> CommandResult {
+        let command_strings: Vec<String> = terminal.commands.keys().cloned().collect();
         terminal.history.push(
-            "Available built-in commands: clear, pwd, ls, cd, cat, neofetch, help".to_string(),
+            format!("Available built-in commands: {}", command_strings.join(", "))
         );
         CommandResult::Handled
     }
