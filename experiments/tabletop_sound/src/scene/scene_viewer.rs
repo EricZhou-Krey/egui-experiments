@@ -1,6 +1,6 @@
 use crate::{
     scene::{scene_object::SceneObject, Scene, SceneObjectKey, SpatialNode},
-    state::terminal::TTSTerminalState,
+    state::terminal::TTSTerminal,
 };
 use glam::Vec2;
 use slotmap::basic::{Iter, Values};
@@ -8,11 +8,11 @@ use std::collections::HashSet;
 
 pub struct SceneViewer<'a> {
     scene: &'a Scene,
-    terminal: &'a TTSTerminalState,
+    terminal: &'a TTSTerminal,
 }
 
 impl<'a> SceneViewer<'a> {
-    pub fn new(scene: &'a Scene, terminal: &'a TTSTerminalState) -> Self {
+    pub fn new(scene: &'a Scene, terminal: &'a TTSTerminal) -> Self {
         Self { scene, terminal }
     }
 

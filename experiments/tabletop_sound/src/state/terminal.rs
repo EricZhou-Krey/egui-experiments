@@ -113,6 +113,9 @@ impl Directory for TTSDirectory {
     }
 }
 
+//TODO: Make TTSCommand trait, define context to be the all the viewers and editors and the public
+// variables and etc
+
 struct TTSCatCommand;
 impl<D> Command<TTSFile, D> for TTSCatCommand
 where
@@ -157,11 +160,11 @@ where
 }
 
 #[derive(Clone)]
-pub struct TTSTerminalState {
-    terminal: Terminal<TTSFile, TTSDirectory>,
+pub struct TTSTerminal {
+    base: Terminal<TTSFile, TTSDirectory>,
 }
 
-impl Default for TTSTerminalState {
+impl Default for TTSTerminal {
     fn default() -> Self {
         let mut tts_file_system: FileSystemNode<TTSFile, TTSDirectory> = FileSystemNode::Directory(TTSDirectory::default());
 
@@ -176,17 +179,19 @@ impl Default for TTSTerminalState {
             );
         }
 
-        let mut terminal: Terminal<TTSFile, TTSDirectory> = Terminal::<TTSFile, TTSDirectory>::new(tts_file_system);
+        let mut base: Terminal<TTSFile, TTSDirectory> = Terminal::<TTSFile, TTSDirectory>::new(tts_file_system);
 
-        terminal.register_command::<TTSCatCommand>();
+        base.register_command::<TTSCatCommand>();
+        //TODO: need to decouple the base register commands and let extended terminal handle these
+        //with context in ui
 
-        Self { terminal }
+        Self { base }
     }
 }
 
-impl TTSTerminalState {
+impl TTSTerminal {
     pub fn register_object(&mut self, scene: &mut Scene, object_key: SceneObjectKey) {
-        if let FileSystemNode::Directory(TTSDirectory::Terminal(children)) = &mut self.terminal.file_system &&
+        if let FileSystemNode::Directory(TTSDirectory::Terminal(children)) = &mut self.base.file_system &&
         let Some(FileSystemNode::Directory(TTSDirectory::Scene { nodes, .. })) = children.get_mut("scene") {
             let object_type: &'static str = match scene.objects.get(object_key) {
                 Some(SceneObject::Wall(..)) => "wall",
@@ -204,7 +209,7 @@ impl TTSTerminalState {
     }
 
     pub fn deregister_object(&mut self, _scene: &mut Scene, object_key: SceneObjectKey) {
-        if let FileSystemNode::Directory(TTSDirectory::Terminal(children)) = &mut self.terminal.file_system && 
+        if let FileSystemNode::Directory(TTSDirectory::Terminal(children)) = &mut self.base.file_system && 
         let Some(FileSystemNode::Directory(TTSDirectory::Scene { nodes, .. })) = children.get_mut("scene") {
             let target_filename = nodes.iter().find_map(|(name, node)| {
                 if let FileSystemNode::File(TTSFile::SceneObject(k)) = node && *k == object_key {
@@ -220,6 +225,6 @@ impl TTSTerminalState {
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui) {
-        self.terminal.ui(ui);
+        self.base.ui(ui);
     }
 }

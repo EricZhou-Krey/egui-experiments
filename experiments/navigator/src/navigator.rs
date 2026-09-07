@@ -1,18 +1,11 @@
-use eframe::egui;
-use terminal::{
-    file_system::{TerminalDirectory, TerminalFile},
-    Terminal,
-};
-
 use crate::{
     boids::graph::BoidGraph,
     life::graph::LifeGraph,
-    settings::{
-        style_sheet::{MIN_TERMINAL_SIZE, TERMINAL_STYLE},
-        NavigatorSettings,
-    },
+    settings::{style_sheet::MIN_TERMINAL_SIZE, NavigatorSettings},
+    terminal::NavigatorTerminal,
     triangulation::graph::TriangulationGraph,
 };
+use eframe::egui;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Tab {
@@ -34,10 +27,10 @@ pub enum Graph {
 }
 
 pub struct Navigator {
-    terminal: Terminal<TerminalFile, TerminalDirectory>,
+    pub terminal: NavigatorTerminal,
     pub settings: NavigatorSettings,
-    graph_mode: GraphMode,
-    graph: Graph,
+    pub graph_mode: GraphMode,
+    pub graph: Graph,
 }
 
 impl Default for Navigator {
@@ -48,10 +41,8 @@ impl Default for Navigator {
 
 impl Navigator {
     pub fn new() -> Self {
-        let mut terminal = Terminal::<TerminalFile, TerminalDirectory>::default();
-        terminal.style = TERMINAL_STYLE;
         Self {
-            terminal,
+            terminal: NavigatorTerminal::default(),
             settings: NavigatorSettings::default(),
             graph_mode: GraphMode::Triangulation,
             graph: Graph::Triangulation(Box::default()),
@@ -114,7 +105,11 @@ impl eframe::App for Navigator {
             .frame(self.settings.terminal_frame)
             .min_size(MIN_TERMINAL_SIZE)
             .resizable(true)
-            .show(ui, |ui: &mut egui::Ui| self.terminal.ui(ui));
+            .show(ui, |ui: &mut egui::Ui| {
+                if let Some((command_fn, args)) = self.terminal.ui(ui) {
+                    command_fn(self, &args);
+                }
+            });
 
         egui::CentralPanel::default()
             .frame(self.settings.graph_outer_frame)
@@ -137,6 +132,9 @@ impl eframe::App for Navigator {
         }
     }
 }
+
+// TODO: LOAD readmes and display title, preview window and etc, on hover, popup, set velocity to 0
+// on selection and reset otherwise, and etc
 
 /*
 

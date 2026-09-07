@@ -5,7 +5,7 @@ use crate::settings::TTSSettings;
 use crate::sound::sound_editor::SoundEditor;
 use crate::sound::sound_viewer::SoundViewer;
 use crate::sound::SoundState;
-use crate::state::{map::MapState, terminal::TTSTerminalState};
+use crate::state::{map::MapState, terminal::TTSTerminal};
 use crate::tabs::Tab;
 use crate::{
     scene::Scene,
@@ -18,7 +18,7 @@ use std::ops::{Deref, DerefMut};
 pub struct TTSState {
     scene: Scene,
     pub map: MapState,
-    terminal: TTSTerminalState,
+    terminal: TTSTerminal,
     sound: SoundState,
     pub settings: TTSSettings,
 }

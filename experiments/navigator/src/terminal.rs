@@ -1,8 +1,15 @@
+use eframe::egui;
 use std::collections::HashMap;
 
 use terminal::{
     command::{Command, CommandResult},
     file_system::{Directory, File, FileSystemNode, TerminalFile},
+    Terminal,
+};
+
+use crate::{
+    navigator::{Graph, GraphMode, Navigator},
+    settings::style_sheet::TERMINAL_STYLE,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -32,16 +39,123 @@ impl Directory for NavigatorDirectory {
     }
 }
 
-pub struct TestCommand;
-impl<T, D> Command<T, D> for TestCommand {
+type NavigatorFn = fn(&mut Navigator, &[String]);
+
+pub trait NavigatorCommand: Command<NavigatorFile, NavigatorDirectory> {
+    fn execute_navigator(navigator: &mut Navigator, args: &[String]);
+}
+
+pub struct NavigatorTerminal {
+    pub base: Terminal<NavigatorFile, NavigatorDirectory>,
+    pub commands: HashMap<String, fn(&mut Navigator, &[String])>,
+}
+
+impl Default for NavigatorTerminal {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl NavigatorTerminal {
+    pub fn new() -> Self {
+        let root = FileSystemNode::Directory(NavigatorDirectory::default());
+        let mut base = Terminal::new(root);
+        base.style = TERMINAL_STYLE;
+
+        let mut terminal = Self {
+            base,
+            commands: HashMap::new(),
+        };
+
+        terminal.register_command::<SetModeCommand>();
+
+        terminal
+    }
+
+    pub fn register_command<C>(&mut self)
+    where
+        C: Command<NavigatorFile, NavigatorDirectory> + NavigatorCommand,
+    {
+        self.base.register_command::<C>();
+        self.commands
+            .insert(C::name().to_string(), C::execute_navigator);
+    }
+
+    pub fn ui(&mut self, ui: &mut egui::Ui) -> Option<(NavigatorFn, Vec<String>)> {
+        if let Some(CommandResult::Unhandled(cmd, args)) = self.base.ui(ui) {
+            if let Some(func) = self.commands.get(&cmd).copied() {
+                return Some((func, args));
+            } else {
+                self.base
+                    .history
+                    .push(format!("{}: command not found", cmd));
+            }
+        }
+        None
+    }
+}
+
+pub struct SetModeCommand;
+
+impl Command<NavigatorFile, NavigatorDirectory> for SetModeCommand {
     fn name() -> &'static str {
-        "test"
+        "set_mode"
     }
 
     fn execute(
-        _terminal: &mut terminal::Terminal<T, D>,
-        _args: &[&str],
-    ) -> terminal::command::CommandResult {
-        CommandResult::Handled
+        _terminal: &mut Terminal<NavigatorFile, NavigatorDirectory>,
+        args: &[&str],
+    ) -> CommandResult {
+        let args_owned = args.iter().map(|s| s.to_string()).collect();
+        CommandResult::Unhandled(Self::name().to_string(), args_owned)
+    }
+}
+
+impl NavigatorCommand for SetModeCommand {
+    fn execute_navigator(navigator: &mut Navigator, args: &[String]) {
+        if let Some(mode) = args.first() {
+            match mode.as_str() {
+                "boids" => {
+                    navigator.graph_mode = GraphMode::Boids;
+                    navigator.graph = Graph::Boids(Box::default());
+                    navigator
+                        .terminal
+                        .base
+                        .history
+                        .push("Switched to Boids mode.".to_string());
+                }
+                "life" => {
+                    navigator.graph_mode = GraphMode::Life;
+                    navigator.graph = Graph::Life(Box::default());
+                    navigator
+                        .terminal
+                        .base
+                        .history
+                        .push("Switched to Game of Life mode.".to_string());
+                }
+                "triangulation" => {
+                    navigator.graph_mode = GraphMode::Triangulation;
+                    navigator.graph = Graph::Triangulation(Box::default());
+                    navigator
+                        .terminal
+                        .base
+                        .history
+                        .push("Switched to Triangulation mode.".to_string());
+                }
+                _ => {
+                    navigator
+                        .terminal
+                        .base
+                        .history
+                        .push(format!("set_mode: unknown mode '{}'", mode));
+                }
+            }
+        } else {
+            navigator
+                .terminal
+                .base
+                .history
+                .push("Usage: set_mode [boids | life | triangulation]".to_string());
+        }
     }
 }

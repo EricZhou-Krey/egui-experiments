@@ -1,16 +1,16 @@
 use crate::{
     scene::{scene_object::SceneObject, Scene, SceneObjectKey, SpatialNode},
-    state::terminal::TTSTerminalState,
+    state::terminal::TTSTerminal,
 };
 use glam::Vec2;
 
 pub struct SceneEditor<'a> {
     scene: &'a mut Scene,
-    terminal: &'a mut TTSTerminalState,
+    terminal: &'a mut TTSTerminal,
 }
 
 impl<'a> SceneEditor<'a> {
-    pub fn new(scene: &'a mut Scene, terminal: &'a mut TTSTerminalState) -> Self {
+    pub fn new(scene: &'a mut Scene, terminal: &'a mut TTSTerminal) -> Self {
         Self { scene, terminal }
     }
 

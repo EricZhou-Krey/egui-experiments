@@ -47,6 +47,8 @@ impl Default for TerminalStyle {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Terminal<F, D> {
     pub history: Vec<String>,
+    pub command_history: Vec<String>, 
+    pub history_index: usize,
     pub input: String,
     pub current_directory: Vec<String>,
     pub file_system: FileSystemNode<F, D>,
@@ -58,6 +60,8 @@ impl Default for Terminal<TerminalFile, TerminalDirectory> {
     fn default() -> Self {
         let mut terminal: Self = Self {
             history: Vec::new(),
+            command_history: Vec::new(),
+            history_index: 0,
             input: String::new(),
             current_directory: Vec::new(),
             file_system: FileSystemNode::Directory(TerminalDirectory {
@@ -75,7 +79,7 @@ impl Default for Terminal<TerminalFile, TerminalDirectory> {
         terminal.register_command::<NeofetchCommand>();
         terminal.register_command::<HelpCommand>();
 
-        terminal       
+        terminal        
     }
 }
 
@@ -110,6 +114,8 @@ impl Terminal<TerminalFile, TerminalDirectory> {
 
         let mut terminal: Self = Self {
             history: Vec::new(),
+            command_history: Vec::new(),
+            history_index: 0,
             input: String::new(),
             current_directory: Vec::new(),
             file_system: FileSystemNode::Directory(TerminalDirectory {
@@ -140,6 +146,8 @@ where
     pub fn new(root: FileSystemNode<F, D>) -> Self {
         let mut terminal: Self = Self {
             history: Vec::new(),
+            command_history: Vec::new(),
+            history_index: 0,
             input: String::new(),
             current_directory: Vec::new(),
             file_system: root,
@@ -154,8 +162,7 @@ where
         terminal.register_command::<NeofetchCommand>();
         terminal.register_command::<HelpCommand>();
 
-        terminal       
-
+        terminal        
     }
         
     pub fn get_node<'a>(&'a self, path_parts_slice: &[String]) -> Option<&'a FileSystemNode<F, D>> {
@@ -333,7 +340,33 @@ where
 
                     if terminal_clicked {
                         response.request_focus();
+                    }
 
+                    if response.has_focus() {
+                        let mut move_cursor_to_end = false;
+
+                        horizontal_ui.input(|input| {
+                            if input.key_pressed(egui::Key::ArrowUp) && self.history_index > 0 {
+                                self.history_index -= 1;
+                                self.input = self.command_history[self.history_index].clone();
+                                move_cursor_to_end = true;
+                            }
+                            if input.key_pressed(egui::Key::ArrowDown) && self.history_index < self.command_history.len() {
+                                self.history_index += 1;
+                                if self.history_index < self.command_history.len() {
+                                    self.input = self.command_history[self.history_index].clone();
+                                    move_cursor_to_end = true;
+                                } else {
+                                    self.input.clear();
+                                }
+                            }
+                        });
+
+                        if move_cursor_to_end && let Some(mut state) = egui::TextEdit::load_state(horizontal_ui.ctx(), response.id) {
+                            let ccursor = egui::text::CCursor::new(self.input.chars().count());
+                            state.cursor.set_char_range(Some(egui::text::CCursorRange::one(ccursor)));
+                            state.store(horizontal_ui.ctx(), response.id);
+                        }
                     }
 
                     if response.lost_focus() && horizontal_ui.input(|input: &egui::InputState| -> bool {
@@ -344,12 +377,16 @@ where
                         self.input.clear();
 
                         if !command.trim().is_empty() {
+                            self.command_history.push(command.clone());
+                            
                             let exec_result: CommandResult = self.execute_command(&command);
 
                             if let CommandResult::Unhandled(..) = exec_result {
                                 final_command_result = Some(exec_result);
                             }
                         }
+                        
+                        self.history_index = self.command_history.len();
 
                         response.request_focus();
                     }
