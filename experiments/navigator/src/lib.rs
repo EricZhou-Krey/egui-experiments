@@ -1,4 +1,5 @@
 pub mod boids;
+pub mod layouts;
 pub mod life;
 pub mod navigator;
 pub mod settings;

@@ -143,8 +143,8 @@ impl<F, D> Terminal<F, D>
 where
     D: Directory<Node = FileSystemNode<F, D>>,
 {
-    pub fn new(root: FileSystemNode<F, D>) -> Self {
-        let mut terminal: Self = Self {
+    pub fn new_empty(root: FileSystemNode<F, D>) -> Self {
+        Self {
             history: Vec::new(),
             command_history: Vec::new(),
             history_index: 0,
@@ -153,7 +153,11 @@ where
             file_system: root,
             style: TerminalStyle::default(),
             commands: HashMap::new(),
-        };
+        }
+    }
+
+    pub fn new(root: FileSystemNode<F, D>) -> Self {
+        let mut terminal: Self = Self::new_empty(root);
 
         terminal.register_command::<ClearCommand>();
         terminal.register_command::<PwdCommand>();

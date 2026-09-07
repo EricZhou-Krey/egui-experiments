@@ -2,12 +2,13 @@ use eframe::egui;
 use std::collections::HashMap;
 
 use terminal::{
-    command::{Command, CommandResult},
+    command::{Command, CommandResult, HelpCommand},
     file_system::{Directory, File, FileSystemNode, TerminalFile},
     Terminal,
 };
 
 use crate::{
+    layouts::Layout,
     navigator::{Graph, GraphMode, Navigator},
     settings::style_sheet::TERMINAL_STYLE,
 };
@@ -59,7 +60,8 @@ impl Default for NavigatorTerminal {
 impl NavigatorTerminal {
     pub fn new() -> Self {
         let root = FileSystemNode::Directory(NavigatorDirectory::default());
-        let mut base = Terminal::new(root);
+        let mut base = Terminal::new_empty(root);
+        base.register_command::<HelpCommand>();
         base.style = TERMINAL_STYLE;
 
         let mut terminal = Self {
@@ -68,6 +70,9 @@ impl NavigatorTerminal {
         };
 
         terminal.register_command::<SetModeCommand>();
+        terminal.register_command::<SetOverlayCommand>();
+
+        terminal.base.execute_command("help");
 
         terminal
     }
@@ -113,49 +118,69 @@ impl Command<NavigatorFile, NavigatorDirectory> for SetModeCommand {
 
 impl NavigatorCommand for SetModeCommand {
     fn execute_navigator(navigator: &mut Navigator, args: &[String]) {
+        let history: &mut Vec<String> = &mut navigator.terminal.base.history;
         if let Some(mode) = args.first() {
             match mode.as_str() {
                 "boids" => {
                     navigator.graph_mode = GraphMode::Boids;
                     navigator.graph = Graph::Boids(Box::default());
-                    navigator
-                        .terminal
-                        .base
-                        .history
-                        .push("Switched to Boids mode.".to_string());
+                    history.push("Switched to Boids mode.".to_string());
                 }
                 "life" => {
                     navigator.graph_mode = GraphMode::Life;
                     navigator.graph = Graph::Life(Box::default());
-                    navigator
-                        .terminal
-                        .base
-                        .history
-                        .push("Switched to Game of Life mode.".to_string());
+                    history.push("Switched to Game of Life mode.".to_string());
                 }
                 "triangulation" => {
                     navigator.graph_mode = GraphMode::Triangulation;
                     navigator.graph = Graph::Triangulation(Box::default());
-                    navigator
-                        .terminal
-                        .base
-                        .history
-                        .push("Switched to Triangulation mode.".to_string());
+                    history.push("Switched to Triangulation mode.".to_string());
                 }
                 _ => {
-                    navigator
-                        .terminal
-                        .base
-                        .history
-                        .push(format!("set_mode: unknown mode '{}'", mode));
+                    history.push(format!("set_mode: unknown mode '{}'", mode));
                 }
             }
         } else {
-            navigator
-                .terminal
-                .base
-                .history
-                .push("Usage: set_mode [boids | life | triangulation]".to_string());
+            history.push("Usage: set_mode [boids | life | triangulation]".to_string());
+        }
+    }
+}
+
+pub struct SetOverlayCommand;
+
+impl Command<NavigatorFile, NavigatorDirectory> for SetOverlayCommand {
+    fn name() -> &'static str {
+        "set_overlay"
+    }
+    fn execute(
+        _terminal: &mut Terminal<NavigatorFile, NavigatorDirectory>,
+        args: &[&str],
+    ) -> CommandResult {
+        let args_owned = args.iter().map(|s| s.to_string()).collect();
+        CommandResult::Unhandled(Self::name().to_string(), args_owned)
+    }
+}
+
+impl NavigatorCommand for SetOverlayCommand {
+    fn execute_navigator(navigator: &mut Navigator, args: &[String]) {
+        let history: &mut Vec<String> = &mut navigator.terminal.base.history;
+        if let Some(overlay) = args.first() {
+            match overlay.as_str() {
+                "example" => {
+                    navigator.experiment_overlay = Some(Layout::Example);
+                    history.push("Switched to Example overlay".to_string());
+                }
+                "navigator" => {
+                    navigator.experiment_overlay = Some(Layout::Navigator);
+                    history.push("Switched to Navigator overlay".to_string());
+                }
+                _ => {
+                    history.push(format!("set_overlay: unknown overlay '{}'", overlay));
+                }
+            }
+        } else {
+            navigator.experiment_overlay = None;
+            history.push("Switched to empty overlay, use: set_overlay [example, navigator] for content overlays".to_string());
         }
     }
 }

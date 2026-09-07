@@ -162,10 +162,17 @@ impl eframe::App for TriangulationGraph {
     fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
         let rect: Rect = ui.available_rect_before_wrap();
 
+        let response = ui.allocate_rect(rect, egui::Sense::click_and_drag());
+
         ui.request_repaint();
 
         if self.graph_view_transform.rect != rect {
             self.graph_view_transform = GraphViewTransform::new(rect, self.settings.mesh_zoom);
+        }
+
+        if response.clicked() && let Some(screen_position) = response.interact_pointer_pos() {
+            self.mesh
+                .interact(self.graph_view_transform.to_uv(screen_position));
         }
 
         let painter: Painter = ui.painter().with_clip_rect(rect);
@@ -222,20 +229,7 @@ impl eframe::App for TriangulationGraph {
     }
 
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let mut mouse_click_position: Option<Pos2> = None;
-        ctx.input(|i| {
-            if i.pointer.primary_pressed() {
-                mouse_click_position = i.pointer.interact_pos();
-            }
-        });
-
-        if let Some(screen_position) = mouse_click_position {
-            self.mesh
-                .interact(self.graph_view_transform.to_uv(screen_position));
-        }
-
         let dt: f32 = ctx.input(|i| i.stable_dt).min(0.1);
-
         let bounds: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
 
         self.mesh.update(dt, bounds);

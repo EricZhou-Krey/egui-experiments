@@ -1,11 +1,13 @@
 use crate::{
     boids::graph::BoidGraph,
+    layouts::Layout,
     life::graph::LifeGraph,
     settings::{style_sheet::MIN_TERMINAL_SIZE, NavigatorSettings},
     terminal::NavigatorTerminal,
     triangulation::graph::TriangulationGraph,
 };
-use eframe::egui;
+use eframe::{egui, App};
+use egui::Rect;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Tab {
@@ -26,11 +28,30 @@ pub enum Graph {
     Life(Box<LifeGraph>),
 }
 
+impl Graph {
+    fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        match self {
+            Self::Triangulation(bg) => bg.ui(ui, frame),
+            Self::Life(bg) => bg.ui(ui, frame),
+            Self::Boids(bg) => bg.ui(ui, frame),
+        }
+    }
+
+    fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        match self {
+            Self::Triangulation(bg) => bg.logic(ctx, frame),
+            Self::Life(bg) => bg.logic(ctx, frame),
+            Self::Boids(bg) => bg.logic(ctx, frame),
+        }
+    }
+}
+
 pub struct Navigator {
     pub terminal: NavigatorTerminal,
     pub settings: NavigatorSettings,
     pub graph_mode: GraphMode,
     pub graph: Graph,
+    pub experiment_overlay: Option<Layout>,
 }
 
 impl Default for Navigator {
@@ -46,13 +67,13 @@ impl Navigator {
             settings: NavigatorSettings::default(),
             graph_mode: GraphMode::Triangulation,
             graph: Graph::Triangulation(Box::default()),
+            experiment_overlay: None,
         }
     }
 }
 
 impl eframe::App for Navigator {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
-        ui.set_visuals(egui::Visuals::dark());
         egui::Panel::top("settings_panel")
             .frame(self.settings.top_panel_frame)
             .show(ui, |ui: &mut egui::Ui| {
@@ -114,22 +135,31 @@ impl eframe::App for Navigator {
         egui::CentralPanel::default()
             .frame(self.settings.graph_outer_frame)
             .show(ui, |ui: &mut egui::Ui| {
+                let panel_rect: Rect = ui.max_rect();
+
                 self.settings
                     .graph_inner_frame
-                    .show(ui, |ui| match &mut self.graph {
-                        Graph::Triangulation(bg) => bg.ui(ui, frame),
-                        Graph::Boids(bg) => bg.ui(ui, frame),
-                        Graph::Life(bg) => bg.ui(ui, frame),
+                    .show(ui, |ui| self.graph.ui(ui, frame));
+
+                egui::Area::new(egui::Id::new("central_overlay"))
+                    .fixed_pos(panel_rect.left_top())
+                    .order(egui::Order::Foreground)
+                    .show(ui, |ui| {
+                        ui.set_min_size(panel_rect.size());
+                        ui.set_max_size(panel_rect.size());
+                        ui.set_clip_rect(panel_rect);
+
+                        ui.debug_text(format!("{:?}", ui.max_rect()));
+
+                        if let Some(overlay) = &self.experiment_overlay {
+                            overlay.ui(ui);
+                        }
                     });
             });
     }
 
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        match &mut self.graph {
-            Graph::Triangulation(bg) => bg.logic(ctx, frame),
-            Graph::Boids(bg) => bg.logic(ctx, frame),
-            Graph::Life(bg) => bg.logic(ctx, frame),
-        }
+        self.graph.logic(ctx, frame);
     }
 }
 
