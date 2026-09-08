@@ -8,7 +8,7 @@ use crate::{
     style::GraphStyle,
     triangulation::mesh::{AnimatedTriangulationMesh, HalfEdge},
 };
-use egui::{Painter, Pos2, Rect, Shape, Ui};
+use egui::{Painter, Pos2, Rect, Shape, Stroke, Ui};
 use glam::{vec2, Vec2};
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -63,12 +63,12 @@ impl InteractableTriangulationMesh {
         let mut new_interaction: Option<usize> = None;
         let mut interaction_radius: f32 = self.settings.interaction_radius;
 
-        for v_index in self.interactable_vertices.iter() {
+        for (i_index, v_index) in self.interactable_vertices.iter().enumerate() {
             let distance: f32 = position.distance(self.vertices[*v_index].pos);
 
             if distance < interaction_radius {
                 interaction_radius = distance;
-                new_interaction = Some(*v_index);
+                new_interaction = Some(i_index);
             }
         }
 
@@ -207,23 +207,51 @@ impl eframe::App for TriangulationGraph {
             }
         }
 
-        for v_index in self.mesh.interactable_vertices.iter() {
+        for (i, v_index) in self.mesh.interactable_vertices.iter().enumerate() {
+            if Some(i) == self.mesh.interact_vertex {
+                continue;
+            }
             let raw_position: Vec2 = self.mesh.vertices[*v_index].pos;
             let screen_position: Pos2 = self.graph_view_transform.to_screen(raw_position);
 
             painter.circle_filled(
                 screen_position,
+                self.style.point_heavy.radius,
+                self.style.point_heavy.color,
+            );
+            
+            painter.rect_stroke(
+                Rect::from_center_size(screen_position, egui::vec2(
+                        self.style.point_heavy.radius * 5.0,
+                        self.style.point_heavy.radius * 5.0,
+                    )),
+                0.0,
+                Stroke::new(self.style.point_heavy.radius * 0.4, self.style.point_heavy.color),
+                egui::StrokeKind::Middle);
+
+            for delta in [egui::vec2(1., 0.), egui::vec2(-1., 0.), egui::vec2(0., 1.), egui::vec2(0., -1.)] {
+                painter.line_segment(
+                    [
+                        screen_position + (delta * self.style.point_heavy.radius * 1.5),
+                        screen_position + (delta * self.style.point_heavy.radius * 3.5)
+                    ],
+                    Stroke::new(self.style.point_heavy.radius * 0.4, self.style.point_heavy.color)
+                );
+            }
+        }
+
+        if let Some(interacted_index) = self.mesh.interact_vertex.map(|i| self.mesh.interactable_vertices[i]) {
+            let screen_position: Pos2 = self.graph_view_transform.to_screen(self.mesh.vertices[interacted_index].pos);
+            painter.circle_filled(
+                screen_position,
                 self.style.point.radius,
                 self.style.point.color,
             );
-        }
 
-        if let Some(interacted_index) = self.mesh.interact_vertex {
-            painter.circle_filled(
-                self.graph_view_transform
-                    .to_screen(self.mesh.vertices[interacted_index].pos),
-                self.style.point_heavy.radius,
-                self.style.point_heavy.color,
+            painter.circle_stroke(
+                screen_position,
+                self.style.point.radius * 1.5,
+                Stroke::new(self.style.point.radius * 0.4, self.style.point.color),
             );
         }
     }

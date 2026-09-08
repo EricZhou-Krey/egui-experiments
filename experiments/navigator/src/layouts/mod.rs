@@ -32,14 +32,14 @@ impl Layout {
         }
     }
 
-    fn get_panels(&self, max_rect: Rect) -> Vec<(Rect, UiFn)> {
+    pub fn panels(&self, max_rect: Rect) -> Vec<(Rect, UiFn)> {
         match self {
-            Self::Title => title::get_panels(max_rect),
-            Self::Navigator => navigator::get_panels(max_rect),
+            Self::Title => title::panels(max_rect),
+            Self::Navigator => navigator::panels(max_rect),
         }
     }
 
-    pub fn draw_overlay(
+    pub fn ui(
         ui: &mut egui::Ui,
         from_layout: &Option<Layout>,
         to_layout: &Option<Layout>,
@@ -49,12 +49,12 @@ impl Layout {
 
         let start_panels: Vec<(Rect, UiFn)> = from_layout
             .as_ref()
-            .map(|l| l.get_panels(max_rect))
+            .map(|l| l.panels(max_rect))
             .unwrap_or_default();
 
-        let target_panels: Vec<(Rect, UiFn)> = to_layout
+        let tarpanels: Vec<(Rect, UiFn)> = to_layout
             .as_ref()
-            .map(|l| l.get_panels(max_rect))
+            .map(|l| l.panels(max_rect))
             .unwrap_or_default();
 
         let eased_t: f32 = egui::emath::easing::quadratic_in_out(if from_layout == to_layout {
@@ -63,11 +63,11 @@ impl Layout {
             t_delta
         });
 
-        let max_len: usize = start_panels.len().max(target_panels.len());
+        let max_len: usize = start_panels.len().max(tarpanels.len());
 
         for i in 0..max_len {
             let start_panel: Option<&(Rect, UiFn)> = start_panels.get(i);
-            let target_panel: Option<&(Rect, UiFn)> = target_panels.get(i);
+            let target_panel: Option<&(Rect, UiFn)> = tarpanels.get(i);
 
             let start_rect: Rect = start_panel.map(|(r, _)| *r).unwrap_or_else(|| {
                 target_panel

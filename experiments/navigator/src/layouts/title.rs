@@ -4,11 +4,10 @@ use crate::{
 };
 use egui::Rect;
 
-pub const LOCK_POINT: (f32, f32) = (0.8, 0.5);
 pub const TITLE_RECT: (f32, f32, f32, f32) = (0.0, 0.0, 0.4, 0.3);
 pub const BODY_RECT: (f32, f32, f32, f32) = (0.0, 0.3, 0.4, 1.0);
 
-pub fn get_panels(max_rect: Rect) -> Vec<(Rect, UiFn)> {
+pub fn panels(max_rect: Rect) -> Vec<(Rect, UiFn)> {
     vec![
         (to_rect(TITLE_RECT, max_rect), title_content),
         (to_rect(BODY_RECT, max_rect), body_content),

@@ -5,13 +5,14 @@ use crate::{
     settings::{
         logic_sheet::LAYOUT_ANIMATION_TIME,
         style_sheet::{set_font, BYTES_0XPROTONERDFONT, MIN_TERMINAL_SIZE},
-        NavigatorSettings,
+        InteractableTriangulationMeshSettings, NavigatorSettings, TriangulationGraphSettings,
     },
     terminal::NavigatorTerminal,
     triangulation::graph::TriangulationGraph,
 };
 use eframe::{egui, App};
-use egui::Rect;
+use egui::{Pos2, Rect};
+use glam::Vec2;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Tab {
@@ -48,6 +49,98 @@ impl Graph {
             Self::Boids(bg) => bg.logic(ctx, frame),
         }
     }
+
+    pub fn interact_index(&mut self) -> Option<usize> {
+        match self {
+            Self::Triangulation(bg) => bg.mesh.interact_vertex,
+            Self::Life(_bg) => {
+                todo!();
+            }
+            Self::Boids(_bg) => {
+                todo!();
+            }
+        }
+    }
+
+    pub fn set_interact_index(&mut self, index: Option<usize>) {
+        match self {
+            Self::Triangulation(bg) => bg.mesh.interact_vertex = index,
+            Self::Life(_bg) => {
+                todo!();
+            }
+            Self::Boids(_bg) => {
+                todo!();
+            }
+        }
+    }
+
+    pub fn clip_interactable_nodes(
+        &mut self,
+        blocked_screen_rects: Vec<Rect>,
+        allowed_clip_rect: Rect,
+    ) {
+        match self {
+            Self::Triangulation(bg) => {
+                let allowed_min: Vec2 = bg.graph_view_transform.to_uv(allowed_clip_rect.min);
+                let allowed_max: Vec2 = bg.graph_view_transform.to_uv(allowed_clip_rect.max);
+                let allowed_uv_rect: Rect = egui::Rect::from_min_max(
+                    egui::pos2(
+                        allowed_min.x.min(allowed_max.x),
+                        allowed_min.y.min(allowed_max.y),
+                    ),
+                    egui::pos2(
+                        allowed_min.x.max(allowed_max.x),
+                        allowed_min.y.max(allowed_max.y),
+                    ),
+                );
+
+                let blocked_uv_rects: Vec<Rect> = blocked_screen_rects
+                    .into_iter()
+                    .map(|screen_rect| {
+                        let min = bg.graph_view_transform.to_uv(screen_rect.min);
+                        let max = bg.graph_view_transform.to_uv(screen_rect.max);
+                        egui::Rect::from_min_max(
+                            egui::pos2(min.x.min(max.x), min.y.min(max.y)),
+                            egui::pos2(min.x.max(max.x), min.y.max(max.y)),
+                        )
+                    })
+                    .collect();
+
+                let interactable_vertices: Vec<usize> = bg.mesh.interactable_vertices.clone();
+                let mut current_vertices: Vec<&mut Vec2> =
+                    bg.mesh.vertices.iter_mut().map(|v| &mut v.pos).collect();
+
+                for &v_index in &interactable_vertices {
+                    let pos: &mut Vec2 = current_vertices[v_index];
+                    let pos2: Pos2 = egui::pos2(pos.x, pos.y);
+
+                    let is_blocked: bool = blocked_uv_rects.iter().any(|r| r.contains(pos2));
+                    let is_outside: bool = !allowed_uv_rect.contains(pos2);
+
+                    if is_blocked || is_outside {
+                        for _ in 0..50 {
+                            let rx = allowed_uv_rect.min.x
+                                + rand::random::<f32>() * allowed_uv_rect.width();
+                            let ry = allowed_uv_rect.min.y
+                                + rand::random::<f32>() * allowed_uv_rect.height();
+                            let candidate_pos = egui::pos2(rx, ry);
+
+                            if !blocked_uv_rects.iter().any(|r| r.contains(candidate_pos)) {
+                                *current_vertices[v_index] = glam::vec2(rx, ry);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            Self::Life(_bg) => {
+                todo!()
+            }
+            Self::Boids(_bg) => {
+                todo!()
+            }
+        }
+    }
 }
 
 pub struct Navigator {
@@ -68,11 +161,20 @@ impl Default for Navigator {
 
 impl Navigator {
     pub fn new() -> Self {
+        let mut graph: Graph = Graph::Triangulation(Box::new(TriangulationGraph::new(
+            TriangulationGraphSettings::default(),
+            InteractableTriangulationMeshSettings {
+                n_interactable: Layout::ALL.len(),
+                ..Default::default()
+            },
+        )));
+        graph.set_interact_index(Some(0));
+
         Self {
             terminal: NavigatorTerminal::default(),
             settings: NavigatorSettings::default(),
             graph_mode: GraphMode::Triangulation,
-            graph: Graph::Triangulation(Box::default()),
+            graph,
             experiment_overlay: Some(Layout::default()),
             displayed_overlay: Some(Layout::default()),
             overlay_transition_t: 1.0,
@@ -155,9 +257,9 @@ impl eframe::App for Navigator {
                     .show(ui, |ui| self.graph.ui(ui, frame));
 
                 if self.experiment_overlay != self.displayed_overlay {
-                    let dt = ui.input(|i| i.stable_dt);
-                    let anim_duration = LAYOUT_ANIMATION_TIME;
-                    self.overlay_transition_t += dt / anim_duration;
+                    let delta: f32 = ui.input(|i| i.stable_dt);
+                    let animation_duration: f32 = LAYOUT_ANIMATION_TIME;
+                    self.overlay_transition_t += delta / animation_duration;
 
                     if self.overlay_transition_t >= 1.0 {
                         self.overlay_transition_t = 1.0;
@@ -172,7 +274,31 @@ impl eframe::App for Navigator {
                 let mut overlay_ui: egui::Ui =
                     ui.new_child(egui::UiBuilder::new().max_rect(panel_rect));
 
-                Layout::draw_overlay(
+                if self
+                    .experiment_overlay
+                    .as_ref()
+                    .map(|layout| layout.clone() as usize)
+                    != self.graph.interact_index()
+                {
+                    self.experiment_overlay =
+                        self.graph.interact_index().map(|i| Layout::ALL[i].clone());
+                }
+
+                let mut blocked_screen_rects: Vec<Rect> = Vec::new();
+                if let Some(overlay) = &self.experiment_overlay {
+                    blocked_screen_rects.extend(
+                        overlay
+                            .panels(panel_rect)
+                            .into_iter()
+                            .map(|(r, _)| r)
+                            .collect::<Vec<Rect>>(),
+                    );
+                }
+
+                self.graph
+                    .clip_interactable_nodes(blocked_screen_rects, panel_rect);
+
+                Layout::ui(
                     &mut overlay_ui,
                     &self.displayed_overlay,
                     &self.experiment_overlay,

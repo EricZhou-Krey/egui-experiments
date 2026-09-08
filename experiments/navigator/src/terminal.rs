@@ -144,6 +144,8 @@ impl NavigatorCommand for SetModeCommand {
         } else {
             history.push("Usage: set_mode [boids | life | triangulation]".to_string());
         }
+
+        SetOverlayCommand::execute_navigator(navigator, &Vec::new());
     }
 }
 
@@ -168,11 +170,15 @@ impl NavigatorCommand for SetOverlayCommand {
         if let Some(overlay) = args.first() {
             if let Ok(layout) = Layout::try_from_name(overlay.as_str()) {
                 history.push(format!("Switched to {} overlay", layout.name()));
+                navigator
+                    .graph
+                    .set_interact_index(Some(layout.clone() as usize));
                 navigator.experiment_overlay = Some(layout);
             } else {
                 history.push(format!("set_overlay: unknown overlay '{}'", overlay));
             }
         } else {
+            navigator.graph.set_interact_index(None);
             navigator.experiment_overlay = None;
             let overlay_names: Vec<String> =
                 Layout::ALL.iter().map(|l| l.name().to_string()).collect();
