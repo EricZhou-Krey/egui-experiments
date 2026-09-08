@@ -1,8 +1,41 @@
+use std::sync::Arc;
+
 use eframe::egui::{Color32, CornerRadius, Frame, Margin, Stroke};
 use eframe::epaint::Shadow;
+use egui::{FontData, TextStyle};
 use terminal::TerminalStyle;
 
 use crate::style::{FaceStyle, GraphStyle, LineStyle, PointStyle};
+
+pub const BYTES_0XPROTONERDFONT: &[u8] =
+    include_bytes!("../../../../assets/0xProtoNerdFontMono-Regular.ttf");
+
+pub fn set_font(ctx: &egui::Context, font_name: String, font_bytes: &'static [u8]) {
+    if ctx.fonts(|f| f.definitions().font_data.contains_key(&font_name)) {
+        return;
+    }
+
+    let mut fonts = egui::FontDefinitions::default();
+
+    fonts.font_data.insert(
+        font_name.clone(),
+        Arc::new(FontData::from_static(font_bytes)),
+    );
+
+    fonts
+        .families
+        .entry(egui::FontFamily::Monospace)
+        .or_default()
+        .insert(0, font_name.clone());
+
+    fonts
+        .families
+        .entry(egui::FontFamily::Proportional)
+        .or_default()
+        .insert(0, font_name.clone());
+
+    ctx.set_fonts(fonts);
+}
 
 pub const TRIANGULATION_GRAPH_STYLE: GraphStyle = GraphStyle {
     point: PointStyle {
@@ -170,10 +203,37 @@ pub const TERMINAL_FRAME: Frame = Frame {
 pub const TERMINAL_STYLE: TerminalStyle = TerminalStyle {
     background_color: Color32::BLACK,
     background_corner_radius: 0.0,
-    prompt_text_color: egui::Color32::from_rgb(80, 250, 120),
-    selection_color: egui::Color32::from_rgba_premultiplied(100, 100, 100, 100),
-    text_color: egui::Color32::from_rgb(200, 200, 200),
-    text_style: egui::TextStyle::Monospace,
+    prompt_text_color: Color32::from_rgb(80, 250, 120),
+    selection_color: Color32::from_rgba_premultiplied(100, 100, 100, 100),
+    text_color: Color32::from_rgb(200, 200, 200),
+    text_style: TextStyle::Monospace,
     user: "bird",
     host: "rook-os",
+};
+
+pub const LAYOUT_BLOCK_FRAME: Frame = Frame {
+    inner_margin: Margin {
+        left: 4,
+        right: 4,
+        top: 4,
+        bottom: 4,
+    },
+    outer_margin: Margin {
+        left: 5,
+        right: 5,
+        top: 5,
+        bottom: 5,
+    },
+    corner_radius: CornerRadius {
+        nw: 0,
+        ne: 0,
+        sw: 0,
+        se: 0,
+    },
+    shadow: Shadow::NONE,
+    fill: Color32::BLACK,
+    stroke: Stroke {
+        width: 1.0,
+        color: Color32::WHITE,
+    },
 };

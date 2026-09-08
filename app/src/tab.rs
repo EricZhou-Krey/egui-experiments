@@ -1,6 +1,5 @@
 use eframe::App;
 use egui_dock::{DockState, TabViewer};
-use navigator::navigator::Navigator;
 use std::ops::{Deref, DerefMut};
 use tabletop_sound::tabletop_sound::TabletopSound;
 

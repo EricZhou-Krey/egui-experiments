@@ -2,7 +2,7 @@ use eframe::egui;
 use std::collections::HashMap;
 
 use terminal::{
-    command::{Command, CommandResult, HelpCommand},
+    command::{ClearCommand, Command, CommandResult, HelpCommand},
     file_system::{Directory, File, FileSystemNode, TerminalFile},
     Terminal,
 };
@@ -62,6 +62,7 @@ impl NavigatorTerminal {
         let root = FileSystemNode::Directory(NavigatorDirectory::default());
         let mut base = Terminal::new_empty(root);
         base.register_command::<HelpCommand>();
+        base.register_command::<ClearCommand>();
         base.style = TERMINAL_STYLE;
 
         let mut terminal = Self {
@@ -165,22 +166,20 @@ impl NavigatorCommand for SetOverlayCommand {
     fn execute_navigator(navigator: &mut Navigator, args: &[String]) {
         let history: &mut Vec<String> = &mut navigator.terminal.base.history;
         if let Some(overlay) = args.first() {
-            match overlay.as_str() {
-                "example" => {
-                    navigator.experiment_overlay = Some(Layout::Example);
-                    history.push("Switched to Example overlay".to_string());
-                }
-                "navigator" => {
-                    navigator.experiment_overlay = Some(Layout::Navigator);
-                    history.push("Switched to Navigator overlay".to_string());
-                }
-                _ => {
-                    history.push(format!("set_overlay: unknown overlay '{}'", overlay));
-                }
+            if let Ok(layout) = Layout::try_from_name(overlay.as_str()) {
+                history.push(format!("Switched to {} overlay", layout.name()));
+                navigator.experiment_overlay = Some(layout);
+            } else {
+                history.push(format!("set_overlay: unknown overlay '{}'", overlay));
             }
         } else {
             navigator.experiment_overlay = None;
-            history.push("Switched to empty overlay, use: set_overlay [example, navigator] for content overlays".to_string());
+            let overlay_names: Vec<String> =
+                Layout::ALL.iter().map(|l| l.name().to_string()).collect();
+            history.push(format!(
+                "Switched to empty overlay, use: set_overlay {:?} for content overlays",
+                overlay_names
+            ));
         }
     }
 }

@@ -1,3 +1,42 @@
-pub fn navigator_layout_ui(ui: &mut egui::Ui) {
-    ui.centered_and_justified(|ui| ui.heading("nav"));
+use crate::{
+    layouts::{to_rect, UiFn},
+    settings::style_sheet::LAYOUT_BLOCK_FRAME,
+};
+use egui::Rect;
+
+pub const LOCK_POINT: (f32, f32) = (0.8, 0.3);
+const PREVIEW_RECT: (f32, f32, f32, f32) = (0.0, 0.0, 0.5, 0.4);
+const TITLE_RECT: (f32, f32, f32, f32) = (0.5, 0.0, 1.0, 0.3);
+const BODY_RECT: (f32, f32, f32, f32) = (0.5, 0.3, 1.0, 1.0);
+
+pub fn get_panels(max_rect: Rect) -> Vec<(Rect, UiFn)> {
+    vec![
+        (to_rect(PREVIEW_RECT, max_rect), preview_content),
+        (to_rect(TITLE_RECT, max_rect), navigator_title),
+        (to_rect(BODY_RECT, max_rect), body_content),
+    ]
+}
+
+fn navigator_title(ui: &mut egui::Ui) {
+    egui::CentralPanel::default()
+        .frame(LAYOUT_BLOCK_FRAME)
+        .show(ui, |ui| {
+            ui.centered_and_justified(|ui| ui.heading("NAV"));
+        });
+}
+
+fn body_content(ui: &mut egui::Ui) {
+    egui::CentralPanel::default()
+        .frame(LAYOUT_BLOCK_FRAME)
+        .show(ui, |ui| {
+            ui.centered_and_justified(|ui| ui.heading("NAV BODY"));
+        });
+}
+
+fn preview_content(ui: &mut egui::Ui) {
+    egui::CentralPanel::default()
+        .frame(LAYOUT_BLOCK_FRAME)
+        .show(ui, |ui| {
+            ui.centered_and_justified(|ui| ui.heading("NAV PREVIEW"));
+        });
 }

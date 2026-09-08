@@ -4,3 +4,4 @@ pub const INTERACTION_RADIUS: f32 = 0.05;
 pub const EXAMPLE_N_TRIANGULATION_INTERACTABLE: usize = 10;
 pub const TRIANGULATION_MESH_ZOOM: f32 = 1.15;
 pub const TERMINAL_RESIZABLE: bool = true;
+pub const LAYOUT_ANIMATION_TIME: f32 = 0.4;

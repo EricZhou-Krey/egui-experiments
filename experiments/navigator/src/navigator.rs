@@ -2,7 +2,11 @@ use crate::{
     boids::graph::BoidGraph,
     layouts::Layout,
     life::graph::LifeGraph,
-    settings::{style_sheet::MIN_TERMINAL_SIZE, NavigatorSettings},
+    settings::{
+        logic_sheet::LAYOUT_ANIMATION_TIME,
+        style_sheet::{set_font, BYTES_0XPROTONERDFONT, MIN_TERMINAL_SIZE},
+        NavigatorSettings,
+    },
     terminal::NavigatorTerminal,
     triangulation::graph::TriangulationGraph,
 };
@@ -52,6 +56,8 @@ pub struct Navigator {
     pub graph_mode: GraphMode,
     pub graph: Graph,
     pub experiment_overlay: Option<Layout>,
+    displayed_overlay: Option<Layout>,
+    overlay_transition_t: f32,
 }
 
 impl Default for Navigator {
@@ -67,13 +73,20 @@ impl Navigator {
             settings: NavigatorSettings::default(),
             graph_mode: GraphMode::Triangulation,
             graph: Graph::Triangulation(Box::default()),
-            experiment_overlay: None,
+            experiment_overlay: Some(Layout::default()),
+            displayed_overlay: Some(Layout::default()),
+            overlay_transition_t: 1.0,
         }
     }
 }
 
 impl eframe::App for Navigator {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        set_font(
+            ui.ctx(),
+            "0xProtoNerdFont".to_string(),
+            BYTES_0XPROTONERDFONT,
+        );
         egui::Panel::top("settings_panel")
             .frame(self.settings.top_panel_frame)
             .show(ui, |ui: &mut egui::Ui| {
@@ -141,20 +154,30 @@ impl eframe::App for Navigator {
                     .graph_inner_frame
                     .show(ui, |ui| self.graph.ui(ui, frame));
 
-                egui::Area::new(egui::Id::new("central_overlay"))
-                    .fixed_pos(panel_rect.left_top())
-                    .order(egui::Order::Foreground)
-                    .show(ui, |ui| {
-                        ui.set_min_size(panel_rect.size());
-                        ui.set_max_size(panel_rect.size());
-                        ui.set_clip_rect(panel_rect);
+                if self.experiment_overlay != self.displayed_overlay {
+                    let dt = ui.input(|i| i.stable_dt);
+                    let anim_duration = LAYOUT_ANIMATION_TIME;
+                    self.overlay_transition_t += dt / anim_duration;
 
-                        ui.debug_text(format!("{:?}", ui.max_rect()));
+                    if self.overlay_transition_t >= 1.0 {
+                        self.overlay_transition_t = 1.0;
+                        self.displayed_overlay = self.experiment_overlay.clone();
+                    } else {
+                        ui.ctx().request_repaint();
+                    }
+                } else {
+                    self.overlay_transition_t = 0.0;
+                }
 
-                        if let Some(overlay) = &self.experiment_overlay {
-                            overlay.ui(ui);
-                        }
-                    });
+                let mut overlay_ui: egui::Ui =
+                    ui.new_child(egui::UiBuilder::new().max_rect(panel_rect));
+
+                Layout::draw_overlay(
+                    &mut overlay_ui,
+                    &self.displayed_overlay,
+                    &self.experiment_overlay,
+                    self.overlay_transition_t,
+                );
             });
     }
 
