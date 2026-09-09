@@ -399,10 +399,24 @@ where
 
         final_command_result
     }
+
+    pub fn logic(&mut self, _ctx: &egui::Context) {}
+    pub fn raw_input_hook(&mut self, _ctx: &egui::Context, _raw_input: &mut egui::RawInput) {}
 }
 
-impl eframe::App for Terminal<TerminalFile, TerminalDirectory> {
+impl<F, D> eframe::App for Terminal<F, D>
+where
+    D: Directory<Node = FileSystemNode<F, D>>,
+{
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.ui(ui);
+    }
+
+    fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.logic(ctx);
+    }
+
+    fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
+        self.raw_input_hook(ctx, raw_input);
     }
 }

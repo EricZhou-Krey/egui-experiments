@@ -8,15 +8,19 @@ pub struct TabletopSound {
 
 impl Default for TabletopSound {
     fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl TabletopSound {
+    pub fn new() -> Self {
         Self {
             dock: TTSState::default_dock(),
             state: TTSState::default(),
         }
     }
-}
 
-impl eframe::App for TabletopSound {
-    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+    pub fn ui(&mut self, ui: &mut egui::Ui) {
         // TODO Change this visually
         egui::Panel::top("DockerBar").show(ui, |ui| {
             ui.horizontal_wrapped(|ui| {
@@ -49,7 +53,23 @@ impl eframe::App for TabletopSound {
         });
     }
 
-    fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        self.state.logic(ctx, frame);
+    pub fn logic(&mut self, ctx: &egui::Context) {
+        self.state.logic(ctx);
+    }
+
+    pub fn raw_input_hook(&mut self, _ctx: &egui::Context, _raw_input: &mut egui::RawInput) {}
+}
+
+impl eframe::App for TabletopSound {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        self.ui(ui);
+    }
+
+    fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.logic(ctx);
+    }
+
+    fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
+        self.raw_input_hook(ctx, raw_input);
     }
 }

@@ -1,12 +1,12 @@
 use crate::{sound::SoundState, state::terminal::TTSTerminal};
 
 pub struct SoundViewer<'a> {
-    sound: &'a SoundState,
-    terminal: &'a TTSTerminal,
+    _sound: &'a SoundState,
+    _terminal: &'a TTSTerminal,
 }
 
 impl<'a> SoundViewer<'a> {
-    pub fn new(sound: &'a SoundState, terminal: &'a TTSTerminal) -> Self {
-        Self { sound, terminal }
+    pub fn new(_sound: &'a SoundState, _terminal: &'a TTSTerminal) -> Self {
+        Self { _sound, _terminal }
     }
 }

@@ -1,7 +1,7 @@
 use app::app::App;
 
 fn main() -> eframe::Result {
-    let native_options = eframe::NativeOptions {
+    let native_options: eframe::NativeOptions = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_maximized(true),
         ..Default::default()
     };
@@ -9,6 +9,6 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "egui-experiments",
         native_options,
-        Box::new(|_cc| Ok(Box::<App>::default())),
+        Box::new(|cc: &eframe::CreationContext<'_>| Ok(Box::new(App::new(cc)))),
     )
 }

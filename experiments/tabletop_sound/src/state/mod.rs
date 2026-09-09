@@ -93,5 +93,5 @@ impl TTSState {
         dock
     }
 
-    pub fn logic(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame) {}
+    pub fn logic(&mut self, _ctx: &egui::Context) {}
 }

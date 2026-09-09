@@ -14,3 +14,4 @@ glow.workspace = true
 
 tabletop_sound = { path = "../experiments/tabletop_sound" }
 navigator = { path = "../experiments/navigator" }
+terminal = { path = "../experiments/terminal" }

@@ -3,10 +3,10 @@ pub struct LifeGraph {
     state: usize,
 }
 
-impl eframe::App for LifeGraph {
-    fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+impl LifeGraph {
+    pub fn ui(&mut self, ui: &mut egui::Ui) {
         ui.heading("life graph");
     }
 
-    fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {}
+    pub fn logic(&mut self, _ctx: &egui::Context) {}
 }

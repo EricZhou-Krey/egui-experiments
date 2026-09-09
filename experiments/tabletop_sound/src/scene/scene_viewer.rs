@@ -8,12 +8,12 @@ use std::collections::HashSet;
 
 pub struct SceneViewer<'a> {
     scene: &'a Scene,
-    terminal: &'a TTSTerminal,
+    _terminal: &'a TTSTerminal,
 }
 
 impl<'a> SceneViewer<'a> {
-    pub fn new(scene: &'a Scene, terminal: &'a TTSTerminal) -> Self {
-        Self { scene, terminal }
+    pub fn new(scene: &'a Scene, _terminal: &'a TTSTerminal) -> Self {
+        Self { scene, _terminal }
     }
 
     pub fn key_object_around(

@@ -10,7 +10,6 @@ use crate::{
     terminal::NavigatorTerminal,
     triangulation::graph::TriangulationGraph,
 };
-use eframe::{egui, App};
 use egui::{Pos2, Rect};
 use glam::Vec2;
 
@@ -34,19 +33,19 @@ pub enum Graph {
 }
 
 impl Graph {
-    fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+    pub fn ui(&mut self, ui: &mut egui::Ui) {
         match self {
-            Self::Triangulation(bg) => bg.ui(ui, frame),
-            Self::Life(bg) => bg.ui(ui, frame),
-            Self::Boids(bg) => bg.ui(ui, frame),
+            Self::Triangulation(bg) => bg.ui(ui),
+            Self::Life(bg) => bg.ui(ui),
+            Self::Boids(bg) => bg.ui(ui),
         }
     }
 
-    fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    pub fn logic(&mut self, ctx: &egui::Context) {
         match self {
-            Self::Triangulation(bg) => bg.logic(ctx, frame),
-            Self::Life(bg) => bg.logic(ctx, frame),
-            Self::Boids(bg) => bg.logic(ctx, frame),
+            Self::Triangulation(bg) => bg.logic(ctx),
+            Self::Life(bg) => bg.logic(ctx),
+            Self::Boids(bg) => bg.logic(ctx),
         }
     }
 
@@ -182,8 +181,8 @@ impl Navigator {
     }
 }
 
-impl eframe::App for Navigator {
-    fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+impl Navigator {
+    pub fn ui(&mut self, ui: &mut egui::Ui) {
         set_font(
             ui.ctx(),
             "0xProtoNerdFont".to_string(),
@@ -254,7 +253,7 @@ impl eframe::App for Navigator {
 
                 self.settings
                     .graph_inner_frame
-                    .show(ui, |ui| self.graph.ui(ui, frame));
+                    .show(ui, |ui| self.graph.ui(ui));
 
                 if self.experiment_overlay != self.displayed_overlay {
                     let delta: f32 = ui.input(|i| i.stable_dt);
@@ -307,8 +306,24 @@ impl eframe::App for Navigator {
             });
     }
 
-    fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        self.graph.logic(ctx, frame);
+    pub fn logic(&mut self, ctx: &egui::Context) {
+        self.graph.logic(ctx);
+    }
+
+    pub fn raw_input_hook(&mut self, _ctx: &egui::Context, _raw_input: &mut egui::RawInput) {}
+}
+
+impl eframe::App for Navigator {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        self.ui(ui);
+    }
+
+    fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.logic(ctx);
+    }
+
+    fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
+        self.raw_input_hook(ctx, raw_input);
     }
 }
 

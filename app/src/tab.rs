@@ -1,7 +1,11 @@
-use eframe::App;
+use egui::{Context, Id, RawInput, Ui, WidgetText};
 use egui_dock::{DockState, TabViewer};
 use std::ops::{Deref, DerefMut};
 use tabletop_sound::tabletop_sound::TabletopSound;
+use terminal::{
+    file_system::{TerminalDirectory, TerminalFile},
+    Terminal,
+};
 
 macro_rules! define_app_tabs {
     (
@@ -21,40 +25,31 @@ macro_rules! define_app_tabs {
         }
 
         impl $enum_name {
-            pub fn title(&self) -> egui::WidgetText {
+            pub fn title(&self) -> WidgetText {
                 match self {
                     Self::Empty => "".into(),
                     $( Self::$variant(_) => $title.into(), )*
                 }
             }
-        }
 
-        impl App for $enum_name {
-            fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+            pub fn ui(&mut self, ui: &mut Ui) {
                 match self {
                     Self::Empty => {}
-                    $( Self::$variant(t) => t.ui(ui, frame), )*
+                    $( Self::$variant(t) => { t.ui(ui); } )*
                 }
             }
 
-            fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+            pub fn logic(&mut self, ctx: &Context) {
                 match self {
                     Self::Empty => {}
-                    $( Self::$variant(t) => t.logic(ctx, frame), )*
+                    $( Self::$variant(t) => { t.logic(ctx); } )*
                 }
             }
 
-            fn save(&mut self, storage: &mut dyn eframe::Storage) {
+            pub fn raw_input_hook(&mut self, ctx: &Context, raw_input: &mut RawInput) {
                 match self {
                     Self::Empty => {}
-                    $( Self::$variant(t) => t.save(storage), )*
-                }
-            }
-
-            fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
-                match self {
-                    Self::Empty => {}
-                    $( Self::$variant(t) => t.raw_input_hook(ctx, raw_input), )*
+                    $( Self::$variant(t) => { t.raw_input_hook(ctx, raw_input); } )*
                 }
             }
         }
@@ -64,6 +59,7 @@ macro_rules! define_app_tabs {
 define_app_tabs! {
     pub enum Tab {
         TabletopSound(Box<TabletopSound>) => "TabletopSound",
+        Terminal(Box<Terminal<TerminalFile, TerminalDirectory>>) => "Terminal",
     }
 }
 
@@ -85,23 +81,21 @@ impl DerefMut for AppTab {
     }
 }
 
-pub struct AppTabViewer<'a> {
-    pub frame: &'a mut eframe::Frame,
-}
+pub struct AppTabViewer;
 
-impl<'a> TabViewer for AppTabViewer<'a> {
+impl TabViewer for AppTabViewer {
     type Tab = AppTab;
 
-    fn id(&mut self, tab: &mut Self::Tab) -> egui::Id {
-        egui::Id::new(tab.id)
+    fn id(&mut self, tab: &mut Self::Tab) -> Id {
+        Id::new(tab.id)
     }
 
-    fn title(&mut self, tab: &mut Self::Tab) -> egui::WidgetText {
+    fn title(&mut self, tab: &mut Self::Tab) -> WidgetText {
         tab.title()
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, tab: &mut Self::Tab) {
-        tab.ui(ui, self.frame)
+    fn ui(&mut self, ui: &mut Ui, tab: &mut Self::Tab) {
+        tab.ui(ui);
     }
 }
 

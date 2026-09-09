@@ -43,7 +43,7 @@ use slotmap::{new_key_type, SlotMap};
 new_key_type! { pub struct SoundKey; }
 
 pub struct SoundState {
-    audio_manager: AudioManager,
+    _audio_manager: AudioManager,
     pub sounds: SlotMap<SoundKey, StaticSoundData>,
     pub settings: SoundSettings,
 }
@@ -51,7 +51,7 @@ pub struct SoundState {
 impl Default for SoundState {
     fn default() -> Self {
         Self {
-            audio_manager: AudioManager::<DefaultBackend>::new(AudioManagerSettings::default())
+            _audio_manager: AudioManager::<DefaultBackend>::new(AudioManagerSettings::default())
                 .unwrap(),
             sounds: SlotMap::with_key(),
             settings: SoundSettings::default(),
@@ -82,7 +82,7 @@ pub struct SoundDescriptor {
 impl SoundState {
     pub fn generate_scene_descriptor(
         &self,
-        receiver_position: Vec2,
+        _receiver_position: Vec2,
         scene_viewer: SceneViewer,
     ) -> SoundDescriptor {
         let sound_rays: Vec<SoundRay> = (0..N_RAYS)
@@ -93,13 +93,13 @@ impl SoundState {
             .collect();
 
         struct EmitterPointSound {
-            pub direct: PointSound,
-            pub reflected: PointSound,
+            pub _direct: PointSound,
+            pub _reflected: PointSound,
         }
         // Making too many copies of the sound file, should only store the sound data once and
         // reference it from the file system probably, need to implement that as cloning is
         // impratcical before moving on
-        let emitter_point_sounds: HashMap<SceneObjectKey, EmitterPointSound> = scene_viewer
+        let _emitter_point_sounds: HashMap<SceneObjectKey, EmitterPointSound> = scene_viewer
             .emitter_keys()
             .iter()
             .filter_map(|key| {
@@ -107,12 +107,12 @@ impl SoundState {
                     Some((
                         *key,
                         EmitterPointSound {
-                            direct: PointSound {
+                            _direct: PointSound {
                                 apparent_position: emitter.shape.center(),
                                 sound_key,
                                 filter: SoundFilter::default(),
                             },
-                            reflected: PointSound {
+                            _reflected: PointSound {
                                 apparent_position: Vec2::ZERO, // TODO
                                 sound_key,
                                 filter: SoundFilter::default(),
@@ -125,7 +125,7 @@ impl SoundState {
             })
             .collect();
 
-        for ray in sound_rays {
+        for _ray in sound_rays {
             todo!()
         }
 
@@ -139,7 +139,7 @@ impl SoundState {
         todo!()
     }
 
-    pub fn play(&mut self, receiver: &Receiver, scene_viewer: SceneViewer) {
+    pub fn play(&mut self, _receiver: &Receiver, _scene_viewer: SceneViewer) {
         // for point_sound in descriptor.paths {
         //     // To implement this in Kira:
         //     // 1. Create a `Track` with a LowPassBuilder effect for the `low_pass_cutoff_hz`.

@@ -158,8 +158,8 @@ impl TriangulationGraph {
     }
 }
 
-impl eframe::App for TriangulationGraph {
-    fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
+impl TriangulationGraph {
+    pub fn ui(&mut self, ui: &mut Ui) {
         let rect: Rect = ui.available_rect_before_wrap();
 
         let response = ui.allocate_rect(rect, egui::Sense::click_and_drag());
@@ -170,9 +170,9 @@ impl eframe::App for TriangulationGraph {
             self.graph_view_transform = GraphViewTransform::new(rect, self.settings.mesh_zoom);
         }
 
-        if response.clicked() && let Some(screen_position) = response.interact_pointer_pos() {
-            self.mesh
-                .interact(self.graph_view_transform.to_uv(screen_position));
+        if response.clicked() && let Some(screen_position) = response.interact_pointer_pos() &&
+        let InteractionType::Reselect(_reselect_index) = self.mesh.interact(self.graph_view_transform.to_uv(screen_position)) {
+            //todo!();
         }
 
         let painter: Painter = ui.painter().with_clip_rect(rect);
@@ -216,26 +216,26 @@ impl eframe::App for TriangulationGraph {
 
             painter.circle_filled(
                 screen_position,
-                self.style.point_heavy.radius,
-                self.style.point_heavy.color,
+                self.style.point.radius,
+                self.style.point.color,
             );
             
             painter.rect_stroke(
                 Rect::from_center_size(screen_position, egui::vec2(
-                        self.style.point_heavy.radius * 5.0,
-                        self.style.point_heavy.radius * 5.0,
+                        self.style.point.radius * 5.0,
+                        self.style.point.radius * 5.0,
                     )),
                 0.0,
-                Stroke::new(self.style.point_heavy.radius * 0.4, self.style.point_heavy.color),
+                Stroke::new(self.style.point.radius * 0.4, self.style.point.color),
                 egui::StrokeKind::Middle);
 
             for delta in [egui::vec2(1., 0.), egui::vec2(-1., 0.), egui::vec2(0., 1.), egui::vec2(0., -1.)] {
                 painter.line_segment(
                     [
-                        screen_position + (delta * self.style.point_heavy.radius * 1.5),
-                        screen_position + (delta * self.style.point_heavy.radius * 3.5)
+                        screen_position + (delta * self.style.point.radius * 1.5),
+                        screen_position + (delta * self.style.point.radius * 3.5)
                     ],
-                    Stroke::new(self.style.point_heavy.radius * 0.4, self.style.point_heavy.color)
+                    Stroke::new(self.style.point.radius * 0.4, self.style.point.color)
                 );
             }
         }
@@ -244,19 +244,19 @@ impl eframe::App for TriangulationGraph {
             let screen_position: Pos2 = self.graph_view_transform.to_screen(self.mesh.vertices[interacted_index].pos);
             painter.circle_filled(
                 screen_position,
-                self.style.point.radius,
-                self.style.point.color,
+                self.style.point_heavy.radius,
+                self.style.point_heavy.color,
             );
 
             painter.circle_stroke(
                 screen_position,
-                self.style.point.radius * 1.5,
-                Stroke::new(self.style.point.radius * 0.4, self.style.point.color),
+                self.style.point_heavy.radius * 1.5,
+                Stroke::new(self.style.point_heavy.radius * 0.4, self.style.point_heavy.color),
             );
         }
     }
 
-    fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    pub fn logic(&mut self, ctx: &egui::Context) {
         let dt: f32 = ctx.input(|i| i.stable_dt).min(0.1);
         let bounds: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
 

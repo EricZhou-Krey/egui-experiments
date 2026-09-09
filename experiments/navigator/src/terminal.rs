@@ -1,16 +1,13 @@
-use eframe::egui;
-use std::collections::HashMap;
-
-use terminal::{
-    command::{ClearCommand, Command, CommandResult, HelpCommand},
-    file_system::{Directory, File, FileSystemNode, TerminalFile},
-    Terminal,
-};
-
 use crate::{
     layouts::Layout,
     navigator::{Graph, GraphMode, Navigator},
     settings::style_sheet::TERMINAL_STYLE,
+};
+use std::collections::HashMap;
+use terminal::{
+    command::{ClearCommand, Command, CommandResult, HelpCommand},
+    file_system::{Directory, File, FileSystemNode, TerminalFile},
+    Terminal,
 };
 
 #[derive(Debug, Clone, PartialEq)]
