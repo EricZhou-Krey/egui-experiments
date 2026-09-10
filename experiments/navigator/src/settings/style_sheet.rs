@@ -85,10 +85,8 @@ pub const TRIANGULATION_GRAPH_STYLE: GraphStyle = GraphStyle {
 pub const ACTIVE_TAB_BG: Color32 = Color32::WHITE;
 pub const ACTIVE_TAB_TEXT: Color32 = Color32::BLACK;
 
-pub const INACTIVE_TAB_BG: Color32 = Color32::from_gray(150);
+pub const INACTIVE_TAB_BG: Color32 = Color32::BLACK;
 pub const INACTIVE_TAB_TEXT: Color32 = Color32::WHITE;
-
-pub const MIN_TERMINAL_SIZE: f32 = 8.0;
 
 pub const TOP_PANEL_FRAME: Frame = Frame {
     inner_margin: Margin {
@@ -174,6 +172,34 @@ pub const GRAPH_INNER_FRAME: Frame = Frame {
 };
 
 pub const TERMINAL_FRAME: Frame = Frame {
+    inner_margin: Margin {
+        left: 5,
+        right: 5,
+        top: 5,
+        bottom: 5,
+    },
+    outer_margin: Margin {
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+    },
+    corner_radius: CornerRadius {
+        nw: 0,
+        ne: 0,
+        sw: 0,
+        se: 0,
+    },
+    shadow: Shadow::NONE,
+    fill: Color32::BLACK,
+    stroke: Stroke {
+        width: 1.0,
+        color: Color32::WHITE,
+    },
+};
+
+pub const SETTINGS_POPUP_SIZE: f32 = 0.2;
+pub const SETTINGS_POPUP_FRAME: Frame = Frame {
     inner_margin: Margin {
         left: 5,
         right: 5,

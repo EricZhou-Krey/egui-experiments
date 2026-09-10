@@ -14,9 +14,6 @@ pub enum Layout {
 
 type UiFn = fn(&mut egui::Ui);
 
-// TODO: add overlays, dexcriptions, and ui for overlays, and asscoiate them will experiments of
-// certain names or etc
-
 #[derive(Debug, Default, Clone, PartialEq, Copy)]
 pub struct LayoutIndex(pub usize);
 #[derive(Debug, Default, Clone, PartialEq, Copy)]

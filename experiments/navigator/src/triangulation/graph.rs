@@ -57,6 +57,30 @@ impl InteractableTriangulationMesh {
         }
     }
 
+    pub fn apply_settings(&mut self) {
+        self.settings.n_internal_vertices = self.settings
+            .n_internal_vertices
+            .max(self.interactable_vertices.len());
+
+        let current_internal_vertices: usize = self.vertices.len().saturating_sub(4);
+        let structural_change = current_internal_vertices != self.settings.n_internal_vertices;
+
+        if structural_change {
+            let new_mesh = Self::new(self.settings.clone());
+            self.animated_mesh = new_mesh.animated_mesh;
+            self.interactable_vertices = new_mesh.interactable_vertices;
+            self.interact_vertex = None;
+        } else {
+            for velocity in self.animated_mesh.velocities.iter_mut() {
+                let current_speed = velocity.length();
+                
+                if current_speed > 0.0 { 
+                    *velocity = (*velocity / current_speed) * self.settings.vertex_speed;
+                }
+            }
+        }
+    }
+
     fn interact(&mut self, position: Vec2) -> InteractionType {
         let mut new_interaction: Option<GraphInteractNodeIndex> = None;
         let mut interaction_radius: f32 = self.settings.interaction_radius;
@@ -157,6 +181,15 @@ impl TriangulationGraph {
 }
 
 impl TriangulationGraph {
+    pub fn apply_settings(&mut self) {
+        self.graph_view_transform = GraphViewTransform::new(
+            self.graph_view_transform.rect, 
+            self.settings.mesh_zoom
+        );
+
+        self.mesh.apply_settings();
+    }
+
     pub fn ui(&mut self, ui: &mut Ui) -> Option<GraphUpdate> {
         let mut graph_update: Option<GraphUpdate> = None;
         let rect: Rect = ui.available_rect_before_wrap();

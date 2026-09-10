@@ -2,12 +2,14 @@ use egui::{Color32, Frame};
 
 use crate::settings::{
     logic_sheet::{
-        EXAMPLE_N_TRIANGULATION_INTERACTABLE, INTERACTION_RADIUS, N_TRIANGULATION_VERTICES,
-        TRIANGULATION_MESH_ZOOM, TRIANGULATION_VERTEX_SPEED,
+        EXAMPLE_N_TRIANGULATION_INTERACTABLE, INTERACTION_RADIUS, LAYOUT_ANIMATION_TIME,
+        N_TRIANGULATION_VERTICES, SETTINGS_POPUP_ANIMATION_TIME, TRIANGULATION_MESH_ZOOM,
+        TRIANGULATION_VERTEX_SPEED,
     },
     style_sheet::{
         ACTIVE_TAB_BG, ACTIVE_TAB_TEXT, GRAPH_INNER_FRAME, GRAPH_OUTER_FRAME, INACTIVE_TAB_BG,
-        INACTIVE_TAB_TEXT, TERMINAL_FRAME, TOP_PANEL_FRAME,
+        INACTIVE_TAB_TEXT, SETTINGS_POPUP_FRAME, SETTINGS_POPUP_SIZE, TERMINAL_FRAME,
+        TOP_PANEL_FRAME,
     },
 };
 
@@ -52,6 +54,10 @@ pub struct NavigatorSettings {
     pub graph_outer_frame: Frame,
     pub graph_inner_frame: Frame,
     pub terminal_frame: Frame,
+    pub settings_popup_frame: Frame,
+    pub settings_popup_size: f32,
+    pub settings_popup_animation_time: f32,
+    pub layout_animation_time: f32,
 
     pub active_tab_bg: Color32,
     pub active_tab_text: Color32,
@@ -66,6 +72,10 @@ impl Default for NavigatorSettings {
             graph_outer_frame: GRAPH_OUTER_FRAME,
             graph_inner_frame: GRAPH_INNER_FRAME,
             terminal_frame: TERMINAL_FRAME,
+            settings_popup_frame: SETTINGS_POPUP_FRAME,
+            settings_popup_size: SETTINGS_POPUP_SIZE,
+            settings_popup_animation_time: SETTINGS_POPUP_ANIMATION_TIME,
+            layout_animation_time: LAYOUT_ANIMATION_TIME,
 
             active_tab_bg: ACTIVE_TAB_BG,
             active_tab_text: ACTIVE_TAB_TEXT,

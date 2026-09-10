@@ -3,8 +3,7 @@ use crate::{
     layouts::{ExperimentIndex, Layout},
     life::graph::LifeGraph,
     settings::{
-        logic_sheet::LAYOUT_ANIMATION_TIME,
-        style_sheet::{set_font, BYTES_0XPROTONERDFONT, MIN_TERMINAL_SIZE},
+        style_sheet::{set_font, BYTES_0XPROTONERDFONT},
         InteractableTriangulationMeshSettings, NavigatorSettings, TriangulationGraphSettings,
     },
     terminal::NavigatorTerminal,
@@ -146,6 +145,79 @@ impl Graph {
             }
         }
     }
+
+    pub fn settings_ui(&mut self, ui: &mut egui::Ui) {
+        egui::CollapsingHeader::new("Current Graph Settings")
+            .default_open(true)
+            .show(ui, |ui| match self {
+                Graph::Triangulation(bg) => {
+                    let mut changed = false;
+
+                    ui.label("Triangulation Settings");
+                    changed |= ui
+                        .add(
+                            egui::Slider::new(&mut bg.settings.mesh_zoom, 0.1..=5.0)
+                                .text("Mesh Zoom"),
+                        )
+                        .changed();
+
+                    ui.separator();
+                    ui.label("Mesh Interactable Settings");
+
+                    changed |= ui
+                        .add(
+                            egui::Slider::new(
+                                &mut bg.mesh.settings.n_internal_vertices,
+                                Layout::ALL.len()..=500,
+                            )
+                            .text("N Internal Vertices"),
+                        )
+                        .changed();
+
+                    changed |= ui
+                        .add(
+                            egui::Slider::new(&mut bg.mesh.settings.vertex_speed, 0.01..=1.0)
+                                .text("Vertex Speed"),
+                        )
+                        .changed();
+
+                    if changed {
+                        bg.apply_settings();
+                    }
+                }
+                Graph::Boids(_bg) => {
+                    ui.label("Boids Settings");
+                    ui.label("(Add Boids-specific fields here)");
+                }
+                Graph::Life(_bg) => {
+                    ui.label("Game of Life Settings");
+                    ui.label("(Add Game of Life-specific fields here)");
+                }
+            });
+    }
+
+    pub fn reset_settings(&mut self) {
+        match self {
+            Self::Triangulation(bg) => {
+                bg.settings = TriangulationGraphSettings::default();
+                bg.mesh.settings = InteractableTriangulationMeshSettings {
+                    n_interactable: Layout::ALL.len(),
+                    ..Default::default()
+                };
+                bg.apply_settings();
+            }
+            Self::Life(_bg) => {
+                // TODO: Reset Game of Life settings
+                // _bg.settings = LifeSettings::default();
+                // _bg.apply_settings();
+            }
+            Self::Boids(_bg) => {
+                // TODO: Reset Boids settings
+                // _bg.settings = BoidsSettings::default();
+                // _bg.apply_settings();
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Copy)]
@@ -162,6 +234,8 @@ pub struct Navigator {
     displayed_overlay: Option<Layout>,
     overlay_transition_t: f32,
     pub update_status: Option<NavigatorUpdate>,
+    show_settings: bool,
+    settings_popup_t: f32,
 }
 
 impl Default for Navigator {
@@ -190,29 +264,147 @@ impl Navigator {
             displayed_overlay: Some(Layout::default()),
             overlay_transition_t: 1.0,
             update_status: None,
+            show_settings: false,
+            settings_popup_t: 0.0,
         }
     }
 }
 
 impl Navigator {
-    pub fn ui(&mut self, ui: &mut egui::Ui) -> Option<NavigatorUpdate> {
-        self.update_status = None;
+    fn setup_visuals(&self, ui: &mut egui::Ui) {
         set_font(
             ui.ctx(),
             "0xProtoNerdFont".to_string(),
             BYTES_0XPROTONERDFONT,
         );
 
+        let visuals: &mut Visuals = &mut ui.style_mut().visuals;
+
+        visuals.selection.bg_fill = self.settings.active_tab_bg;
+        visuals.widgets.inactive.weak_bg_fill = self.settings.inactive_tab_bg;
+        visuals.widgets.hovered.weak_bg_fill = self.settings.inactive_tab_bg;
+    }
+
+    fn settings_ui(&mut self, ui: &mut egui::Ui) {
+        egui::ScrollArea::vertical().show(ui, |ui| {
+            ui.heading("SETTINGS");
+            ui.separator();
+
+            egui::CollapsingHeader::new("Navigator Settings")
+                .default_open(true)
+                .show(ui, |ui| {
+                    ui.label("Animation & Layout");
+                    ui.add(
+                        egui::Slider::new(&mut self.settings.settings_popup_size, 0.1..=1.0)
+                            .text("Popup Size"),
+                    );
+                    ui.add(
+                        egui::Slider::new(
+                            &mut self.settings.settings_popup_animation_time,
+                            0.0..=2.0,
+                        )
+                        .text("Popup Anim Time"),
+                    );
+                    ui.add(
+                        egui::Slider::new(&mut self.settings.layout_animation_time, 0.0..=2.0)
+                            .text("Layout Anim Time"),
+                    );
+
+                    ui.separator();
+                    ui.label("Tab Colors");
+                    ui.horizontal(|ui| {
+                        ui.color_edit_button_srgba(&mut self.settings.active_tab_bg);
+                        ui.label("Active Tab BG");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.color_edit_button_srgba(&mut self.settings.active_tab_text);
+                        ui.label("Active Tab Text");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.color_edit_button_srgba(&mut self.settings.inactive_tab_bg);
+                        ui.label("Inactive Tab BG");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.color_edit_button_srgba(&mut self.settings.inactive_tab_text);
+                        ui.label("Inactive Tab Text");
+                    });
+
+                    ui.separator();
+                    ui.label("Frame Backgrounds");
+                    ui.horizontal(|ui| {
+                        ui.color_edit_button_srgba(&mut self.settings.top_panel_frame.fill);
+                        ui.label("Top Panel Frame");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.color_edit_button_srgba(&mut self.settings.graph_outer_frame.fill);
+                        ui.label("Graph Outer Frame");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.color_edit_button_srgba(&mut self.settings.graph_inner_frame.fill);
+                        ui.label("Graph Inner Frame");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.color_edit_button_srgba(&mut self.settings.terminal_frame.fill);
+                        ui.label("Terminal Frame");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.color_edit_button_srgba(&mut self.settings.settings_popup_frame.fill);
+                        ui.label("Settings Popup Frame");
+                    });
+                });
+
+            ui.separator();
+
+            self.graph.settings_ui(ui);
+
+            if ui.button("Reset").clicked() {
+                self.settings = NavigatorSettings::default();
+                self.graph.reset_settings();
+            }
+        });
+    }
+
+    fn settings_popup(&mut self, ui: &mut egui::Ui) {
+        let delta: f32 = ui.input(|i| i.stable_dt);
+        let animation_duration: f32 = self.settings.settings_popup_animation_time;
+        self.settings_popup_t +=
+            (delta / animation_duration) * if self.show_settings { 1.0 } else { -1.0 };
+
+        self.settings_popup_t = self.settings_popup_t.clamp(0.0, 1.0);
+
+        if self.settings_popup_t == 0.0 {
+            return;
+        }
+
+        let eased_t: f32 = egui::emath::easing::quadratic_in_out(self.settings_popup_t);
+        let screen_width: f32 = ui.viewport_rect().size().x;
+
+        let target_width: f32 = screen_width * self.settings.settings_popup_size;
+        let animated_width: f32 = target_width * eased_t;
+
+        let mut panel =
+            egui::Panel::left("settings_popup").frame(self.settings.settings_popup_frame);
+
+        if self.settings_popup_t >= 1.0 {
+            panel = panel.resizable(true).size_range(0.0..=target_width);
+        } else {
+            panel = panel.resizable(false).exact_size(animated_width);
+        }
+
+        panel.show(ui, |ui: &mut egui::Ui| {
+            self.settings_ui(ui);
+        });
+
+        if self.settings_popup_t > 0.0 && self.settings_popup_t < 1.0 {
+            ui.ctx().request_repaint();
+        }
+    }
+
+    fn settings_bar(&mut self, ui: &mut egui::Ui) {
         egui::Panel::top("settings_panel")
             .frame(self.settings.top_panel_frame)
             .show(ui, |ui: &mut egui::Ui| {
                 ui.horizontal(|ui: &mut egui::Ui| {
-                    let visuals: &mut Visuals = &mut ui.style_mut().visuals;
-
-                    visuals.selection.bg_fill = self.settings.active_tab_bg;
-                    visuals.widgets.inactive.weak_bg_fill = self.settings.inactive_tab_bg;
-                    visuals.widgets.hovered.weak_bg_fill = self.settings.inactive_tab_bg;
-
                     let mut new_mode: GraphMode = self.graph_mode.clone();
 
                     let tab_text = |text: &str, is_active: bool| {
@@ -223,6 +415,11 @@ impl Navigator {
                         };
                         egui::RichText::new(text).color(text_color).strong()
                     };
+
+                    let setttings_text: egui::RichText = tab_text("Settings", self.show_settings);
+                    ui.toggle_value(&mut self.show_settings, setttings_text);
+
+                    ui.separator();
 
                     ui.selectable_value(
                         &mut new_mode,
@@ -250,17 +447,9 @@ impl Navigator {
                     }
                 });
             });
+    }
 
-        egui::Panel::bottom("terminal_panel")
-            .frame(self.settings.terminal_frame)
-            .min_size(MIN_TERMINAL_SIZE)
-            .resizable(true)
-            .show(ui, |ui: &mut egui::Ui| {
-                if let Some((command_fn, args)) = self.terminal.ui(ui) {
-                    command_fn(self, &args);
-                }
-            });
-
+    fn graph_ui(&mut self, ui: &mut egui::Ui) {
         egui::CentralPanel::default()
             .frame(self.settings.graph_outer_frame)
             .show(ui, |ui: &mut egui::Ui| {
@@ -289,7 +478,7 @@ impl Navigator {
 
                 if self.experiment_overlay != self.displayed_overlay {
                     let delta: f32 = ui.input(|i| i.stable_dt);
-                    let animation_duration: f32 = LAYOUT_ANIMATION_TIME;
+                    let animation_duration: f32 = self.settings.layout_animation_time;
                     self.overlay_transition_t += delta / animation_duration;
 
                     if self.overlay_transition_t >= 1.0 {
@@ -326,6 +515,26 @@ impl Navigator {
                     self.overlay_transition_t,
                 );
             });
+    }
+
+    pub fn ui(&mut self, ui: &mut egui::Ui) -> Option<NavigatorUpdate> {
+        self.setup_visuals(ui);
+        self.update_status = None;
+
+        self.settings_bar(ui);
+
+        egui::Panel::bottom("terminal_panel")
+            .frame(self.settings.terminal_frame)
+            .resizable(true)
+            .show(ui, |ui: &mut egui::Ui| {
+                if let Some((command_fn, args)) = self.terminal.ui(ui) {
+                    command_fn(self, &args);
+                }
+            });
+        egui::CentralPanel::no_frame().show(ui, |ui: &mut egui::Ui| {
+            self.settings_popup(ui);
+            self.graph_ui(ui);
+        });
 
         self.update_status
     }
@@ -350,14 +559,3 @@ impl eframe::App for Navigator {
         self.raw_input_hook(ctx, raw_input);
     }
 }
-
-// TODO: LOAD readmes and display title, preview window and etc, on hover, popup, set velocity to 0
-// on selection and reset otherwise, and etc
-
-/*
-
-TODO: after first experiment is completed add to this navigator the project ui and overlay, then
-make the navigator assign ids to the overlays and let the app choose which overlays correspond
-to each of the tab enums and then make it interactable as to which one is clicked on and etc
-
-*/
