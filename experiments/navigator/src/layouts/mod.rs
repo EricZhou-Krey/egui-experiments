@@ -14,6 +14,31 @@ pub enum Layout {
 
 type UiFn = fn(&mut egui::Ui);
 
+// TODO: add overlays, dexcriptions, and ui for overlays, and asscoiate them will experiments of
+// certain names or etc
+
+#[derive(Debug, Default, Clone, PartialEq, Copy)]
+pub struct LayoutIndex(pub usize);
+#[derive(Debug, Default, Clone, PartialEq, Copy)]
+pub struct ExperimentIndex(pub usize);
+
+impl ExperimentIndex {
+    pub const ALL: &'static [ExperimentIndex] = &[];
+    pub const L_INDEX_TO_EXPERIMENT_INDEX: &[Option<ExperimentIndex>] = &[None, None];
+
+    pub fn name(&self) -> &str {
+        match self {
+            _ => "",
+        }
+    }
+
+    pub fn try_from_name(name: &str) -> Result<Self, &'static str> {
+        match name {
+            _ => Err("No experiment of name: {name}"),
+        }
+    }
+}
+
 impl Layout {
     pub const ALL: &'static [Layout] = &[Self::Title, Self::Navigator];
 

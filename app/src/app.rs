@@ -1,9 +1,8 @@
-// app.rs
 use crate::tab::{AppTabHandler, AppTabViewer};
 use eframe::CreationContext;
 use egui::{CentralPanel, Context, RawInput, Ui};
 use egui_dock::{DockArea, Style};
-use navigator::navigator::Navigator;
+use navigator::navigator::{Navigator, NavigatorUpdate};
 
 pub struct App {
     tab_handler: AppTabHandler,
@@ -25,7 +24,10 @@ impl eframe::App for App {
             if self.tab_handler.dock.main_surface().is_empty()
                 || self.tab_handler.dock.iter_all_tabs().next().is_none()
             {
-                self.navigator.ui(ui);
+                let update: Option<NavigatorUpdate> = self.navigator.ui(ui);
+                if update.is_some() {
+                    println!("{:?}", update);
+                }
             }
 
             let mut tab_viewer: AppTabViewer = AppTabViewer;

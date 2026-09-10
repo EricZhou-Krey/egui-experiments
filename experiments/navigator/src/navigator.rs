@@ -1,6 +1,6 @@
 use crate::{
     boids::graph::BoidGraph,
-    layouts::Layout,
+    layouts::{ExperimentIndex, Layout},
     life::graph::LifeGraph,
     settings::{
         logic_sheet::LAYOUT_ANIMATION_TIME,
@@ -10,13 +10,8 @@ use crate::{
     terminal::NavigatorTerminal,
     triangulation::graph::TriangulationGraph,
 };
-use egui::{Pos2, Rect};
+use egui::{Pos2, Rect, Visuals};
 use glam::Vec2;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Tab {
-    Settings,
-}
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub enum GraphMode {
@@ -26,14 +21,25 @@ pub enum GraphMode {
     Life,
 }
 
+#[derive(Debug)]
 pub enum Graph {
     Triangulation(Box<TriangulationGraph>),
     Boids(Box<BoidGraph>),
     Life(Box<LifeGraph>),
 }
 
+#[derive(Debug, Default, Clone, PartialEq, Copy)]
+pub struct GraphInteractNodeIndex(pub usize);
+
+#[derive(Debug, Clone, PartialEq, Copy)]
+pub enum GraphUpdate {
+    Deselect,
+    Select(GraphInteractNodeIndex),
+    Reselect(GraphInteractNodeIndex),
+}
+
 impl Graph {
-    pub fn ui(&mut self, ui: &mut egui::Ui) {
+    pub fn ui(&mut self, ui: &mut egui::Ui) -> Option<GraphUpdate> {
         match self {
             Self::Triangulation(bg) => bg.ui(ui),
             Self::Life(bg) => bg.ui(ui),
@@ -49,7 +55,7 @@ impl Graph {
         }
     }
 
-    pub fn interact_index(&mut self) -> Option<usize> {
+    pub fn interact_index(&mut self) -> Option<GraphInteractNodeIndex> {
         match self {
             Self::Triangulation(bg) => bg.mesh.interact_vertex,
             Self::Life(_bg) => {
@@ -61,7 +67,7 @@ impl Graph {
         }
     }
 
-    pub fn set_interact_index(&mut self, index: Option<usize>) {
+    pub fn set_interact_index(&mut self, index: Option<GraphInteractNodeIndex>) {
         match self {
             Self::Triangulation(bg) => bg.mesh.interact_vertex = index,
             Self::Life(_bg) => {
@@ -142,6 +148,11 @@ impl Graph {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Copy)]
+pub enum NavigatorUpdate {
+    Open(ExperimentIndex),
+}
+
 pub struct Navigator {
     pub terminal: NavigatorTerminal,
     pub settings: NavigatorSettings,
@@ -150,6 +161,7 @@ pub struct Navigator {
     pub experiment_overlay: Option<Layout>,
     displayed_overlay: Option<Layout>,
     overlay_transition_t: f32,
+    pub update_status: Option<NavigatorUpdate>,
 }
 
 impl Default for Navigator {
@@ -167,7 +179,7 @@ impl Navigator {
                 ..Default::default()
             },
         )));
-        graph.set_interact_index(Some(0));
+        graph.set_interact_index(Some(GraphInteractNodeIndex::default()));
 
         Self {
             terminal: NavigatorTerminal::default(),
@@ -177,22 +189,25 @@ impl Navigator {
             experiment_overlay: Some(Layout::default()),
             displayed_overlay: Some(Layout::default()),
             overlay_transition_t: 1.0,
+            update_status: None,
         }
     }
 }
 
 impl Navigator {
-    pub fn ui(&mut self, ui: &mut egui::Ui) {
+    pub fn ui(&mut self, ui: &mut egui::Ui) -> Option<NavigatorUpdate> {
+        self.update_status = None;
         set_font(
             ui.ctx(),
             "0xProtoNerdFont".to_string(),
             BYTES_0XPROTONERDFONT,
         );
+
         egui::Panel::top("settings_panel")
             .frame(self.settings.top_panel_frame)
             .show(ui, |ui: &mut egui::Ui| {
                 ui.horizontal(|ui: &mut egui::Ui| {
-                    let visuals = &mut ui.style_mut().visuals;
+                    let visuals: &mut Visuals = &mut ui.style_mut().visuals;
 
                     visuals.selection.bg_fill = self.settings.active_tab_bg;
                     visuals.widgets.inactive.weak_bg_fill = self.settings.inactive_tab_bg;
@@ -251,9 +266,26 @@ impl Navigator {
             .show(ui, |ui: &mut egui::Ui| {
                 let panel_rect: Rect = ui.max_rect();
 
-                self.settings
-                    .graph_inner_frame
-                    .show(ui, |ui| self.graph.ui(ui));
+                self.settings.graph_inner_frame.show(ui, |ui| {
+                    if let Some(graph_update) = self.graph.ui(ui) {
+                        match graph_update {
+                            GraphUpdate::Deselect => {
+                                self.experiment_overlay = None;
+                            }
+                            GraphUpdate::Select(index) => {
+                                self.experiment_overlay = Some(Layout::ALL[index.0].clone());
+                            }
+                            GraphUpdate::Reselect(index) => {
+                                if let Some(experiment_index) =
+                                    ExperimentIndex::L_INDEX_TO_EXPERIMENT_INDEX[index.0]
+                                {
+                                    self.update_status =
+                                        Some(NavigatorUpdate::Open(experiment_index));
+                                }
+                            }
+                        }
+                    }
+                });
 
                 if self.experiment_overlay != self.displayed_overlay {
                     let delta: f32 = ui.input(|i| i.stable_dt);
@@ -272,16 +304,6 @@ impl Navigator {
 
                 let mut overlay_ui: egui::Ui =
                     ui.new_child(egui::UiBuilder::new().max_rect(panel_rect));
-
-                if self
-                    .experiment_overlay
-                    .as_ref()
-                    .map(|layout| layout.clone() as usize)
-                    != self.graph.interact_index()
-                {
-                    self.experiment_overlay =
-                        self.graph.interact_index().map(|i| Layout::ALL[i].clone());
-                }
 
                 let mut blocked_screen_rects: Vec<Rect> = Vec::new();
                 if let Some(overlay) = &self.experiment_overlay {
@@ -304,6 +326,8 @@ impl Navigator {
                     self.overlay_transition_t,
                 );
             });
+
+        self.update_status
     }
 
     pub fn logic(&mut self, ctx: &egui::Context) {

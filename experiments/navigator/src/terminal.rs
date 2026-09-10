@@ -1,6 +1,6 @@
 use crate::{
-    layouts::Layout,
-    navigator::{Graph, GraphMode, Navigator},
+    layouts::{ExperimentIndex, Layout, LayoutIndex},
+    navigator::{Graph, GraphInteractNodeIndex, GraphMode, Navigator, NavigatorUpdate},
     settings::style_sheet::TERMINAL_STYLE,
 };
 use std::collections::HashMap;
@@ -69,6 +69,7 @@ impl NavigatorTerminal {
 
         terminal.register_command::<SetModeCommand>();
         terminal.register_command::<SetOverlayCommand>();
+        terminal.register_command::<OpenExperimentCommand>();
 
         terminal.base.execute_command("help");
 
@@ -164,12 +165,12 @@ impl Command<NavigatorFile, NavigatorDirectory> for SetOverlayCommand {
 impl NavigatorCommand for SetOverlayCommand {
     fn execute_navigator(navigator: &mut Navigator, args: &[String]) {
         let history: &mut Vec<String> = &mut navigator.terminal.base.history;
-        if let Some(overlay) = args.first() {
-            if let Ok(layout) = Layout::try_from_name(overlay.as_str()) {
+        if let Some(overlay_name) = args.first() {
+            if let Ok(layout) = Layout::try_from_name(overlay_name.as_str()) {
                 history.push(format!("Switched to {} overlay", layout.name()));
                 navigator
                     .graph
-                    .set_interact_index(Some(layout.clone() as usize));
+                    .set_interact_index(Some(GraphInteractNodeIndex(layout.clone() as usize)));
                 navigator.experiment_overlay = Some(layout);
             } else {
                 history.push(format!("set_overlay: unknown overlay '{}'", overlay));
@@ -183,6 +184,44 @@ impl NavigatorCommand for SetOverlayCommand {
                 "Switched to empty overlay, use: set_overlay {:?} for content overlays",
                 overlay_names
             ));
+        }
+    }
+}
+
+pub struct OpenExperimentCommand;
+
+impl Command<NavigatorFile, NavigatorDirectory> for OpenExperimentCommand {
+    fn name() -> &'static str {
+        "open_ex"
+    }
+    fn execute(
+        _terminal: &mut Terminal<NavigatorFile, NavigatorDirectory>,
+        args: &[&str],
+    ) -> CommandResult {
+        let args_owned = args.iter().map(|s| s.to_string()).collect();
+        CommandResult::Unhandled(Self::name().to_string(), args_owned)
+    }
+}
+
+impl NavigatorCommand for OpenExperimentCommand {
+    fn execute_navigator(navigator: &mut Navigator, args: &[String]) {
+        let history: &mut Vec<String> = &mut navigator.terminal.base.history;
+        if let Some(experiment_name) = args.first() {
+            if let Ok(experiment_index) = ExperimentIndex::try_from_name(experiment_name.as_str()) {
+                navigator.update_status = Some(NavigatorUpdate::Open(experiment_index));
+                history.push(format!("Opened {}", experiment_name));
+            } else {
+                history.push(format!(
+                    "open_ex: unknown experiment '{}', use overlay names",
+                    experiment_name
+                ));
+            }
+        } else {
+            let experiment_names: Vec<String> = ExperimentIndex::ALL
+                .iter()
+                .map(|l| l.name().to_string())
+                .collect();
+            history.push(format!("Usage: open_ex {:?}", experiment_names));
         }
     }
 }

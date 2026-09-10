@@ -1,12 +1,9 @@
 use std::ops::{Deref, DerefMut};
 
 use crate::{
-    settings::{
-        style_sheet::TRIANGULATION_GRAPH_STYLE, InteractableTriangulationMeshSettings,
-        TriangulationGraphSettings,
-    },
-    style::GraphStyle,
-    triangulation::mesh::{AnimatedTriangulationMesh, HalfEdge},
+    navigator::{GraphInteractNodeIndex, GraphUpdate}, settings::{
+        InteractableTriangulationMeshSettings, TriangulationGraphSettings, style_sheet::TRIANGULATION_GRAPH_STYLE
+    }, style::GraphStyle, triangulation::mesh::{AnimatedTriangulationMesh, HalfEdge}
 };
 use egui::{Painter, Pos2, Rect, Shape, Stroke, Ui};
 use glam::{vec2, Vec2};
@@ -15,7 +12,7 @@ use glam::{vec2, Vec2};
 pub struct InteractableTriangulationMesh {
     pub animated_mesh: AnimatedTriangulationMesh,
     pub interactable_vertices: Vec<usize>,
-    pub interact_vertex: Option<usize>,
+    pub interact_vertex: Option<GraphInteractNodeIndex>,
     pub settings: InteractableTriangulationMeshSettings,
 }
 
@@ -33,10 +30,11 @@ impl DerefMut for InteractableTriangulationMesh {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum InteractionType {
     Deselect,
-    Select(usize),
-    Reselect(usize),
+    Select(GraphInteractNodeIndex),
+    Reselect(GraphInteractNodeIndex),
 }
 
 impl InteractableTriangulationMesh {
@@ -60,7 +58,7 @@ impl InteractableTriangulationMesh {
     }
 
     fn interact(&mut self, position: Vec2) -> InteractionType {
-        let mut new_interaction: Option<usize> = None;
+        let mut new_interaction: Option<GraphInteractNodeIndex> = None;
         let mut interaction_radius: f32 = self.settings.interaction_radius;
 
         for (i_index, v_index) in self.interactable_vertices.iter().enumerate() {
@@ -68,7 +66,7 @@ impl InteractableTriangulationMesh {
 
             if distance < interaction_radius {
                 interaction_radius = distance;
-                new_interaction = Some(i_index);
+                new_interaction = Some(GraphInteractNodeIndex(i_index));
             }
         }
 
@@ -159,7 +157,8 @@ impl TriangulationGraph {
 }
 
 impl TriangulationGraph {
-    pub fn ui(&mut self, ui: &mut Ui) {
+    pub fn ui(&mut self, ui: &mut Ui) -> Option<GraphUpdate> {
+        let mut graph_update: Option<GraphUpdate> = None;
         let rect: Rect = ui.available_rect_before_wrap();
 
         let response = ui.allocate_rect(rect, egui::Sense::click_and_drag());
@@ -170,9 +169,18 @@ impl TriangulationGraph {
             self.graph_view_transform = GraphViewTransform::new(rect, self.settings.mesh_zoom);
         }
 
-        if response.clicked() && let Some(screen_position) = response.interact_pointer_pos() &&
-        let InteractionType::Reselect(_reselect_index) = self.mesh.interact(self.graph_view_transform.to_uv(screen_position)) {
-            //todo!();
+        if response.clicked() && let Some(screen_position) = response.interact_pointer_pos() {
+            match self.mesh.interact(self.graph_view_transform.to_uv(screen_position)) {
+                InteractionType::Deselect => {
+                    graph_update = Some(GraphUpdate::Deselect);
+                }
+                InteractionType::Select(index) => {
+                    graph_update = Some(GraphUpdate::Select(index));
+                }
+                InteractionType::Reselect(index) => {
+                    graph_update = Some(GraphUpdate::Reselect(index));
+                }
+            };
         }
 
         let painter: Painter = ui.painter().with_clip_rect(rect);
@@ -208,7 +216,7 @@ impl TriangulationGraph {
         }
 
         for (i, v_index) in self.mesh.interactable_vertices.iter().enumerate() {
-            if Some(i) == self.mesh.interact_vertex {
+            if Some(GraphInteractNodeIndex(i)) == self.mesh.interact_vertex {
                 continue;
             }
             let raw_position: Vec2 = self.mesh.vertices[*v_index].pos;
@@ -240,7 +248,7 @@ impl TriangulationGraph {
             }
         }
 
-        if let Some(interacted_index) = self.mesh.interact_vertex.map(|i| self.mesh.interactable_vertices[i]) {
+        if let Some(interacted_index) = self.mesh.interact_vertex.map(|i| self.mesh.interactable_vertices[i.0]) {
             let screen_position: Pos2 = self.graph_view_transform.to_screen(self.mesh.vertices[interacted_index].pos);
             painter.circle_filled(
                 screen_position,
@@ -254,6 +262,8 @@ impl TriangulationGraph {
                 Stroke::new(self.style.point_heavy.radius * 0.4, self.style.point_heavy.color),
             );
         }
+
+        graph_update
     }
 
     pub fn logic(&mut self, ctx: &egui::Context) {
