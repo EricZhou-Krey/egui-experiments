@@ -1,5 +1,5 @@
 use crate::{
-    layouts::{ExperimentIndex, Layout, LayoutIndex},
+    layouts::{ExperimentIndex, Layout},
     navigator::{Graph, GraphInteractNodeIndex, GraphMode, Navigator, NavigatorUpdate},
     settings::style_sheet::TERMINAL_STYLE,
 };
@@ -173,7 +173,7 @@ impl NavigatorCommand for SetOverlayCommand {
                     .set_interact_index(Some(GraphInteractNodeIndex(layout.clone() as usize)));
                 navigator.experiment_overlay = Some(layout);
             } else {
-                history.push(format!("set_overlay: unknown overlay '{}'", overlay));
+                history.push(format!("set_overlay: unknown overlay '{}'", overlay_name));
             }
         } else {
             navigator.graph.set_interact_index(None);
