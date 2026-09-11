@@ -21,6 +21,26 @@ pub enum GraphMode {
     Life,
 }
 
+impl GraphMode {
+    pub const ALL: [GraphMode; 3] = [GraphMode::Triangulation, GraphMode::Boids, GraphMode::Life];
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            GraphMode::Triangulation => "triangulation",
+            GraphMode::Boids => "boids",
+            GraphMode::Life => "life",
+        }
+    }
+
+    pub fn try_from_name(name: &str) -> Result<Self, &'static str> {
+        Self::ALL
+            .iter()
+            .find(|m| m.name() == name)
+            .cloned()
+            .ok_or("No graph of name")
+    }
+}
+
 #[derive(Debug)]
 pub enum Graph {
     Triangulation(Box<TriangulationGraph>),

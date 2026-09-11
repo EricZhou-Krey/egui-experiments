@@ -1,5 +1,5 @@
 use crate::{
-    graph::{Graph, GraphInteractNodeIndex, GraphMode},
+    graph::{GraphInteractNodeIndex, GraphMode},
     layouts::{ExperimentIndex, Layout},
     navigator::{Navigator, NavigatorUpdate},
     settings::style_sheet::TERMINAL_STYLE,
@@ -119,29 +119,20 @@ impl Command<NavigatorFile, NavigatorDirectory> for SetModeCommand {
 impl NavigatorCommand for SetModeCommand {
     fn execute_navigator(navigator: &mut Navigator, args: &[String]) {
         let history: &mut Vec<String> = &mut navigator.terminal.base.history;
-        if let Some(mode) = args.first() {
-            match mode.as_str() {
-                "boids" => {
-                    navigator.graph_mode = GraphMode::Boids;
-                    navigator.graph = Graph::Boids(Box::default());
-                    history.push("Switched to Boids mode.".to_string());
-                }
-                "life" => {
-                    navigator.graph_mode = GraphMode::Life;
-                    navigator.graph = Graph::Life(Box::default());
-                    history.push("Switched to Game of Life mode.".to_string());
-                }
-                "triangulation" => {
-                    navigator.graph_mode = GraphMode::Triangulation;
-                    navigator.graph = Graph::Triangulation(Box::default());
-                    history.push("Switched to Triangulation mode.".to_string());
-                }
-                _ => {
-                    history.push(format!("set_mode: unknown mode '{}'", mode));
-                }
+        if let Some(mode_name) = args.first() {
+            if let Ok(mode) = GraphMode::try_from_name(mode_name.as_str()) {
+                history.push(format!("Switched to {} mode.", mode.name()));
+                navigator.graph = Navigator::create_graph(&mode);
+                navigator.graph_mode = mode;
+            } else {
+                history.push(format!("set_mode: unknown mode '{}'", mode_name));
             }
         } else {
-            history.push("Usage: set_mode [boids | life | triangulation]".to_string());
+            let mode_names: Vec<String> = GraphMode::ALL
+                .iter()
+                .map(|m| m.name().to_string())
+                .collect();
+            history.push(format!("Usage: set_mode {:?}", mode_names));
         }
 
         SetOverlayCommand::execute_navigator(navigator, &Vec::new());

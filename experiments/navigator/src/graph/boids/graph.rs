@@ -1,4 +1,5 @@
 use crate::graph::GraphUpdate;
+
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct BoidGraph {
     state: usize,

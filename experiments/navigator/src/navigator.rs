@@ -8,7 +8,10 @@ use crate::{
         style_sheet::{set_font, BYTES_0XPROTONERDFONT},
         InteractableTriangulationMeshSettings, NavigatorSettings, TriangulationGraphSettings,
     },
-    terminal::NavigatorTerminal,
+    terminal::{
+        NavigatorCommand, NavigatorTerminal, OpenExperimentCommand, SetModeCommand,
+        SetOverlayCommand,
+    },
 };
 use egui::{Rect, Visuals};
 
@@ -38,20 +41,11 @@ impl Default for Navigator {
 
 impl Navigator {
     pub fn new() -> Self {
-        let mut graph: Graph = Graph::Triangulation(Box::new(TriangulationGraph::new(
-            TriangulationGraphSettings::default(),
-            InteractableTriangulationMeshSettings {
-                n_interactable: Layout::ALL.len(),
-                ..Default::default()
-            },
-        )));
-        graph.set_interact_index(Some(GraphInteractNodeIndex::default()));
-
         Self {
             terminal: NavigatorTerminal::default(),
             settings: NavigatorSettings::default(),
             graph_mode: GraphMode::Triangulation,
-            graph,
+            graph: Self::create_graph(&GraphMode::Triangulation),
             experiment_overlay: Some(Layout::default()),
             displayed_overlay: Some(Layout::default()),
             overlay_transition_t: 1.0,
@@ -60,9 +54,26 @@ impl Navigator {
             settings_popup_t: 0.0,
         }
     }
-}
 
-impl Navigator {
+    pub fn create_graph(mode: &GraphMode) -> Graph {
+        match mode {
+            GraphMode::Triangulation => {
+                let mut graph: Graph = Graph::Triangulation(Box::new(TriangulationGraph::new(
+                    TriangulationGraphSettings::default(),
+                    InteractableTriangulationMeshSettings {
+                        n_interactable: Layout::ALL.len(),
+                        ..Default::default()
+                    },
+                )));
+
+                graph.set_interact_index(Some(GraphInteractNodeIndex::default()));
+                graph
+            }
+            GraphMode::Boids => Graph::Boids(Box::default()),
+            GraphMode::Life => Graph::Life(Box::default()),
+        }
+    }
+
     fn setup_visuals(&self, ui: &mut egui::Ui) {
         set_font(
             ui.ctx(),
@@ -230,12 +241,7 @@ impl Navigator {
                     );
 
                     if new_mode != self.graph_mode {
-                        self.graph_mode = new_mode.clone();
-                        self.graph = match new_mode {
-                            GraphMode::Triangulation => Graph::Triangulation(Box::default()),
-                            GraphMode::Boids => Graph::Boids(Box::default()),
-                            GraphMode::Life => Graph::Life(Box::default()),
-                        };
+                        SetModeCommand::execute_navigator(self, &[new_mode.name().to_string()]);
                     }
                 });
             });
@@ -251,17 +257,22 @@ impl Navigator {
                     if let Some(graph_update) = self.graph.ui(ui) {
                         match graph_update {
                             GraphUpdate::Deselect => {
-                                self.experiment_overlay = None;
+                                SetOverlayCommand::execute_navigator(self, &[]);
                             }
                             GraphUpdate::Select(index) => {
-                                self.experiment_overlay = Some(Layout::ALL[index.0].clone());
+                                SetOverlayCommand::execute_navigator(
+                                    self,
+                                    &[Layout::ALL[index.0].name().to_string()],
+                                );
                             }
                             GraphUpdate::Reselect(index) => {
                                 if let Some(experiment_index) =
                                     ExperimentIndex::L_INDEX_TO_EXPERIMENT_INDEX[index.0]
                                 {
-                                    self.update_status =
-                                        Some(NavigatorUpdate::Open(experiment_index));
+                                    OpenExperimentCommand::execute_navigator(
+                                        self,
+                                        &[experiment_index.name().to_string()],
+                                    );
                                 }
                             }
                         }
