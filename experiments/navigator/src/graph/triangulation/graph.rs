@@ -1,9 +1,10 @@
 use std::ops::{Deref, DerefMut};
 
 use crate::{
-    navigator::{GraphInteractNodeIndex, GraphUpdate}, settings::{
+    graph::{GraphInteractNodeIndex, GraphUpdate},
+    settings::{
         InteractableTriangulationMeshSettings, TriangulationGraphSettings, style_sheet::TRIANGULATION_GRAPH_STYLE
-    }, style::GraphStyle, triangulation::mesh::{AnimatedTriangulationMesh, HalfEdge}
+    }, style::GraphStyle, graph::triangulation::mesh::{AnimatedTriangulationMesh, HalfEdge}
 };
 use egui::{Painter, Pos2, Rect, Shape, Stroke, Ui};
 use glam::{vec2, Vec2};

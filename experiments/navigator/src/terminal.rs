@@ -1,6 +1,7 @@
 use crate::{
+    graph::{Graph, GraphInteractNodeIndex, GraphMode},
     layouts::{ExperimentIndex, Layout},
-    navigator::{Graph, GraphInteractNodeIndex, GraphMode, Navigator, NavigatorUpdate},
+    navigator::{Navigator, NavigatorUpdate},
     settings::style_sheet::TERMINAL_STYLE,
 };
 use std::collections::HashMap;

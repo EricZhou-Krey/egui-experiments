@@ -1,13 +1,12 @@
-use crate::navigator::GraphUpdate;
-
-#[derive(Default, Debug, Clone, PartialEq)]
-pub struct LifeGraph {
+use crate::graph::GraphUpdate;
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct BoidGraph {
     state: usize,
 }
 
-impl LifeGraph {
+impl BoidGraph {
     pub fn ui(&mut self, ui: &mut egui::Ui) -> Option<GraphUpdate> {
-        ui.heading("life graph");
+        ui.heading("boid_graph");
         None
     }
 
