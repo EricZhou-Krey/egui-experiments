@@ -6,8 +6,8 @@ use crate::{
     layouts::{ExperimentIndex, Layout},
     settings::{
         style_sheet::{set_font, BYTES_0XPROTONERDFONT},
-        BoidsGraphSettings, InteractableTriangulationMeshSettings, NavigatorSettings,
-        TriangulationGraphSettings,
+        BoidsGraphSettings, InteractableTriangulationMeshSettings, LifeGraphSettings,
+        NavigatorSettings, TriangulationGraphSettings,
     },
     terminal::{
         NavigatorCommand, NavigatorTerminal, OpenExperimentCommand, SetModeCommand,
@@ -78,7 +78,14 @@ impl Navigator {
                 graph.interact_index = Some(GraphInteractNodeIndex::default());
                 Graph::Boids(Box::new(graph))
             }
-            GraphMode::Life => Graph::Life(Box::default()),
+            GraphMode::Life => {
+                let mut graph = crate::graph::life::graph::LifeGraph::new(LifeGraphSettings {
+                    n_interactable: Layout::ALL.len(),
+                    ..Default::default()
+                });
+                graph.interact_index = Some(GraphInteractNodeIndex::default());
+                Graph::Life(Box::new(graph))
+            }
         }
     }
 

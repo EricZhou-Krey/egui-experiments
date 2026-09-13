@@ -3,8 +3,7 @@ use glam::{vec2, Vec2};
 
 use super::boid::Boid;
 use crate::{
-    graph::{GraphInteractNodeIndex, GraphUpdate},
-    settings::BoidsGraphSettings,
+    graph::{GraphInteractNodeIndex, GraphUpdate}, settings::{BoidsGraphSettings, style_sheet::TRIANGULATION_GRAPH_STYLE},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -283,68 +282,66 @@ impl BoidGraph {
             }
 
         let painter: Painter = ui.painter().with_clip_rect(rect);
-
-        let boid_color: Color32 = Color32::WHITE;
-        let point_color: Color32 = Color32::WHITE; // Pure white for interactable indicators
-        let heavy_color: Color32 = Color32::from_gray(180); // Distinct light grey for selected indicator
+        
+        let boid_color: Color32 = Color32::WHITE; 
+        let point_color: Color32 = Color32::WHITE;         
+        let heavy_color: Color32 = Color32::from_gray(180); 
+        
         let boid_size: f32 = 6.0 * self.settings.mesh_zoom;
-        let point_radius: f32 = boid_size * 0.8;
+        
+        // Pull exact sizes from Triangulation style
+        let point_radius: f32 = TRIANGULATION_GRAPH_STYLE.point.radius;
+        let point_heavy_radius: f32 = TRIANGULATION_GRAPH_STYLE.point_heavy.radius;
 
         for (i, boid) in self.boids.iter().enumerate() {
             let is_interactable: bool = i < self.settings.n_interactable;
             let is_selected: bool = self.interact_index.is_some_and(|idx| idx.0 == i);
-            let screen_pos: Pos2 = self.graph_view_transform.to_screen(boid.pos);
-
+            let screen_position: Pos2 = self.graph_view_transform.to_screen(boid.pos);
+            
             let direction: Vec2 = boid.vel.normalize_or_zero();
             let perp: Vec2 = vec2(-direction.y, direction.x);
 
-            let p1: Pos2 = screen_pos + egui::vec2(direction.x, direction.y) * (boid_size * 1.5);
-            let p2: Pos2 = screen_pos - egui::vec2(direction.x, direction.y) * boid_size
-                + egui::vec2(perp.x, perp.y) * boid_size;
-            let p3: Pos2 = screen_pos
-                - egui::vec2(direction.x, direction.y) * boid_size
-                - egui::vec2(perp.x, perp.y) * boid_size;
+            let p1: Pos2 = screen_position + egui::vec2(direction.x, direction.y) * (boid_size * 1.5);
+            let p2: Pos2 = screen_position - egui::vec2(direction.x, direction.y) * boid_size + egui::vec2(perp.x, perp.y) * boid_size;
+            let p3: Pos2 = screen_position - egui::vec2(direction.x, direction.y) * boid_size - egui::vec2(perp.x, perp.y) * boid_size;
 
+            // Draw the boid itself
             painter.add(egui::Shape::convex_polygon(
                 vec![p1, p2, p3],
-                if is_selected { heavy_color } else { boid_color },
+                boid_color, 
                 Stroke::NONE,
             ));
 
-            // Render Unselected Indicator (Matches Triangulation)
+            // Render Unselected Indicator (Exact Triangulation Match)
             if is_interactable && !is_selected {
+                painter.circle_filled(screen_position, point_radius, point_color);
+                
                 painter.rect_stroke(
-                    Rect::from_center_size(
-                        screen_pos,
-                        egui::vec2(point_radius * 5.0, point_radius * 5.0),
-                    ),
+                    Rect::from_center_size(screen_position, egui::vec2(point_radius * 5.0, point_radius * 5.0)),
                     0.0,
                     Stroke::new(point_radius * 0.4, point_color),
                     egui::StrokeKind::Middle,
                 );
 
-                for delta in [
-                    egui::vec2(1., 0.),
-                    egui::vec2(-1., 0.),
-                    egui::vec2(0., 1.),
-                    egui::vec2(0., -1.),
-                ] {
+                for delta in [egui::vec2(1., 0.), egui::vec2(-1., 0.), egui::vec2(0., 1.), egui::vec2(0., -1.)] {
                     painter.line_segment(
                         [
-                            screen_pos + (delta * point_radius * 1.5),
-                            screen_pos + (delta * point_radius * 3.5),
+                            screen_position + (delta * point_radius * 1.5),
+                            screen_position + (delta * point_radius * 3.5)
                         ],
-                        Stroke::new(point_radius * 0.4, point_color),
+                        Stroke::new(point_radius * 0.4, point_color)
                     );
                 }
             }
 
-            // Render Selected Heavy Indicator
+            // Render Selected Heavy Indicator (Exact Triangulation Match)
             if is_selected {
+                painter.circle_filled(screen_position, point_heavy_radius, heavy_color);
+
                 painter.circle_stroke(
-                    screen_pos,
-                    point_radius * 2.5, // Matches the radius * 1.5 style
-                    Stroke::new(point_radius * 0.6, heavy_color),
+                    screen_position,
+                    point_heavy_radius * 1.5,
+                    Stroke::new(point_heavy_radius * 0.4, heavy_color),
                 );
             }
         }

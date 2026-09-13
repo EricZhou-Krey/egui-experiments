@@ -11,7 +11,8 @@ use crate::{
     },
     layouts::Layout,
     settings::{
-        BoidsGraphSettings, InteractableTriangulationMeshSettings, TriangulationGraphSettings,
+        BoidsGraphSettings, InteractableTriangulationMeshSettings, LifeGraphSettings,
+        TriangulationGraphSettings,
     },
 };
 
@@ -80,7 +81,7 @@ impl Graph {
     pub fn interact_index(&mut self) -> Option<GraphInteractNodeIndex> {
         match self {
             Self::Triangulation(bg) => bg.mesh.interact_vertex,
-            Self::Life(_bg) => None,
+            Self::Life(bg) => bg.interact_index,
             Self::Boids(bg) => bg.interact_index,
         }
     }
@@ -88,9 +89,7 @@ impl Graph {
     pub fn set_interact_index(&mut self, index: Option<GraphInteractNodeIndex>) {
         match self {
             Self::Triangulation(bg) => bg.mesh.interact_vertex = index,
-            Self::Life(_bg) => {
-                //todo!();
-            }
+            Self::Life(bg) => bg.interact_index = index,
             Self::Boids(bg) => bg.interact_index = index,
         }
     }
@@ -154,8 +153,8 @@ impl Graph {
                     }
                 }
             }
-            Self::Life(_bg) => {
-                //todo!()
+            Self::Life(bg) => {
+                bg.clip_interactable_nodes(blocked_screen_rects, allowed_clip_rect);
             }
             Self::Boids(bg) => {
                 bg.clip_interactable_nodes(blocked_screen_rects, allowed_clip_rect);
@@ -266,9 +265,46 @@ impl Graph {
                         bg.apply_settings();
                     }
                 }
-                Graph::Life(_bg) => {
+                Graph::Life(bg) => {
+                    let mut changed_visuals: bool = false;
+                    let mut reset_board: bool = false;
+
                     ui.label("Game of Life Settings");
-                    ui.label("(Add Game of Life-specific fields here)");
+
+                    changed_visuals |= ui
+                        .add(egui::Slider::new(&mut bg.settings.mesh_zoom, 0.1..=5.0).text("Zoom"))
+                        .changed();
+
+                    ui.separator();
+                    ui.label("Simulation Rules");
+                    changed_visuals |= ui
+                        .add(
+                            egui::Slider::new(&mut bg.settings.tick_rate, 0.01..=1.0)
+                                .text("Tick Rate (Seconds)"),
+                        )
+                        .changed();
+
+                    // If we change dimensions, flag it to reset the board
+                    reset_board |= ui
+                        .add(egui::Slider::new(&mut bg.settings.cols, 100..=500).text("Columns"))
+                        .changed();
+                    reset_board |= ui
+                        .add(egui::Slider::new(&mut bg.settings.rows, 100..=500).text("Rows"))
+                        .changed();
+                    reset_board |= ui
+                        .add(
+                            egui::Slider::new(&mut bg.settings.initial_density, 0.01..=0.5)
+                                .text("Start Density"),
+                        )
+                        .changed();
+
+                    if ui.button("Regenerate Board").clicked() {
+                        reset_board = true;
+                    }
+
+                    if changed_visuals || reset_board {
+                        bg.apply_settings(reset_board);
+                    }
                 }
             });
     }
@@ -283,10 +319,9 @@ impl Graph {
                 };
                 bg.apply_settings();
             }
-            Self::Life(_bg) => {
-                // TODO: Reset Game of Life settings
-                // _bg.settings = LifeSettings::default();
-                // _bg.apply_settings();
+            Self::Life(bg) => {
+                bg.settings = LifeGraphSettings::default();
+                bg.apply_settings(true);
             }
             Self::Boids(bg) => {
                 bg.settings = BoidsGraphSettings::default();

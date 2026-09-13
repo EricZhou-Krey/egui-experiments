@@ -117,3 +117,28 @@ impl Default for BoidsGraphSettings {
         }
     }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct LifeGraphSettings {
+    pub cols: usize,
+    pub rows: usize,
+    pub tick_rate: f32,
+    pub mesh_zoom: f32,
+    pub n_interactable: usize,
+    pub interact_radius: f32,
+    pub initial_density: f32,
+}
+
+impl Default for LifeGraphSettings {
+    fn default() -> Self {
+        Self {
+            cols: 200,
+            rows: 200,
+            tick_rate: 0.05,
+            mesh_zoom: 1.0,
+            n_interactable: 2,
+            interact_radius: 0.05,
+            initial_density: 0.15,
+        }
+    }
+}
