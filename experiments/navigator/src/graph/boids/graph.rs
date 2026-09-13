@@ -281,6 +281,23 @@ impl BoidGraph {
                 }
             }
 
+        let mut hovered_index: Option<usize> = None;
+        if let Some(hover_pos) = response.hover_pos() {
+            let uv_pos: Vec2 = self.graph_view_transform.to_uv(hover_pos);
+            let mut best_dist: f32 = self.settings.interact_radius;
+
+            for i in 0..self.settings.n_interactable {
+                if i >= self.boids.len() {
+                    break;
+                }
+                let dist: f32 = self.boids[i].pos.distance(uv_pos);
+                if dist < best_dist {
+                    best_dist = dist;
+                    hovered_index = Some(i);
+                }
+            }
+        }
+
         let painter: Painter = ui.painter().with_clip_rect(rect);
         
         let boid_color: Color32 = Color32::WHITE; 
@@ -344,6 +361,19 @@ impl BoidGraph {
                     Stroke::new(point_heavy_radius * 0.4, heavy_color),
                 );
             }
+        }
+
+        if let Some(idx) = hovered_index && let Some(layout) = crate::layouts::Layout::ALL.get(idx) {
+            let screen_pos = self.graph_view_transform.to_screen(self.boids[idx].pos);
+
+            egui::Area::new(egui::Id::new("boid_tooltip").with(idx))
+                .fixed_pos(screen_pos + egui::vec2(15.0, 15.0))
+                .order(egui::Order::Tooltip) // Ensures it floats above other elements
+                .show(ui.ctx(), |ui| {
+                    crate::settings::style_sheet::LAYOUT_BLOCK_FRAME.show(ui, |ui| {
+                        ui.strong(layout.name().to_uppercase());
+                    });
+                });
         }
 
         graph_update

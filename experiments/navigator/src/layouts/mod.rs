@@ -2,7 +2,10 @@ use egui::{Rect, UiBuilder};
 
 use crate::settings::style_sheet::LAYOUT_BLOCK_FRAME;
 
+pub mod math_simulations;
 pub mod navigator;
+pub mod tabletop_sound;
+pub mod terminal;
 pub mod title;
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -10,39 +13,66 @@ pub enum Layout {
     #[default]
     Title,
     Navigator,
+    Terminal,
+    TabletopSound,
+    MathSimulations,
 }
 
 type UiFn = fn(&mut egui::Ui);
 
 #[derive(Debug, Default, Clone, PartialEq, Copy)]
 pub struct LayoutIndex(pub usize);
+
 #[derive(Debug, Default, Clone, PartialEq, Copy)]
 pub struct ExperimentIndex(pub usize);
 
 impl ExperimentIndex {
-    pub const ALL: &'static [ExperimentIndex] = &[];
-    pub const L_INDEX_TO_EXPERIMENT_INDEX: &[Option<ExperimentIndex>] = &[None, None];
+    pub const ALL: &'static [ExperimentIndex] =
+        &[ExperimentIndex(0), ExperimentIndex(1), ExperimentIndex(2)];
+
+    pub const L_INDEX_TO_EXPERIMENT_INDEX: &[Option<ExperimentIndex>] = &[
+        None,
+        None,
+        Some(ExperimentIndex(0)),
+        Some(ExperimentIndex(1)),
+        Some(ExperimentIndex(2)),
+    ];
 
     pub fn name(&self) -> &str {
-        match self {
+        match self.0 {
+            0 => "terminal",
+            1 => "tabletop_sound",
+            2 => "math_simulations",
             _ => "",
         }
     }
 
     pub fn try_from_name(name: &str) -> Result<Self, &'static str> {
         match name {
-            _ => Err("No experiment of name: {name}"),
+            "terminal" => Ok(ExperimentIndex(0)),
+            "tabletop_sound" => Ok(ExperimentIndex(1)),
+            "math_simulations" => Ok(ExperimentIndex(2)),
+            _ => Err("No experiment of name"),
         }
     }
 }
 
 impl Layout {
-    pub const ALL: &'static [Layout] = &[Self::Title, Self::Navigator];
+    pub const ALL: &'static [Layout] = &[
+        Self::Title,
+        Self::Navigator,
+        Self::Terminal,
+        Self::TabletopSound,
+        Self::MathSimulations,
+    ];
 
     pub fn name(&self) -> &str {
         match self {
             Self::Title => "title",
             Self::Navigator => "navigator",
+            Self::Terminal => "terminal",
+            Self::TabletopSound => "tabletop_sound",
+            Self::MathSimulations => "math_simulations",
         }
     }
 
@@ -50,6 +80,9 @@ impl Layout {
         match name {
             "title" => Ok(Self::Title),
             "navigator" => Ok(Self::Navigator),
+            "terminal" => Ok(Self::Terminal),
+            "tabletop_sound" => Ok(Self::TabletopSound),
+            "math_simulations" => Ok(Self::MathSimulations),
             _ => Err("No layout of name: {name}"),
         }
     }
@@ -58,6 +91,9 @@ impl Layout {
         match self {
             Self::Title => title::panels(max_rect),
             Self::Navigator => navigator::panels(max_rect),
+            Self::Terminal => terminal::panels(max_rect),
+            Self::TabletopSound => tabletop_sound::panels(max_rect),
+            Self::MathSimulations => math_simulations::panels(max_rect),
         }
     }
 

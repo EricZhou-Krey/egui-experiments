@@ -201,6 +201,20 @@ impl LifeGraph {
                 }
             }
 
+        let mut hovered_index: Option<usize> = None;
+        if let Some(hover_pos) = response.hover_pos() {
+            let uv_pos: Vec2 = self.graph_view_transform.to_uv(hover_pos);
+            let mut best_dist: f32 = self.settings.interact_radius;
+
+            for (i, node) in self.interactable_nodes.iter().enumerate() {
+                let dist: f32 = node.distance(uv_pos);
+                if dist < best_dist {
+                    best_dist = dist;
+                    hovered_index = Some(i);
+                }
+            }
+        }
+
         let painter: Painter = ui.painter().with_clip_rect(rect);
 
         // Grayscale Palette
@@ -264,6 +278,19 @@ impl LifeGraph {
                     Stroke::new(point_heavy_radius * 0.4, heavy_color),
                 );
             }
+        }
+
+        if let Some(idx) = hovered_index && let Some(layout) = crate::layouts::Layout::ALL.get(idx) {
+            let screen_pos = self.graph_view_transform.to_screen(self.interactable_nodes[idx]);
+
+            egui::Area::new(egui::Id::new("life_tooltip").with(idx))
+                .fixed_pos(screen_pos + egui::vec2(15.0, 15.0))
+                .order(egui::Order::Tooltip)
+                .show(ui.ctx(), |ui| {
+                    crate::settings::style_sheet::LAYOUT_BLOCK_FRAME.show(ui, |ui| {
+                        ui.strong(layout.name().to_uppercase());
+                    });
+                });
         }
 
         graph_update

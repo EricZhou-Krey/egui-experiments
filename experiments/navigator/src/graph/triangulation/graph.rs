@@ -82,6 +82,22 @@ impl InteractableTriangulationMesh {
         }
     }
 
+    pub fn hover(&self, position: Vec2) -> Option<usize> {
+        let mut new_hover: Option<usize> = None;
+        let mut interaction_radius: f32 = self.settings.interaction_radius;
+
+        for (i_index, v_index) in self.interactable_vertices.iter().enumerate() {
+            let distance: f32 = position.distance(self.vertices[*v_index].pos);
+
+            if distance < interaction_radius {
+                interaction_radius = distance;
+                new_hover = Some(i_index);
+            }
+        }
+
+        new_hover
+    }
+
     fn interact(&mut self, position: Vec2) -> InteractionType {
         let mut new_interaction: Option<GraphInteractNodeIndex> = None;
         let mut interaction_radius: f32 = self.settings.interaction_radius;
@@ -217,6 +233,11 @@ impl TriangulationGraph {
             };
         }
 
+        let mut hovered_index: Option<usize> = None;
+        if let Some(hover_pos) = response.hover_pos() {
+            hovered_index = self.mesh.hover(self.graph_view_transform.to_uv(hover_pos));
+        }
+
         let painter: Painter = ui.painter().with_clip_rect(rect);
 
         for face in self.mesh.faces.iter() {
@@ -295,6 +316,21 @@ impl TriangulationGraph {
                 self.style.point_heavy.radius * 1.5,
                 Stroke::new(self.style.point_heavy.radius * 0.4, self.style.point_heavy.color),
             );
+        }
+
+        if let Some(idx) = hovered_index && let Some(layout) = crate::layouts::Layout::ALL.get(idx) {
+            let screen_pos = self.graph_view_transform.to_screen(
+                self.mesh.vertices[self.mesh.interactable_vertices[idx]].pos
+            );
+
+            egui::Area::new(egui::Id::new("tri_tooltip").with(idx))
+                .fixed_pos(screen_pos + egui::vec2(15.0, 15.0))
+                .order(egui::Order::Tooltip)
+                .show(ui.ctx(), |ui| {
+                    crate::settings::style_sheet::LAYOUT_BLOCK_FRAME.show(ui, |ui| {
+                        ui.strong(layout.name().to_uppercase());
+                    });
+                });
         }
 
         graph_update
