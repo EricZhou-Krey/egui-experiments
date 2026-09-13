@@ -6,11 +6,13 @@ use egui::{Pos2, Rect};
 use glam::Vec2;
 
 use crate::{
-    graph::boids::graph::BoidGraph,
-    graph::life::graph::LifeGraph,
-    graph::triangulation::graph::TriangulationGraph,
+    graph::{
+        boids::graph::BoidGraph, life::graph::LifeGraph, triangulation::graph::TriangulationGraph,
+    },
     layouts::Layout,
-    settings::{InteractableTriangulationMeshSettings, TriangulationGraphSettings},
+    settings::{
+        BoidsGraphSettings, InteractableTriangulationMeshSettings, TriangulationGraphSettings,
+    },
 };
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -78,14 +80,8 @@ impl Graph {
     pub fn interact_index(&mut self) -> Option<GraphInteractNodeIndex> {
         match self {
             Self::Triangulation(bg) => bg.mesh.interact_vertex,
-            Self::Life(_bg) => {
-                // todo!();
-                None
-            }
-            Self::Boids(_bg) => {
-                // todo!();
-                None
-            }
+            Self::Life(_bg) => None,
+            Self::Boids(bg) => bg.interact_index,
         }
     }
 
@@ -95,9 +91,7 @@ impl Graph {
             Self::Life(_bg) => {
                 //todo!();
             }
-            Self::Boids(_bg) => {
-                //todo!();
-            }
+            Self::Boids(bg) => bg.interact_index = index,
         }
     }
 
@@ -163,8 +157,8 @@ impl Graph {
             Self::Life(_bg) => {
                 //todo!()
             }
-            Self::Boids(_bg) => {
-                //todo!()
+            Self::Boids(bg) => {
+                bg.clip_interactable_nodes(blocked_screen_rects, allowed_clip_rect);
             }
         }
     }
@@ -208,9 +202,69 @@ impl Graph {
                         bg.apply_settings();
                     }
                 }
-                Graph::Boids(_bg) => {
+                // Inside `settings_ui()` on your `Graph` enum wrapper
+                Graph::Boids(bg) => {
+                    let mut changed: bool = false;
+
                     ui.label("Boids Settings");
-                    ui.label("(Add Boids-specific fields here)");
+
+                    changed |= ui
+                        .add(
+                            egui::Slider::new(&mut bg.settings.n_boids, 10..=500)
+                                .text("Number of Boids"),
+                        )
+                        .changed();
+                    changed |= ui
+                        .add(egui::Slider::new(&mut bg.settings.mesh_zoom, 0.1..=5.0).text("Zoom"))
+                        .changed();
+
+                    ui.separator();
+                    ui.label("Speed Constraints");
+
+                    changed |= ui
+                        .add(
+                            egui::Slider::new(&mut bg.settings.min_speed, 0.0..=1.0)
+                                .text("Min Speed"),
+                        )
+                        .changed();
+                    changed |= ui
+                        .add(
+                            egui::Slider::new(&mut bg.settings.max_speed, 0.01..=2.0)
+                                .text("Max Speed"),
+                        )
+                        .changed();
+
+                    // Safety check: Prevent min_speed from exceeding max_speed
+                    if bg.settings.max_speed < bg.settings.min_speed {
+                        bg.settings.max_speed = bg.settings.min_speed;
+                        changed = true;
+                    }
+
+                    ui.separator();
+                    ui.label("Flocking Weights");
+
+                    changed |= ui
+                        .add(
+                            egui::Slider::new(&mut bg.settings.separation_weight, 0.0..=5.0)
+                                .text("Separation Weight"),
+                        )
+                        .changed();
+                    changed |= ui
+                        .add(
+                            egui::Slider::new(&mut bg.settings.alignment_weight, 0.0..=5.0)
+                                .text("Alignment Weight"),
+                        )
+                        .changed();
+                    changed |= ui
+                        .add(
+                            egui::Slider::new(&mut bg.settings.cohesion_weight, 0.0..=5.0)
+                                .text("Cohesion Weight"),
+                        )
+                        .changed();
+
+                    if changed {
+                        bg.apply_settings();
+                    }
                 }
                 Graph::Life(_bg) => {
                     ui.label("Game of Life Settings");
@@ -234,10 +288,9 @@ impl Graph {
                 // _bg.settings = LifeSettings::default();
                 // _bg.apply_settings();
             }
-            Self::Boids(_bg) => {
-                // TODO: Reset Boids settings
-                // _bg.settings = BoidsSettings::default();
-                // _bg.apply_settings();
+            Self::Boids(bg) => {
+                bg.settings = BoidsGraphSettings::default();
+                bg.apply_settings();
             }
         }
     }

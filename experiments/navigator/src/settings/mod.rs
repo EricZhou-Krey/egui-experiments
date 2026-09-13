@@ -84,3 +84,36 @@ impl Default for NavigatorSettings {
         }
     }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct BoidsGraphSettings {
+    pub n_boids: usize,
+    pub n_interactable: usize,
+    pub mesh_zoom: f32,
+    pub max_speed: f32,
+    pub min_speed: f32,
+    pub perception_radius: f32,
+    pub separation_radius: f32,
+    pub alignment_weight: f32,
+    pub cohesion_weight: f32,
+    pub separation_weight: f32,
+    pub interact_radius: f32,
+}
+
+impl Default for BoidsGraphSettings {
+    fn default() -> Self {
+        Self {
+            n_boids: 300,
+            n_interactable: 2,
+            mesh_zoom: 1.0,
+            max_speed: 0.5,
+            min_speed: 0.1,
+            perception_radius: 0.15,
+            separation_radius: 0.05,
+            alignment_weight: 2.0,
+            cohesion_weight: 2.0,
+            separation_weight: 0.01,
+            interact_radius: 0.05,
+        }
+    }
+}

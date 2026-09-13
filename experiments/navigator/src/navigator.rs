@@ -1,12 +1,13 @@
 use crate::{
     graph::{
-        triangulation::graph::TriangulationGraph, Graph, GraphInteractNodeIndex, GraphMode,
-        GraphUpdate,
+        boids::graph::BoidGraph, triangulation::graph::TriangulationGraph, Graph,
+        GraphInteractNodeIndex, GraphMode, GraphUpdate,
     },
     layouts::{ExperimentIndex, Layout},
     settings::{
         style_sheet::{set_font, BYTES_0XPROTONERDFONT},
-        InteractableTriangulationMeshSettings, NavigatorSettings, TriangulationGraphSettings,
+        BoidsGraphSettings, InteractableTriangulationMeshSettings, NavigatorSettings,
+        TriangulationGraphSettings,
     },
     terminal::{
         NavigatorCommand, NavigatorTerminal, OpenExperimentCommand, SetModeCommand,
@@ -69,7 +70,14 @@ impl Navigator {
                 graph.set_interact_index(Some(GraphInteractNodeIndex::default()));
                 graph
             }
-            GraphMode::Boids => Graph::Boids(Box::default()),
+            GraphMode::Boids => {
+                let mut graph = BoidGraph::new(BoidsGraphSettings {
+                    n_interactable: Layout::ALL.len(),
+                    ..Default::default()
+                });
+                graph.interact_index = Some(GraphInteractNodeIndex::default());
+                Graph::Boids(Box::new(graph))
+            }
             GraphMode::Life => Graph::Life(Box::default()),
         }
     }

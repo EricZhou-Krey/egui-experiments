@@ -1,4 +1,2 @@
-pub mod camera;
+pub mod boid;
 pub mod graph;
-pub mod octree;
-pub mod scene;
