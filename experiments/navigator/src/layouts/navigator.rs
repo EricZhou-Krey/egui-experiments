@@ -20,7 +20,7 @@ fn navigator_title(ui: &mut egui::Ui) {
     egui::CentralPanel::default()
         .frame(LAYOUT_BLOCK_FRAME)
         .show(ui, |ui| {
-            ui.centered_and_justified(|ui| ui.heading("NAV"));
+            ui.centered_and_justified(|ui| ui.heading("INTERACTIVE NAVIGATOR"));
         });
 }
 
@@ -28,7 +28,19 @@ fn body_content(ui: &mut egui::Ui) {
     egui::CentralPanel::default()
         .frame(LAYOUT_BLOCK_FRAME)
         .show(ui, |ui| {
-            ui.centered_and_justified(|ui| ui.heading("NAV BODY"));
+            egui::ScrollArea::vertical().id_salt("navigator_body_scroll").show(ui, |ui| {
+                ui.heading("SYSTEM OVERVIEW");
+                ui.separator();
+                
+                ui.label("The Navigator is the central orchestrator of this application. It manages state transitions between different UI layout overlays and delegates input to the active background simulation.");
+                ui.add_space(10.0);
+                
+                ui.label("Rather than relying on standard static buttons, this app utilizes spatial selection logic. Node coordinates are dynamically mapped from virtual UV space to screen space.");
+                ui.add_space(10.0);
+                
+                ui.label(egui::RichText::new("Occlusion Avoidance").strong());
+                ui.label("To prevent interactable nodes from being hidden behind opaque UI panels, the graphs continuously calculate bounding boxes. Nodes mathematically 'dodge' active layouts by teleporting to valid UV coordinates when clipped.");
+            });
         });
 }
 
@@ -36,6 +48,22 @@ fn preview_content(ui: &mut egui::Ui) {
     egui::CentralPanel::default()
         .frame(LAYOUT_BLOCK_FRAME)
         .show(ui, |ui| {
-            ui.centered_and_justified(|ui| ui.heading("NAV PREVIEW"));
+            egui::ScrollArea::vertical().id_salt("navigator_preview_scroll").show(ui, |ui| {
+                ui.heading("BACKGROUND VISUALIZERS");
+                ui.separator();
+                
+                ui.label(egui::RichText::new("1. Triangulation (Default)").strong());
+                ui.label("A dynamic web of interconnected vertices with animated half-edges. Specific structural vertices are exposed as clickable navigation points.");
+                
+                ui.add_space(10.0);
+                
+                ui.label(egui::RichText::new("2. Boids Flocking").strong());
+                ui.label("An implementation of Craig Reynolds' Boids algorithm. Agents continuously balance separation, alignment, and cohesion forces. The UI nodes attach to specific leaders in the flock.");
+                
+                ui.add_space(10.0);
+                
+                ui.label(egui::RichText::new("3. Game of Life").strong());
+                ui.label("Conway's cellular automaton running on a dense grayscale grid. The interactable layout nodes act as continuous 'spawners', actively breathing life into the cells directly beneath them.");
+            });
         });
 }
