@@ -1,63 +1,54 @@
 use terminal::{
-    command::{Command, CommandResult},
+    app::AppCommand,
     file_system::{FileSystemNode, TerminalFile},
-    Terminal,
 };
 
-use crate::{
-    state::TTSState,
-    terminal::file_system::{TTSDirectory, TTSFile},
-};
+use crate::{state::TTSState, terminal::file_system::TTSFile};
 
-pub type TTSFn = fn(&mut TTSState, &[String]);
+pub struct TTSInfoCommand;
 
-pub trait TTSCommand: Command<TTSFile, TTSDirectory> {
-    fn execute_tts(tts: &mut TTSState, args: &[String]);
-}
-
-pub struct TTSCatCommand;
-impl Command<TTSFile, TTSDirectory> for TTSCatCommand {
+impl AppCommand<TTSState> for TTSInfoCommand {
     fn name() -> &'static str {
-        "cat"
+        "info"
     }
-    fn execute(terminal: &mut Terminal<TTSFile, TTSDirectory>, args: &[&str]) -> CommandResult {
+
+    fn execute_app(tts: &mut TTSState, args: &[String]) {
+        let terminal = &mut tts.terminal.base;
+
         if let Some(target_file) = args.first() {
             let mut file_path: Vec<String> = terminal.current_directory.clone();
             file_path.push(target_file.to_string());
 
-            if let Some(FileSystemNode::File(file)) = terminal.get_node(&file_path) {
+            let node_option = terminal.get_node(&file_path).cloned();
+
+            if let Some(FileSystemNode::File(file)) = node_option {
                 match file {
                     TTSFile::Terminal(terminal_file) => match terminal_file {
                         TerminalFile::Text(text_file) => {
-                            terminal.history.push(text_file.content.clone());
+                            terminal.history.push(text_file.content);
                         }
                         TerminalFile::Binary(..) => {
                             terminal
                                 .history
-                                .push(format!("cat: {}: cannot display binary file", target_file));
+                                .push(format!("info: {}: cannot display binary file", target_file));
                         }
                     },
-                    TTSFile::SceneObject(..) => {
-                        let args_owned = args.iter().map(|s| s.to_string()).collect();
-                        return CommandResult::Unhandled(Self::name().to_string(), args_owned);
+                    TTSFile::SceneObject(object_key) => {
+                        terminal.history.push(format!(
+                            "Successfully read SceneObject {:?} from state!",
+                            object_key
+                        ));
                     }
                 }
             } else {
                 terminal
                     .history
-                    .push(format!("cat: {}: No such file", target_file));
+                    .push(format!("info: {}: No such file", target_file));
             }
         } else {
             terminal
                 .history
-                .push("cat: missing file operand".to_string());
+                .push("info: missing file operand".to_string());
         }
-        CommandResult::Handled
-    }
-}
-
-impl TTSCommand for TTSCatCommand {
-    fn execute_tts(tts: &mut TTSState, args: &[String]) {
-        todo!()
     }
 }

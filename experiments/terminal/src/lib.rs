@@ -16,6 +16,7 @@ use crate::{
 pub mod command;
 pub mod file_system;
 pub mod style_sheet;
+pub mod app;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TerminalStyle {

@@ -7,7 +7,7 @@ use crate::sound::sound_viewer::SoundViewer;
 use crate::sound::SoundState;
 use crate::state::map::MapState;
 use crate::tabs::Tab;
-use crate::terminal::TTSTerminal;
+use crate::terminal::{create_tts_terminal, TTSTerminal};
 use crate::{
     scene::Scene,
     settings::style_sheet::{LEFT_PANEL_WIDTH, TOP_LEFT_PANEL_HEIGHT, TOP_RIGHT_PANEL_HEIGHT},
@@ -15,7 +15,6 @@ use crate::{
 use egui_dock::{DockState, NodeIndex, TabViewer, Tree};
 use std::ops::{Deref, DerefMut};
 
-#[derive(Default)]
 pub struct TTSState {
     scene: Scene,
     pub map: MapState,
@@ -52,7 +51,22 @@ impl TabViewer for TTSState {
     }
 }
 
+impl Default for TTSState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TTSState {
+    pub fn new() -> Self {
+        Self {
+            scene: Scene::default(),
+            map: MapState::default(),
+            terminal: create_tts_terminal(),
+            sound: SoundState::default(),
+            settings: TTSSettings::default(),
+        }
+    }
     pub fn edit_scene(&mut self) -> SceneEditor<'_> {
         SceneEditor::new(&mut self.scene, &mut self.terminal)
     }

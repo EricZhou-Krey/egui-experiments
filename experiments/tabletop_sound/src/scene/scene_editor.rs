@@ -1,6 +1,6 @@
 use crate::{
     scene::{scene_object::SceneObject, Scene, SceneObjectKey, SpatialNode},
-    terminal::TTSTerminal,
+    terminal::{TTSTerminal, TTSTerminalExt},
 };
 use glam::Vec2;
 

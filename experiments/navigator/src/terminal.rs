@@ -6,7 +6,8 @@ use crate::{
 };
 use std::collections::HashMap;
 use terminal::{
-    command::{ClearCommand, Command, CommandResult, HelpCommand},
+    app::{AppCommand, AppTerminal},
+    command::{ClearCommand, HelpCommand},
     file_system::{Directory, File, FileSystemNode, TerminalFile},
     Terminal,
 };
@@ -38,86 +39,33 @@ impl Directory for NavigatorDirectory {
     }
 }
 
-type NavigatorFn = fn(&mut Navigator, &[String]);
+pub type NavigatorTerminal = AppTerminal<NavigatorFile, NavigatorDirectory, Navigator>;
 
-pub trait NavigatorCommand: Command<NavigatorFile, NavigatorDirectory> {
-    fn execute_navigator(navigator: &mut Navigator, args: &[String]);
-}
+pub fn create_navigator_terminal() -> NavigatorTerminal {
+    let root = FileSystemNode::Directory(NavigatorDirectory::default());
+    let mut base = Terminal::new_empty(root);
+    base.register_command::<HelpCommand>();
+    base.register_command::<ClearCommand>();
+    base.style = TERMINAL_STYLE;
 
-pub struct NavigatorTerminal {
-    pub base: Terminal<NavigatorFile, NavigatorDirectory>,
-    pub commands: HashMap<String, fn(&mut Navigator, &[String])>,
-}
+    let mut terminal = NavigatorTerminal::new(base);
 
-impl Default for NavigatorTerminal {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+    terminal.register_app_command::<SetModeCommand>();
+    terminal.register_app_command::<SetOverlayCommand>();
+    terminal.register_app_command::<OpenExperimentCommand>();
 
-impl NavigatorTerminal {
-    pub fn new() -> Self {
-        let root = FileSystemNode::Directory(NavigatorDirectory::default());
-        let mut base = Terminal::new_empty(root);
-        base.register_command::<HelpCommand>();
-        base.register_command::<ClearCommand>();
-        base.style = TERMINAL_STYLE;
-
-        let mut terminal = Self {
-            base,
-            commands: HashMap::new(),
-        };
-
-        terminal.register_command::<SetModeCommand>();
-        terminal.register_command::<SetOverlayCommand>();
-        terminal.register_command::<OpenExperimentCommand>();
-
-        terminal.base.execute_command("help");
-
-        terminal
-    }
-
-    pub fn register_command<C>(&mut self)
-    where
-        C: Command<NavigatorFile, NavigatorDirectory> + NavigatorCommand,
-    {
-        self.base.register_command::<C>();
-        self.commands
-            .insert(C::name().to_string(), C::execute_navigator);
-    }
-
-    pub fn ui(&mut self, ui: &mut egui::Ui) -> Option<(NavigatorFn, Vec<String>)> {
-        if let Some(CommandResult::Unhandled(cmd, args)) = self.base.ui(ui) {
-            if let Some(func) = self.commands.get(&cmd).copied() {
-                return Some((func, args));
-            } else {
-                self.base
-                    .history
-                    .push(format!("{}: command not found", cmd));
-            }
-        }
-        None
-    }
+    terminal.base.execute_command("help");
+    terminal
 }
 
 pub struct SetModeCommand;
 
-impl Command<NavigatorFile, NavigatorDirectory> for SetModeCommand {
+impl AppCommand<Navigator> for SetModeCommand {
     fn name() -> &'static str {
         "set_mode"
     }
 
-    fn execute(
-        _terminal: &mut Terminal<NavigatorFile, NavigatorDirectory>,
-        args: &[&str],
-    ) -> CommandResult {
-        let args_owned = args.iter().map(|s| s.to_string()).collect();
-        CommandResult::Unhandled(Self::name().to_string(), args_owned)
-    }
-}
-
-impl NavigatorCommand for SetModeCommand {
-    fn execute_navigator(navigator: &mut Navigator, args: &[String]) {
+    fn execute_app(navigator: &mut Navigator, args: &[String]) {
         let history: &mut Vec<String> = &mut navigator.terminal.base.history;
         if let Some(mode_name) = args.first() {
             if let Ok(mode) = GraphMode::try_from_name(mode_name.as_str()) {
@@ -135,27 +83,17 @@ impl NavigatorCommand for SetModeCommand {
             history.push(format!("Usage: set_mode {:?}", mode_names));
         }
 
-        SetOverlayCommand::execute_navigator(navigator, &Vec::new());
+        SetOverlayCommand::execute_app(navigator, &Vec::new());
     }
 }
 
 pub struct SetOverlayCommand;
 
-impl Command<NavigatorFile, NavigatorDirectory> for SetOverlayCommand {
+impl AppCommand<Navigator> for SetOverlayCommand {
     fn name() -> &'static str {
         "set_overlay"
     }
-    fn execute(
-        _terminal: &mut Terminal<NavigatorFile, NavigatorDirectory>,
-        args: &[&str],
-    ) -> CommandResult {
-        let args_owned = args.iter().map(|s| s.to_string()).collect();
-        CommandResult::Unhandled(Self::name().to_string(), args_owned)
-    }
-}
-
-impl NavigatorCommand for SetOverlayCommand {
-    fn execute_navigator(navigator: &mut Navigator, args: &[String]) {
+    fn execute_app(navigator: &mut Navigator, args: &[String]) {
         let history: &mut Vec<String> = &mut navigator.terminal.base.history;
         if let Some(overlay_name) = args.first() {
             if let Ok(layout) = Layout::try_from_name(overlay_name.as_str()) {
@@ -182,21 +120,11 @@ impl NavigatorCommand for SetOverlayCommand {
 
 pub struct OpenExperimentCommand;
 
-impl Command<NavigatorFile, NavigatorDirectory> for OpenExperimentCommand {
+impl AppCommand<Navigator> for OpenExperimentCommand {
     fn name() -> &'static str {
         "open_ex"
     }
-    fn execute(
-        _terminal: &mut Terminal<NavigatorFile, NavigatorDirectory>,
-        args: &[&str],
-    ) -> CommandResult {
-        let args_owned = args.iter().map(|s| s.to_string()).collect();
-        CommandResult::Unhandled(Self::name().to_string(), args_owned)
-    }
-}
-
-impl NavigatorCommand for OpenExperimentCommand {
-    fn execute_navigator(navigator: &mut Navigator, args: &[String]) {
+    fn execute_app(navigator: &mut Navigator, args: &[String]) {
         let history: &mut Vec<String> = &mut navigator.terminal.base.history;
         if let Some(experiment_name) = args.first() {
             if let Ok(experiment_index) = ExperimentIndex::try_from_name(experiment_name.as_str()) {

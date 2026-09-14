@@ -10,11 +10,12 @@ use crate::{
         NavigatorSettings, TriangulationGraphSettings,
     },
     terminal::{
-        NavigatorCommand, NavigatorTerminal, OpenExperimentCommand, SetModeCommand,
+        create_navigator_terminal, NavigatorTerminal, OpenExperimentCommand, SetModeCommand,
         SetOverlayCommand,
     },
 };
 use egui::{Rect, Visuals};
+use terminal::app::AppCommand;
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum NavigatorUpdate {
@@ -43,7 +44,7 @@ impl Default for Navigator {
 impl Navigator {
     pub fn new() -> Self {
         Self {
-            terminal: NavigatorTerminal::default(),
+            terminal: create_navigator_terminal(),
             settings: NavigatorSettings::default(),
             graph_mode: GraphMode::Triangulation,
             graph: Self::create_graph(&GraphMode::Triangulation),
@@ -256,7 +257,7 @@ impl Navigator {
                     );
 
                     if new_mode != self.graph_mode {
-                        SetModeCommand::execute_navigator(self, &[new_mode.name().to_string()]);
+                        SetModeCommand::execute_app(self, &[new_mode.name().to_string()]);
                     }
                 });
             });
@@ -272,10 +273,10 @@ impl Navigator {
                     if let Some(graph_update) = self.graph.ui(ui) {
                         match graph_update {
                             GraphUpdate::Deselect => {
-                                SetOverlayCommand::execute_navigator(self, &[]);
+                                SetOverlayCommand::execute_app(self, &[]);
                             }
                             GraphUpdate::Select(index) => {
-                                SetOverlayCommand::execute_navigator(
+                                SetOverlayCommand::execute_app(
                                     self,
                                     &[Layout::ALL[index.0].name().to_string()],
                                 );
@@ -284,7 +285,7 @@ impl Navigator {
                                 if let Some(experiment_index) =
                                     ExperimentIndex::L_INDEX_TO_EXPERIMENT_INDEX[index.0]
                                 {
-                                    OpenExperimentCommand::execute_navigator(
+                                    OpenExperimentCommand::execute_app(
                                         self,
                                         &[experiment_index.name().to_string()],
                                     );
