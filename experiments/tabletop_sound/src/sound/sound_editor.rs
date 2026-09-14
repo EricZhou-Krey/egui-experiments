@@ -1,4 +1,4 @@
-use crate::{sound::SoundState, state::terminal::TTSTerminal};
+use crate::{sound::SoundState, terminal::TTSTerminal};
 
 pub struct SoundEditor<'a> {
     _sound: &'a mut SoundState,

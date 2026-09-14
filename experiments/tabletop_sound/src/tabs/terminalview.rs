@@ -5,5 +5,7 @@ pub fn terminal_title(_state: &mut TTSState) -> egui::WidgetText {
 }
 
 pub fn terminal_ui(state: &mut TTSState, ui: &mut egui::Ui) {
-    state.edit_scene().terminal_ui(ui);
+    if let Some((command_fn, args)) = state.terminal.ui(ui) {
+        command_fn(state, &args);
+    }
 }

@@ -1,6 +1,6 @@
 use crate::{
     scene::{scene_object::SceneObject, Scene, SceneObjectKey, SpatialNode},
-    state::terminal::TTSTerminal,
+    terminal::TTSTerminal,
 };
 use glam::Vec2;
 use slotmap::basic::{Iter, Values};

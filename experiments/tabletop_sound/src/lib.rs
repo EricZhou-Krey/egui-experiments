@@ -4,6 +4,7 @@ pub mod sound;
 pub mod state;
 pub mod tabletop_sound;
 pub mod tabs;
+pub mod terminal;
 
 /*
 

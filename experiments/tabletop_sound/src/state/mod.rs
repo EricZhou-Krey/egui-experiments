@@ -1,12 +1,13 @@
 pub mod map;
-pub mod terminal;
+
 use crate::scene::{scene_editor::SceneEditor, scene_viewer::SceneViewer};
 use crate::settings::TTSSettings;
 use crate::sound::sound_editor::SoundEditor;
 use crate::sound::sound_viewer::SoundViewer;
 use crate::sound::SoundState;
-use crate::state::{map::MapState, terminal::TTSTerminal};
+use crate::state::map::MapState;
 use crate::tabs::Tab;
+use crate::terminal::TTSTerminal;
 use crate::{
     scene::Scene,
     settings::style_sheet::{LEFT_PANEL_WIDTH, TOP_LEFT_PANEL_HEIGHT, TOP_RIGHT_PANEL_HEIGHT},
@@ -18,7 +19,7 @@ use std::ops::{Deref, DerefMut};
 pub struct TTSState {
     scene: Scene,
     pub map: MapState,
-    terminal: TTSTerminal,
+    pub terminal: TTSTerminal,
     sound: SoundState,
     pub settings: TTSSettings,
 }
