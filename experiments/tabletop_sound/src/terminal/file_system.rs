@@ -23,6 +23,7 @@ pub enum TTSDirectory {
     Terminal(HashMap<String, FileSystemNode<TTSFile, TTSDirectory>>),
     Scene {
         nodes: HashMap<String, FileSystemNode<TTSFile, TTSDirectory>>,
+        key_map: HashMap<SceneObjectKey, String>,
     },
 }
 

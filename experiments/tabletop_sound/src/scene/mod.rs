@@ -1,13 +1,11 @@
-pub mod scene_editor;
 pub mod scene_object;
-pub mod scene_viewer;
-use std::collections::HashSet;
 
 use crate::scene::scene_object::SceneObject;
 use crate::settings::SceneSettings;
 use glam::Vec2;
 use rstar::{RTree, RTreeObject, AABB};
 use slotmap::{new_key_type, SlotMap};
+use std::collections::HashSet;
 
 new_key_type! { pub struct SceneObjectKey; }
 
@@ -50,5 +48,15 @@ impl Scene {
             wall_quadtree: RTree::new(),
             settings: SceneSettings::default(),
         }
+    }
+
+    pub fn key_object_around(
+        &self,
+        position: Vec2,
+        radius: f32,
+    ) -> Option<(SceneObjectKey, &SceneObject)> {
+        self.objects
+            .iter()
+            .find(|(_, object)| object.shape().is_around(position, radius))
     }
 }

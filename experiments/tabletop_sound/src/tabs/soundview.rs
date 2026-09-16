@@ -51,8 +51,9 @@ pub fn soundview_ui(state: &mut TTSState, ui: &mut egui::Ui) {
 
         let emitter_info: Vec<(usize, String)> = {
             state
-                .view_scene()
-                .objects()
+                .scene
+                .objects
+                .values()
                 .enumerate()
                 .filter(|(_, obj)| matches!(*obj, SceneObject::Emitter(_)))
                 .map(|(i, _)| (i, format!("Emitter (ID: {})", i)))

@@ -1,6 +1,4 @@
 pub mod ray;
-pub mod sound_editor;
-pub mod sound_viewer;
 
 /*
 
@@ -27,12 +25,8 @@ use std::{collections::HashMap, f32::consts::PI};
 
 use crate::{
     scene::{
-        scene_object::{Receiver, SceneObject},
-        scene_viewer::SceneViewer,
-        SceneObjectKey,
-    },
-    settings::{logic_sheet::N_RAYS, SoundSettings},
-    sound::ray::SoundRay,
+        Scene, SceneObjectKey, scene_object::{Receiver, SceneObject},
+    }, settings::{SoundSettings, logic_sheet::N_RAYS}, sound::ray::SoundRay,
 };
 use glam::Vec2;
 use kira::{
@@ -83,7 +77,7 @@ impl SoundState {
     pub fn generate_scene_descriptor(
         &self,
         _receiver_position: Vec2,
-        scene_viewer: SceneViewer,
+        scene: &Scene,
     ) -> SoundDescriptor {
         let sound_rays: Vec<SoundRay> = (0..N_RAYS)
             .map(|i| SoundRay {
@@ -99,11 +93,11 @@ impl SoundState {
         // Making too many copies of the sound file, should only store the sound data once and
         // reference it from the file system probably, need to implement that as cloning is
         // impratcical before moving on
-        let _emitter_point_sounds: HashMap<SceneObjectKey, EmitterPointSound> = scene_viewer
-            .emitter_keys()
+        let _emitter_point_sounds: HashMap<SceneObjectKey, EmitterPointSound> = scene
+            .emitter_keys
             .iter()
             .filter_map(|key| {
-                if let Some(SceneObject::Emitter(emitter)) = scene_viewer.object(*key) && let Some(sound_key) = emitter.sound_key {
+                if let Some(SceneObject::Emitter(emitter)) = scene.objects.get(*key) && let Some(sound_key) = emitter.sound_key {
                     Some((
                         *key,
                         EmitterPointSound {
@@ -139,7 +133,7 @@ impl SoundState {
         todo!()
     }
 
-    pub fn play(&mut self, _receiver: &Receiver, _scene_viewer: SceneViewer) {
+    pub fn play(&mut self, _receiver: &Receiver, _scene: &Scene) {
         // for point_sound in descriptor.paths {
         //     // To implement this in Kira:
         //     // 1. Create a `Track` with a LowPassBuilder effect for the `low_pass_cutoff_hz`.

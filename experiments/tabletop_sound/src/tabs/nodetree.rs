@@ -12,8 +12,9 @@ pub fn nodetree_ui(state: &mut TTSState, ui: &mut egui::Ui) {
     ui.separator();
 
     let object_info: Vec<(SceneObjectKey, String)> = state
-        .view_scene()
-        .key_objects()
+        .scene
+        .objects
+        .iter()
         .map(|(key, obj)| {
             let display_name = match obj {
                 SceneObject::Wall(..) => "🧱 Wall",

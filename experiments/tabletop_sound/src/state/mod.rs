@@ -1,9 +1,6 @@
 pub mod map;
 
-use crate::scene::{scene_editor::SceneEditor, scene_viewer::SceneViewer};
 use crate::settings::TTSSettings;
-use crate::sound::sound_editor::SoundEditor;
-use crate::sound::sound_viewer::SoundViewer;
 use crate::sound::SoundState;
 use crate::state::map::MapState;
 use crate::tabs::Tab;
@@ -16,10 +13,10 @@ use egui_dock::{DockState, NodeIndex, TabViewer, Tree};
 use std::ops::{Deref, DerefMut};
 
 pub struct TTSState {
-    scene: Scene,
+    pub scene: Scene,
     pub map: MapState,
     pub terminal: TTSTerminal,
-    sound: SoundState,
+    pub sound: SoundState,
     pub settings: TTSSettings,
 }
 
@@ -66,21 +63,6 @@ impl TTSState {
             sound: SoundState::default(),
             settings: TTSSettings::default(),
         }
-    }
-    pub fn edit_scene(&mut self) -> SceneEditor<'_> {
-        SceneEditor::new(&mut self.scene, &mut self.terminal)
-    }
-
-    pub fn view_scene(&self) -> SceneViewer<'_> {
-        SceneViewer::new(&self.scene, &self.terminal)
-    }
-
-    pub fn edit_sound(&mut self) -> SoundEditor<'_> {
-        SoundEditor::new(&mut self.sound, &mut self.terminal)
-    }
-
-    pub fn view_sound(&self) -> SoundViewer<'_> {
-        SoundViewer::new(&self.sound, &self.terminal)
     }
 
     pub fn default_dock() -> DockState<Tab> {

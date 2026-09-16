@@ -7,7 +7,7 @@ use terminal::{
 
 use crate::{
     scene::{Scene, SceneObjectKey, scene_object::SceneObject}, state::TTSState, terminal::{
-        command::TTSInfoCommand, file_system::{TTSDirectory, TTSFile}
+        command::{AddSceneObjectCommand, ModifySceneObjectCommand, RemoveSceneObjectCommand, TTSInfoCommand}, file_system::{TTSDirectory, TTSFile}
     }
 };
 use std::collections::HashMap;
@@ -22,6 +22,7 @@ pub fn create_tts_terminal() -> TTSTerminal {
             "scene".to_string(),
             FileSystemNode::Directory(TTSDirectory::Scene {
                 nodes: HashMap::new(),
+                key_map: HashMap::new(),
             }),
         );
     }
@@ -30,6 +31,9 @@ pub fn create_tts_terminal() -> TTSTerminal {
     let mut terminal = TTSTerminal::new(base);
 
     terminal.register_app_command::<TTSInfoCommand>();
+    terminal.register_app_command::<AddSceneObjectCommand>();
+    terminal.register_app_command::<RemoveSceneObjectCommand>();
+    terminal.register_app_command::<ModifySceneObjectCommand>();
 
     terminal
 }
@@ -37,31 +41,34 @@ pub fn create_tts_terminal() -> TTSTerminal {
 pub trait TTSTerminalExt {
     fn register_object(&mut self, scene: &mut Scene, object_key: SceneObjectKey);
     fn deregister_object(&mut self, scene: &mut Scene, object_key: SceneObjectKey);
+    fn get_object_filename(&self, object_key: SceneObjectKey) -> Option<String>;
 }
 
 impl TTSTerminalExt for TTSTerminal {
     fn register_object(&mut self, scene: &mut Scene, object_key: SceneObjectKey) {
         if let FileSystemNode::Directory(TTSDirectory::Terminal(children)) = &mut self.base.file_system &&
-           let Some(FileSystemNode::Directory(TTSDirectory::Scene { nodes, .. })) = children.get_mut("scene") {
-            
-            let object_type: &'static str = match scene.objects.get(object_key) {
-                Some(SceneObject::Wall(..)) => "wall",
-                Some(SceneObject::Emitter(..)) => "emitter",
-                Some(SceneObject::Receiver(..)) => "receiver",
-                None => "?",
-            };
+           let Some(FileSystemNode::Directory(TTSDirectory::Scene { nodes, key_map, .. })) = children.get_mut("scene") {
 
-            let filename: String = format!("{}_(ID: {:?}).obj", object_type, object_key);
-            nodes.insert(
-                filename,
-                FileSystemNode::File(TTSFile::SceneObject(object_key)),
-            );
+               let object_type: &'static str = match scene.objects.get(object_key) {
+                   Some(SceneObject::Wall(..)) => "wall",
+                   Some(SceneObject::Emitter(..)) => "emitter",
+                   Some(SceneObject::Receiver(..)) => "receiver",
+                   None => "?",
+               };
+
+               let filename: String = format!("{}_(ID: {:?}).obj", object_type, object_key);
+               nodes.insert(
+                   filename.clone(),
+                   FileSystemNode::File(TTSFile::SceneObject(object_key)),
+               );
+
+               key_map.insert(object_key, filename);
         }
     }
 
     fn deregister_object(&mut self, _scene: &mut Scene, object_key: SceneObjectKey) {
         if let FileSystemNode::Directory(TTSDirectory::Terminal(children)) = &mut self.base.file_system && 
-           let Some(FileSystemNode::Directory(TTSDirectory::Scene { nodes, .. })) = children.get_mut("scene") {
+           let Some(FileSystemNode::Directory(TTSDirectory::Scene { nodes, key_map, .. })) = children.get_mut("scene") {
             
             let target_filename = nodes.iter().find_map(|(name, node)| {
                 if let FileSystemNode::File(TTSFile::SceneObject(k)) = node && *k == object_key {
@@ -72,7 +79,17 @@ impl TTSTerminalExt for TTSTerminal {
 
             if let Some(filename) = target_filename {
                 nodes.remove(&filename);
+                key_map.remove(&object_key);
             }
         }
+    }
+
+    fn get_object_filename(&self, object_key: SceneObjectKey) -> Option<String> {
+        if let FileSystemNode::Directory(TTSDirectory::Terminal(children)) = &self.base.file_system {
+            if let Some(FileSystemNode::Directory(TTSDirectory::Scene { key_map, .. })) = children.get("scene") {
+                return key_map.get(&object_key).cloned();
+            }
+        }
+        None
     }
 }

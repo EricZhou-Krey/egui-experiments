@@ -158,6 +158,9 @@ fn scene_view(state: &mut TTSState, ui: &mut egui::Ui) {
                     for screen_line_vertices in screen_positions.windows(2) {
                         draw_line(state.map.zoom, painter, &screen_line_vertices[0], &screen_line_vertices[1], line_style);
                     }
+                    if let (Some(&first), Some(&last)) = (screen_positions.first(), screen_positions.last()) {
+                        draw_line(state.map.zoom, painter, &last, &first, line_style);
+                    }
                 }
 
                 if let Some(point_style) = point_style {
@@ -170,7 +173,7 @@ fn scene_view(state: &mut TTSState, ui: &mut egui::Ui) {
     };
 
 
-    for object in state.view_scene().objects() {
+    for object in state.scene.objects.values() {
         draw_shape(object.shape());
     }
 
