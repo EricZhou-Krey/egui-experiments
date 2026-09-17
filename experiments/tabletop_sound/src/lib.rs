@@ -8,11 +8,8 @@ pub mod terminal;
 
 /*
 
-Debating about storing a directory directly instead of a Key to the scene objects, and move the keys around, but probably not becuase voliate to filesystem
-
 Consider each of the states of each tab and create them approriately,
 need to create:
-    Tab::MapView,
     Tab::NodeDetails,
     Tab::Console,
     Tab::NodeTree,
@@ -40,9 +37,8 @@ For each receiver call collect sound, and play when play controls play is select
 
 - WGPU ray calculations
 
-
 TODO current:
 - SoundEditor, SoundViewer, TerminalUpdate
     -> How to import/load files into a simulated file system and create asset list, also do this for img files for editor
-    -> Project on HOLD FOR NOW -> experimenting with multipole expansions first
+
 */

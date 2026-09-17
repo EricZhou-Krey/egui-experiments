@@ -214,6 +214,11 @@ impl AppCommand<TTSState> for TTSInfoCommand {
                             object_key
                         ));
                     }
+                    TTSFile::SoundData(data_key) => {
+                        terminal
+                            .history
+                            .push(format!("info: {}: cannot display binary sound file (of ID: {:?})", target_file, data_key));
+                    }
                 }
             } else {
                 terminal
@@ -251,12 +256,15 @@ impl AppCommand<TTSState> for AddSceneObjectCommand {
                         let world_position = Vec2::new(x, y);
                         let key = if object_type == "emitter" {
                             let style = tts.map.settings.style.emitter.clone();
+                            let sample_sound = crate::settings::logic_sheet::generate_sample_emitter_sound();
+                            let s_key = tts.sound.sounds.insert(sample_sound);
+
                             let k =
                                 tts.scene
                                     .objects
                                     .insert(SceneObject::Emitter(Box::new(Emitter {
                                         shape: Shape::Point(world_position, style),
-                                        sound_key: None,
+                                        sound_key: Some(s_key),
                                     })));
                             tts.scene.emitter_keys.insert(k);
                             k

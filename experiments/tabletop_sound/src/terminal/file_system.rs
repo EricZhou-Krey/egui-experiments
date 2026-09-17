@@ -2,12 +2,13 @@ use std::collections::HashMap;
 
 use terminal::file_system::{Directory, File, FileSystemNode, TerminalFile};
 
-use crate::scene::SceneObjectKey;
+use crate::{scene::SceneObjectKey, sound::SoundKey};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TTSFile {
     Terminal(TerminalFile),
     SceneObject(SceneObjectKey),
+    SoundData(SoundKey),
 }
 
 impl Default for TTSFile {

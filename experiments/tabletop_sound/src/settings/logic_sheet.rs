@@ -7,7 +7,7 @@ pub const MAP_BASE_ZOOM: f32 = 1.0;
 
 pub fn generate_sample_emitter_sound() -> kira::sound::static_sound::StaticSoundData {
     let sample_rate: u32 = 44100;
-    let duration_seconds: f32 = 1.0;
+    let duration_seconds: f32 = 10.0;
     let num_samples: usize = (sample_rate as f32 * duration_seconds) as usize;
 
     let mut frames: Vec<kira::Frame> = Vec::with_capacity(num_samples);
@@ -24,6 +24,6 @@ pub fn generate_sample_emitter_sound() -> kira::sound::static_sound::StaticSound
         sample_rate,
         slice: Some((0, frames.len())),
         frames: std::sync::Arc::from(frames),
-        settings: kira::sound::static_sound::StaticSoundSettings::new(),
+        settings: kira::sound::static_sound::StaticSoundSettings::new().loop_region(..),
     }
 }

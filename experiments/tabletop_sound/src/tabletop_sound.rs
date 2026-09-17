@@ -21,7 +21,6 @@ impl TabletopSound {
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui) {
-        // TODO Change this visually
         egui::Panel::top("DockerBar").show(ui, |ui| {
             ui.horizontal_wrapped(|ui| {
                 if ui.button("Reset").clicked() {
