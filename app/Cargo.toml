@@ -12,6 +12,5 @@ glam.workspace = true
 rand.workspace = true
 glow.workspace = true
 
-tabletop_sound = { path = "../experiments/tabletop_sound" }
 navigator = { path = "../experiments/navigator" }
 terminal = { path = "../experiments/terminal" }

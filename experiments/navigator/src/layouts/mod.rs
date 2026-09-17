@@ -4,7 +4,6 @@ use crate::settings::style_sheet::LAYOUT_BLOCK_FRAME;
 
 pub mod math_simulations;
 pub mod navigator;
-pub mod tabletop_sound;
 pub mod terminal;
 pub mod title;
 
@@ -14,7 +13,6 @@ pub enum Layout {
     Title,
     Navigator,
     Terminal,
-    TabletopSound,
     MathSimulations,
 }
 
@@ -62,7 +60,6 @@ impl Layout {
         Self::Title,
         Self::Navigator,
         Self::Terminal,
-        Self::TabletopSound,
         Self::MathSimulations,
     ];
 
@@ -71,7 +68,6 @@ impl Layout {
             Self::Title => "title",
             Self::Navigator => "navigator",
             Self::Terminal => "terminal",
-            Self::TabletopSound => "tabletop_sound",
             Self::MathSimulations => "math_simulations",
         }
     }
@@ -81,7 +77,6 @@ impl Layout {
             "title" => Ok(Self::Title),
             "navigator" => Ok(Self::Navigator),
             "terminal" => Ok(Self::Terminal),
-            "tabletop_sound" => Ok(Self::TabletopSound),
             "math_simulations" => Ok(Self::MathSimulations),
             _ => Err("No layout of name: {name}"),
         }
@@ -92,7 +87,6 @@ impl Layout {
             Self::Title => title::panels(max_rect),
             Self::Navigator => navigator::panels(max_rect),
             Self::Terminal => terminal::panels(max_rect),
-            Self::TabletopSound => tabletop_sound::panels(max_rect),
             Self::MathSimulations => math_simulations::panels(max_rect),
         }
     }

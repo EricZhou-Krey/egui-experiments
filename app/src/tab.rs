@@ -1,7 +1,6 @@
 use egui::{Context, Id, RawInput, Ui, WidgetText};
 use egui_dock::{DockState, TabViewer};
 use std::ops::{Deref, DerefMut};
-use tabletop_sound::tabletop_sound::TabletopSound;
 use terminal::{
     file_system::{TerminalDirectory, TerminalFile},
     Terminal,
@@ -58,7 +57,6 @@ macro_rules! define_app_tabs {
 
 define_app_tabs! {
     pub enum Tab {
-        TabletopSound(Box<TabletopSound>) => "TabletopSound",
         Terminal(Box<Terminal<TerminalFile, TerminalDirectory>>) => "Terminal",
     }
 }
